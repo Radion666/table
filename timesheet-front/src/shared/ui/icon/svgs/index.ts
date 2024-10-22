@@ -1,0 +1,29 @@
+import Employees from "./icons/employees.svg";
+import Excel from "./icons/excel.svg";
+import EyeFilled from "./icons/eyeFilled.svg";
+import EyeSlash from "./icons/eyeSlash.svg";
+import Facilities from "./icons/facilities.svg";
+import Frog from "./icons/frong.svg";
+import Logout from "./icons/logout.svg";
+import Logs from "./icons/logs.svg";
+import NoRoutes from "./icons/no-routes.svg";
+import Position from "./icons/position.svg";
+import Roles from "./icons/roles.svg";
+import Timesheet from "./icons/timesheet.svg";
+import Worker from "./icons/worker.svg";
+
+export {
+  Employees,
+  Excel,
+  EyeFilled,
+  EyeSlash,
+  Facilities,
+  Frog,
+  Logout,
+  Logs,
+  NoRoutes,
+  Position,
+  Roles,
+  Timesheet,
+  Worker
+};

@@ -1,0 +1,589 @@
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import dayjs from 'dayjs';
+import {
+  EmploymentPeriod,
+  EmploymentStatus,
+} from 'src/employment-periods/employment-periods.model';
+import { Facilities } from 'src/facilities/facilities.model';
+import { FacilityPeriod } from 'src/facility-periods/facility-periods.model';
+import { MasterPeriod } from 'src/master-periods/master-periods.model';
+import { OutOfTownPeriod } from 'src/out-of-town-periods/out-of-town-periods';
+import { PositionPeriod } from 'src/position-periods/position-periods.model';
+import { Positions } from 'src/positions/positions.model';
+import { Roles } from 'src/roles/role.model';
+import { User } from 'src/users/user.model';
+import { CreateEmployeeDto } from './dto/create-employee.dto';
+import { UpdateEmployeeDto } from './dto/update-employee.dto';
+import { Employee } from './employee.model';
+
+@Injectable()
+export class EmployeeService {
+  constructor(
+    @InjectModel(Employee) private employeeModel: typeof Employee,
+    @InjectModel(User) private userModel: typeof User,
+    @InjectModel(Facilities) private facilityModel: typeof Facilities,
+    @InjectModel(Roles) private roleModel: typeof Roles,
+    @InjectModel(Positions) private positionModel: typeof Positions,
+    @InjectModel(EmploymentPeriod)
+    private employmentPeriodModel: typeof EmploymentPeriod,
+    @InjectModel(FacilityPeriod)
+    private facilityPeriodModel: typeof FacilityPeriod,
+    @InjectModel(MasterPeriod)
+    private masterPeriodModel: typeof MasterPeriod,
+    @InjectModel(OutOfTownPeriod)
+    private outOfTownPeriodModel: typeof OutOfTownPeriod,
+    @InjectModel(PositionPeriod)
+    private positionPeriodModel: typeof PositionPeriod,
+  ) {}
+
+  async validateDto(createEmployeeDto: UpdateEmployeeDto, id?: number) {
+    const findByPhone = await this.employeeModel.findOne({
+      where: {
+        phoneNumber: createEmployeeDto.phoneNumber,
+      },
+    });
+
+    if (findByPhone?.id && !id) {
+      throw new HttpException(
+        'Пользователь с таким номером телефона уже существует',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (findByPhone?.id && id && findByPhone?.id !== id) {
+      throw new HttpException(
+        'Пользователь с таким номером телефона уже существует',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const isPositionExists = await this.positionModel.findByPk(
+      createEmployeeDto.positionId,
+    );
+
+    if (!isPositionExists && createEmployeeDto.positionId) {
+      throw new HttpException(
+        `Должности с id - ${createEmployeeDto.positionId} не найден`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const isRelatedMaster = await this.userModel.findByPk(
+      createEmployeeDto.masterId,
+    );
+
+    if (!isRelatedMaster && createEmployeeDto.masterId) {
+      throw new HttpException(
+        `Привязанный пользователь с ролью мастер -  (id - ${createEmployeeDto.masterId}) не найден`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (isRelatedMaster) {
+      const relatedMasterRoleName = await this.roleModel.findByPk(
+        isRelatedMaster.role_id,
+      );
+
+      if (relatedMasterRoleName && relatedMasterRoleName.name !== 'master') {
+        throw new HttpException(
+          `Привязанный пользователь не обладает ролью "Мастер"`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+
+    const isFacilityExists = await this.facilityModel.findByPk(
+      createEmployeeDto.facilityId,
+    );
+
+    if (!isFacilityExists && createEmployeeDto.facilityId) {
+      throw new HttpException(
+        `Объект с id - ${createEmployeeDto.facilityId} не найден`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  async create(createEmployeeDto: CreateEmployeeDto) {
+    const isCreatedUsersExists = await this.userModel.findByPk(
+      createEmployeeDto.createdById,
+    );
+
+    if (!isCreatedUsersExists) {
+      throw new HttpException(
+        `Созданный пользователь с id - ${createEmployeeDto.createdById} не найден`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    await this.validateDto(createEmployeeDto);
+
+    const newEmployee = await this.employeeModel.create({
+      ...createEmployeeDto,
+    });
+
+    if (newEmployee) {
+      await this.updateEmploymentPeriod(
+        newEmployee.id,
+        createEmployeeDto.status,
+        createEmployeeDto.facilityId,
+        createEmployeeDto.masterId,
+        createEmployeeDto.positionId,
+        createEmployeeDto.isOutOfTown,
+      );
+    }
+
+    return newEmployee;
+  }
+
+  async update(id: number, updateEmployeeDto: UpdateEmployeeDto) {
+    await this.validateDto(updateEmployeeDto, id);
+
+    const [_, [data]] = await this.employeeModel.update(
+      {
+        ...updateEmployeeDto,
+      },
+      {
+        where: {
+          id,
+        },
+        returning: true,
+      },
+    );
+
+    await this.updateEmploymentPeriod(
+      id,
+      updateEmployeeDto.status,
+      updateEmployeeDto.facilityId,
+      updateEmployeeDto.masterId,
+      updateEmployeeDto.positionId,
+      updateEmployeeDto.isOutOfTown,
+    );
+
+    return data;
+  }
+
+  private async updateEmploymentPeriod(
+    employeeId: number,
+    status: EmploymentStatus,
+    facilityId: number,
+    masterId: number,
+    positionId: number,
+    isOutOfTown: boolean,
+  ) {
+    const currentPeriod = await this.employmentPeriodModel.findOne({
+      where: {
+        employeeId,
+        endDate: null,
+      },
+    });
+
+    const currentFacility = await this.facilityPeriodModel.findOne({
+      where: {
+        employeeId,
+        endDate: null,
+      },
+    });
+
+    const currentMaster = await this.masterPeriodModel.findOne({
+      where: {
+        employeeId,
+        endDate: null,
+      },
+    });
+
+    const currentPosition = await this.positionPeriodModel.findOne({
+      where: {
+        employeeId,
+        endDate: null,
+      },
+    });
+
+    const currentIsOutOfTown = await this.outOfTownPeriodModel.findOne({
+      where: {
+        employeeId,
+        endDate: null,
+      },
+    });
+
+    if (
+      currentIsOutOfTown ? currentIsOutOfTown.isOutOfTown !== isOutOfTown : true
+    ) {
+      if (currentIsOutOfTown) {
+        currentIsOutOfTown.endDate = new Date();
+        await currentIsOutOfTown.save();
+      }
+
+      await this.outOfTownPeriodModel.create({
+        employeeId,
+        startDate: new Date(),
+        isOutOfTown,
+      });
+    }
+
+    if (currentPosition ? currentPosition.positionId !== positionId : true) {
+      if (currentPosition) {
+        currentPosition.endDate = new Date();
+        await currentPosition.save();
+      }
+
+      await this.positionPeriodModel.create({
+        employeeId,
+        startDate: new Date(),
+        positionId,
+      });
+    }
+
+    if (currentMaster ? currentMaster.masterId !== masterId : true) {
+      if (currentMaster) {
+        currentMaster.endDate = new Date();
+        await currentMaster.save();
+      }
+
+      await this.masterPeriodModel.create({
+        employeeId,
+        startDate: new Date(),
+        masterId,
+      });
+    }
+
+    if (currentFacility ? currentFacility.facilityId !== facilityId : true) {
+      if (currentFacility) {
+        currentFacility.endDate = new Date();
+        await currentFacility.save();
+      }
+
+      await this.facilityPeriodModel.create({
+        employeeId,
+        startDate: new Date(),
+        facilityId,
+      });
+    }
+
+    if (currentPeriod?.status ? currentPeriod.status !== status : true) {
+      if (currentPeriod) {
+        currentPeriod.endDate = new Date();
+        await currentPeriod.save();
+      }
+
+      await this.employmentPeriodModel.create({
+        employeeId,
+        startDate: new Date(),
+        status,
+      });
+    }
+  }
+
+  async findAll() {
+    const employees = await this.employeeModel.findAll({
+      order: [['createdAt', 'ASC']],
+      include: [
+        {
+          model: EmploymentPeriod,
+          attributes: ['status', 'startDate', 'endDate', 'createdAt', 'id'],
+        },
+        {
+          model: MasterPeriod,
+          attributes: {
+            exclude: ['masterId', 'employeeId'],
+          },
+          include: [
+            {
+              model: User,
+              attributes: {
+                exclude: [
+                  'positionId',
+                  'role_id',
+                  'password',
+                  'login',
+                  'lastLoginAt',
+                  'createdAt',
+                  'updatedAt',
+                ],
+              },
+              include: [
+                {
+                  model: Roles,
+                  attributes: {
+                    exclude: ['id'],
+                    include: ['name', 'alt_name', 'createdAt', 'updatedAt'],
+                  },
+                },
+                {
+                  model: Positions,
+                  attributes: ['name'],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          model: FacilityPeriod,
+          attributes: {
+            exclude: ['facilityId', 'employeeId'],
+          },
+          include: [
+            {
+              model: Facilities,
+              attributes: ['name', 'id'],
+            },
+          ],
+        },
+        {
+          model: PositionPeriod,
+          attributes: {
+            exclude: ['positionId', 'employeeId'],
+          },
+          include: [
+            {
+              model: Positions,
+              attributes: ['name', 'id'],
+            },
+          ],
+        },
+        {
+          model: OutOfTownPeriod,
+          attributes: ['isOutOfTown', 'startDate', 'endDate', 'createdAt'],
+        },
+        {
+          model: User,
+          as: 'creator',
+          attributes: ['id', 'firstName', 'lastName', 'middleName'],
+        },
+      ],
+    });
+
+    const sortedEmployees = employees.map((employee) => {
+      const sortedEmploymentPeriods =
+        employee.employmentPeriods?.sort((a, b) => {
+          return b.createdAt.getTime() - a.createdAt.getTime();
+        }) || [];
+      const sortedMasterPeriods =
+        employee.masterPeriods?.sort((a, b) => {
+          return b.createdAt.getTime() - a.createdAt.getTime();
+        }) || [];
+      const sortedPositionPeriods =
+        employee.positionPeriods?.sort((a, b) => {
+          return b.createdAt.getTime() - a.createdAt.getTime();
+        }) || [];
+      const sortedOutOfTownPeriods =
+        employee.outOfTownPeriods?.sort((a, b) => {
+          return b.createdAt.getTime() - a.createdAt.getTime();
+        }) || [];
+      const sortedFacilityPeriods =
+        employee.facilityPeriods?.sort((a, b) => {
+          return b.createdAt.getTime() - a.createdAt.getTime();
+        }) || [];
+
+      return {
+        ...employee.toJSON(),
+        employmentPeriods: sortedEmploymentPeriods,
+        masterPeriods: sortedMasterPeriods,
+        positionPeriods: sortedPositionPeriods,
+        outOfTownPeriods: sortedOutOfTownPeriods,
+        facilityPeriods: sortedFacilityPeriods,
+      };
+    });
+
+    return sortedEmployees;
+  }
+
+  findOne(id: number) {}
+
+  async findByFacilityId(facilityId: number, monthYear: string) {
+    return this.getAllowedEmployeesByFacilityAndDate(facilityId, monthYear);
+  }
+
+  async getAllowedEmployeesByFacilityAndDate(
+    facilityId: number,
+    monthYear: string,
+  ) {
+    const isFacilityExists = await this.facilityModel.findByPk(facilityId);
+
+    if (!isFacilityExists && facilityId) {
+      throw new HttpException(
+        `Объект с id - ${facilityId} не найден`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const [month, year] = monthYear.split('-').map(Number);
+    const startDate = dayjs(new Date(year, month - 1, 1));
+    const endDate = dayjs(new Date(year, month, 0));
+
+    const facilities = await this.facilityPeriodModel.findAll({
+      where: {
+        facilityId: facilityId,
+      },
+    });
+
+    const allowedFacilityEmployees: FacilityPeriod[] = [];
+    for (let i = 0; i < facilities?.length; i++) {
+      const facility = facilities?.[i];
+
+      const innerStartDate = dayjs(facility?.startDate);
+
+      const innerEndDate =
+        facility?.endDate === null ? null : dayjs(facility?.endDate);
+
+      if (
+        innerEndDate === null &&
+        (innerStartDate?.isBefore(startDate) ||
+          innerStartDate?.isSame(startDate, 'month'))
+      ) {
+        allowedFacilityEmployees.push(facility);
+        continue;
+      } else if (
+        innerEndDate !== null &&
+        (innerStartDate.isBefore(startDate) ||
+          innerStartDate?.isSame(startDate, 'month')) &&
+        (innerEndDate.isAfter(endDate) ||
+          innerEndDate?.isSame(endDate, 'month'))
+      ) {
+        allowedFacilityEmployees.push(facility);
+        continue;
+      }
+    }
+
+    const allEmployeesIds = allowedFacilityEmployees?.map(
+      (el) => el.employeeId,
+    );
+    const employees = await this.employeeModel.findAll({
+      where: {
+        id: allEmployeesIds,
+      },
+      include: {
+        model: EmploymentPeriod,
+        attributes: ['status', 'startDate', 'endDate', 'createdAt'],
+      },
+    });
+
+    console.log(JSON.stringify(employees));
+
+    const allowedEmployees: Employee[] = [];
+
+    for (let i = 0; i < employees?.length; i++) {
+      const employee = employees?.[i];
+
+      const allowedPeriods: EmploymentPeriod[] = [];
+
+      for (let j = 0; j < employee?.employmentPeriods?.length; j++) {
+        const employmentPeriod = employee?.employmentPeriods?.[j];
+
+        const innerStartDate = dayjs(employmentPeriod?.startDate);
+        const innerEndDate =
+          employmentPeriod?.endDate === null
+            ? null
+            : dayjs(employmentPeriod?.endDate);
+
+        if (
+          innerEndDate === null &&
+          (innerStartDate?.isBefore(startDate) ||
+            innerStartDate?.isSame(startDate, 'month'))
+        ) {
+          allowedPeriods.push(employmentPeriod);
+          continue;
+        } else if (
+          innerEndDate !== null &&
+          (innerStartDate.isBefore(startDate) ||
+            innerStartDate?.isSame(startDate, 'month')) &&
+          (innerEndDate.isAfter(endDate) ||
+            innerEndDate?.isSame(endDate, 'month'))
+        ) {
+          allowedPeriods.push(employmentPeriod);
+          continue;
+        }
+      }
+
+      if (allowedPeriods?.length) {
+        allowedEmployees.push({
+          id: employee.id,
+          lastName: employee?.lastName,
+          firstName: employee?.firstName,
+          middleName: employee?.middleName,
+          position: {},
+          employmentPeriods: allowedPeriods,
+          facilityPeriods: allowedFacilityEmployees,
+        } as any);
+      }
+    }
+
+    //   for (let j = 0; j < employee?.employmentPeriods?.length; j++) {
+
+    //     if (
+    //       innerEndDate === null &&
+    //       innerStartDate?.isAfter(startDate) &&
+    //       innerStartDate?.isBefore(endDate)
+    //     ) {
+    //       console.log('c1');
+    //       allowedPeriods.push(employmentPeriod);
+    //     } else if (
+    //       innerEndDate === null &&
+    //       innerStartDate?.isBefore(startDate) &&
+    //       employmentPeriod?.status === 'working'
+    //     ) {
+    //       console.log('c2');
+    //       allowedPeriods.push(employmentPeriod);
+    //     } else if (
+    //       innerEndDate !== null &&
+    //       employmentPeriod?.status === 'working' &&
+    //       innerStartDate?.isBefore(startDate) &&
+    //       innerEndDate?.isAfter(endDate)
+    //     ) {
+    //       allowedPeriods.push(employmentPeriod);
+    //     } else if (
+    //       innerEndDate !== null &&
+    //       innerStartDate?.isAfter(startDate) &&
+    //       innerStartDate?.isBefore(endDate) &&
+    //       innerEndDate?.isAfter(startDate) &&
+    //       innerEndDate?.isBefore(endDate)
+    //     ) {
+    //       console.log('cl3');
+    //       allowedPeriods.push(employmentPeriod);
+    //     } else if (
+    //       innerEndDate !== null &&
+    //       innerEndDate?.isAfter(startDate) &&
+    //       innerEndDate?.isBefore(endDate)
+    //     ) {
+    //       console.log('cl4');
+    //       allowedPeriods.push(employmentPeriod);
+    //     } else if (
+    //       innerStartDate?.isAfter(startDate) &&
+    //       innerStartDate?.isBefore(endDate)
+    //     ) {
+    //       console.log('cl5');
+    //       allowedPeriods.push(employmentPeriod);
+    //     }
+    //   }
+    //   if (allowedPeriods?.length) {
+    //     allowedEmployees.push({
+    //       id: employee.id,
+    //       lastName: employee?.lastName,
+    //       firstName: employee?.firstName,
+    //       middleName: employee?.middleName,
+    //       facility: {
+
+    //         id: employee?.facility?.id,
+
+    //         name: employee?.facility?.name,
+    //       },
+    //       position: {
+
+    //         id: employee?.position?.id,
+
+    //         name: employee?.position?.name,
+    //       },
+    //       employmentPeriods: allowedPeriods,
+    //     } as any);
+    //   }
+    // }
+    // return allowedEmployees;
+
+    return allowedEmployees;
+  }
+
+  // remove(id: number) {
+  //   return `This action removes a #${id} employee`;
+  // }
+}

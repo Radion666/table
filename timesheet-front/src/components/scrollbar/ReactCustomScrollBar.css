@@ -1,0 +1,28 @@
+.simplebar-scrollbar {
+  &::before {
+    cursor: pointer;
+    opacity: 1 !important;
+    border-radius: 4 !important;
+    background-color: #cbd3d5 !important;
+    width: 100%;
+    top: 0px;
+    left: 0px;
+    bottom: 0px;
+    z-index: 9999999999999 !important;
+    cursor: pointer !important;
+  }
+}
+
+.simplebar-track.simplebar-vertical {
+  width: var(--simplebar-react-scrollwidth);
+  top: var(--simplebar-react-verticalTopMargin);
+}
+.simplebar-track.simplebar-horizontal {
+  height: var(--simplebar-react-scrollheight);
+  left: var(--simplebar-react-horizontalLeftMargin);
+}
+
+.simplebar-track {
+  cursor: default;
+  pointer-events: auto;
+}
