@@ -1,24 +1,4 @@
-node_modules
+
 **/node_modules
+**/dist
 
-build
-dist
-coverage
-*.log
-
-.env
-*.local
-
-.DS_Store
-Thumbs.db
-
-.vscode
-.idea
-*.sublime-workspace
-*.sublime-project
-
-*~
-.*.swp
-
-Dockerfile
-docker-compose.yml
