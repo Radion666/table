@@ -2,7 +2,8 @@ FROM node:20.11.0 AS build-stage
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY package.json yarn.lock ./
+
 RUN yarn install
 
 COPY . .
