@@ -54,7 +54,7 @@ export const LoginPage = () => {
   });
 
   useEffect(() => {
-    const error = mutation?.error?.response.data.message;
+    const error = mutation?.error?.response?.data?.message;
     const errorMsg = Array.isArray(error) ? error?.[0] : error;
     if (errorMsg) {
       toast.error(errorMsg);

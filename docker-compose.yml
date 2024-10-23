@@ -3,6 +3,8 @@ services:
     build:
       context: ./timesheet-front
       dockerfile: Dockerfile
+    environment:
+      VITE_API_URL: "${VITE_API_URL}"
     restart: unless-stopped
     ports:
       - "80:80"
