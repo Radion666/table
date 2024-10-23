@@ -1,5 +1,5 @@
 # Используем официальный Node.js образ
-FROM node:20.11.0 as build-stage
+FROM node:20.11.0 AS build-stage
 
 WORKDIR /app
 
@@ -9,7 +9,7 @@ RUN yarn install
 COPY . .
 RUN yarn build
 
-FROM nginx:alpine as production-stage
+FROM nginx:alpine AS production-stage
 
 RUN mkdir /app
 

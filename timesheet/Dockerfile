@@ -11,4 +11,4 @@ RUN yarn build
 EXPOSE 42131
 
 # Запускаем приложение
-CMD ["yarn", "dev"]
+CMD ["yarn", "start:prod"]
