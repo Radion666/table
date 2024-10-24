@@ -10,25 +10,25 @@ services:
       - "80:80"
     networks:
       - my_network
-  # backend:
-  #   build:
-  #     context: ./timesheet
-  #   restart: unless-stopped
-  #   ports:
-  #     - "${BACKEND_PORT}:42131"
-  #   depends_on:
-  #     - postgres
-  #   networks:
-  #     - my_network
-  #   environment:
-  #     PORT: '${PORT}'
-  #     PG_HOST: "${PG_HOST}"
-  #     PG_PORT: "${PG_PORT}"
-  #     PG_USERNAME: "${PG_USERNAME}"
-  #     PG_PASSWORD: "${PG_PASSWORD}"
-  #     PG_DATABASE: "${PG_DATABASE}"
-  #     TG_API_TOKEN: "${TG_API_TOKEN}"
-  #     TG_CHAT_ID: "${TG_CHAT_ID}"
+  backend:
+    build:
+      context: ./timesheet
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT}:42131"
+    depends_on:
+      - postgres
+    networks:
+      - my_network
+    environment:
+      PORT: '${PORT}'
+      PG_HOST: "${PG_HOST}"
+      PG_PORT: "${PG_PORT}"
+      PG_USERNAME: "${PG_USERNAME}"
+      PG_PASSWORD: "${PG_PASSWORD}"
+      PG_DATABASE: "${PG_DATABASE}"
+      TG_API_TOKEN: "${TG_API_TOKEN}"
+      TG_CHAT_ID: "${TG_CHAT_ID}"
   postgres:
     image: postgres:16.3-alpine
     environment:
