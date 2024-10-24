@@ -12,7 +12,7 @@ services:
       - my_network
   backend:
     build:
-      context: ./trash
+      context: ./timesheet
     restart: unless-stopped
     ports:
       - "${BACKEND_PORT}:42131"

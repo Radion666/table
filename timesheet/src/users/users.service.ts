@@ -5,7 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { hash } from 'bcrypt';
+import { hash } from 'bcryptjs';
 import { Op } from 'sequelize';
 import { Positions } from 'src/positions/positions.model';
 import { Roles } from 'src/roles/role.model';
