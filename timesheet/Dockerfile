@@ -1,14 +1,22 @@
-FROM node:20.11.0 AS build-stage
+FROM node:20
 
-WORKDIR /app
+# Set the working directory inside the container
+WORKDIR /usr/src/app
 
+# Copy package.json and package-lock.json to the working directory
 COPY package*.json ./
-RUN yarn install
 
+# Install the application dependencies
+RUN npm install
+
+# Copy the rest of the application files
 COPY . .
-RUN yarn build
 
-EXPOSE 42131
+# Build the NestJS application
+RUN npm run build
 
-# Запускаем приложение
-CMD ["yarn", "start:prod"]
+# Expose the application port
+EXPOSE 3000
+
+# Command to run the application
+CMD ["node", "dist/main"]
