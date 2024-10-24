@@ -17,7 +17,6 @@ import { Scrollbar } from "~src/components/scrollbar/Scrollbar";
 import { apiRequests } from "~src/shared/api/requests";
 import { monthsNameByNumberLocal } from "~src/shared/constants/default";
 import { Button } from "~src/shared/ui/button/button";
-import { Icon } from "~src/shared/ui/icon/icon";
 import { getShortUserFio, removeLeadingZeroFromDate } from "~src/shared/utils/default";
 
 type tableValueType = (object: employeeType) => string;
@@ -453,11 +452,11 @@ export const TimesheetPage = () => {
       </div>
       <div className="mb-2 text-center flex items-center justify-between flex-row-reverse gap-5">
         <div className="text-2xl">Табель учета рабочего времени</div>
-        <Icon
+        {/* <Icon
           className={clsx("cursor-pointer text-[#343434], hover:text-[#B74858]")}
           name="Excel"
           size={24}
-        />
+        /> */}
       </div>
       <div className="flex-1" ref={containerRef}>
         <div

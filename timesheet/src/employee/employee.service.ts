@@ -275,7 +275,10 @@ export class EmployeeService {
     }
   }
 
-  async findAll() {
+  async findAll(user: User) {
+    //TODO
+    //Добавить проверку на user
+
     const employees = await this.employeeModel.findAll({
       order: [['createdAt', 'ASC']],
       include: [
@@ -354,6 +357,8 @@ export class EmployeeService {
       ],
     });
 
+    const userRole = await this.roleModel.findByPk(user?.role as any);
+
     const sortedEmployees = employees.map((employee) => {
       const sortedEmploymentPeriods =
         employee.employmentPeriods?.sort((a, b) => {
@@ -386,7 +391,28 @@ export class EmployeeService {
       };
     });
 
-    return sortedEmployees;
+    if (userRole?.name === 'master') {
+      const mastersEmployees: typeof sortedEmployees = [];
+
+      for (let i = 0; i < sortedEmployees?.length; i++) {
+        const firstMaster = sortedEmployees?.[i].masterPeriods?.[0];
+        if (
+          firstMaster?.endDate === null &&
+          firstMaster?.['user']?.id === user.id
+        )
+          mastersEmployees.push({
+            ...sortedEmployees?.[i],
+            masterPeriods: [
+              {
+                ...(firstMaster.toJSON() as any),
+              },
+            ],
+          });
+      }
+      return mastersEmployees;
+    } else {
+      return sortedEmployees;
+    }
   }
 
   findOne(id: number) {}

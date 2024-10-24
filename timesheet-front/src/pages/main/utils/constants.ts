@@ -5,7 +5,9 @@ import { headerType } from "../timesheet/timesheet";
 export const defaultHeaders: headerType[] = [
   {
     label: "Работник",
-    value: (obj) => `${obj.fullName} + ${obj.position}`,
+    // value: (obj) => `${obj.fullName} + ${obj.position}`,
+    value: (obj) => `${obj.fullName}`,
+
     className: "min-w-48 flex-1 sticky left-0 bg-white z-40 ",
     fieldType: "text",
     type: "worker"

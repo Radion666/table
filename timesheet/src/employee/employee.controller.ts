@@ -12,6 +12,8 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { Roles } from 'src/auth/roles-auth.decorator';
 import { RolesGuards } from 'src/auth/roles.guard';
+import { UserDecorator } from 'src/common/UserDecorator/UserDecorator';
+import { User } from 'src/users/user.model';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { EmployeeService } from './employee.service';
@@ -25,14 +27,17 @@ import { EmployeeService } from './employee.service';
 export class EmployeeController {
   constructor(private readonly employeeService: EmployeeService) {}
 
+  @Roles('admin', 'master')
+  @UseGuards(RolesGuards)
   @Post()
   create(@Body() createEmployeeDto: CreateEmployeeDto) {
     return this.employeeService.create(createEmployeeDto);
   }
 
+  @Roles('admin', 'master')
   @Get()
-  findAll() {
-    return this.employeeService.findAll();
+  findAll(@UserDecorator() user: User) {
+    return this.employeeService.findAll(user);
   }
 
   @Roles('admin', 'master')
@@ -50,6 +55,8 @@ export class EmployeeController {
     return this.employeeService.findOne(+id);
   }
 
+  @Roles('admin', 'master')
+  @UseGuards(RolesGuards)
   @Patch(':id')
   update(
     @Param('id') id: string,

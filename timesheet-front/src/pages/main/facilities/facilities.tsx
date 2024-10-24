@@ -4,23 +4,32 @@ import { Pagination } from "antd";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 
+import { workersStatuses } from "../workers/utils/constants";
+
 import { facilitiesColumns } from "./utils/constants";
 
 import { GridTable } from "~src/components/grid-table/grid-table";
 import { Loader } from "~src/components/loader/loader";
 import { apiRequests } from "~src/shared/api/requests";
+import { regexes } from "~src/shared/constants/default";
 import { usePagination } from "~src/shared/hooks";
 import { useGetUser } from "~src/shared/hooks/useGetUser";
-import { useGetAllFacilities, useGetAllMasters } from "~src/shared/hooks/useRequests";
+import {
+  useGetAllFacilities,
+  useGetAllMasters,
+  useGetAllPositions
+} from "~src/shared/hooks/useRequests";
+import { createWorkerType } from "~src/shared/types/employees";
 import { createFacilityWithMasterType } from "~src/shared/types/facilities";
 import { Button } from "~src/shared/ui/button/button";
+import { Checkbox } from "~src/shared/ui/checkbox/checkbox";
 import { Input } from "~src/shared/ui/input/input";
 import { Modal } from "~src/shared/ui/modal/modal";
 import { Select } from "~src/shared/ui/select/select";
 import { getUserFio } from "~src/shared/utils/default";
 
 export const FacilitiesPage = () => {
-  const { user } = useGetUser();
+  const { user, userRole } = useGetUser();
 
   const { currentPage, onChange, onShowSizeChange, pageSize, setTotalPage, totalPage } =
     usePagination();
@@ -51,6 +60,7 @@ export const FacilitiesPage = () => {
   });
 
   const [isModalOpen, setModalOpen] = useState<boolean>(false);
+  const [isCreateModalOpen, setCreateModalOpen] = useState<boolean>(false);
 
   const [isBtnLoading, setBtnLoading] = useState<boolean>(false);
 
@@ -92,6 +102,46 @@ export const FacilitiesPage = () => {
       });
   };
 
+  const {
+    control: createWorkerControl,
+    handleSubmit: createWorkerHandleSubmit,
+    reset: createWorkerReset,
+    formState: { errors: createWorkerErrors }
+  } = useForm<createWorkerType>({
+    defaultValues: {
+      createdById: user?.id,
+      actualAddress: "",
+      facilityId: null,
+      firstName: "",
+      isOutOfTown: true,
+      lastName: "",
+      masterId: user?.id,
+      middleName: "",
+      phoneNumber: "",
+      positionId: null,
+      registeredAddress: "",
+      status: "working"
+    }
+  });
+
+  const { data: positionsData, isFetching: isPositionsFetching } = useGetAllPositions();
+  const { data: allFacilities, isFetching: isAllFacilitiesFetching } = useGetAllFacilities({
+    page: 1,
+    pageSize: 1000
+  });
+
+  const handleCreate = async (data: createWorkerType) => {
+    await apiRequests
+      .createWorker({ ...data, createdById: user?.id as number, isOutOfTown: !data?.isOutOfTown })
+      .then(() => {
+        toast.success("Сотрудник успешно создан");
+        refetch();
+      })
+      .finally(() => {
+        setCreateModalOpen(false);
+      });
+  };
+
   useEffect(() => {
     reset();
   }, [isModalOpen]);
@@ -103,9 +153,14 @@ export const FacilitiesPage = () => {
   return (
     <>
       <div className="flex flex-1 flex-col gap-5 justify-center p-5">
-        {user?.role?.name !== "master" && (
+        {userRole !== "master" && (
           <div className="flex justify-end">
             <Button onClick={() => setModalOpen(true)}>Создать новый объект</Button>
+          </div>
+        )}
+        {userRole === "master" && (
+          <div className="flex justify-end">
+            <Button onClick={() => setCreateModalOpen(true)}>Добавить сотрудника</Button>
           </div>
         )}
 
@@ -131,48 +186,209 @@ export const FacilitiesPage = () => {
           </>
         )}
       </div>
-      <Modal title="Создание объекта" state={isModalOpen} setState={setModalOpen}>
-        <form className="flex flex-col gap-2 mt-4" onSubmit={handleSubmit(handleCreateFacilitiy)}>
-          <Controller
-            control={control}
-            name="facilityName"
-            rules={{
-              required: "Необходимо написать название объекта"
-            }}
-            render={({ field }) => {
-              return (
-                <Input
-                  errorMessage={errors?.facilityName?.message}
-                  label="Наименование объекта"
-                  {...field}
-                />
-              );
-            }}
-          />
-          <Controller
-            control={control}
-            name="masters"
-            render={({ field }) => {
-              return (
-                <Select
-                  label="Мастер"
-                  loading={isMastersFetching}
-                  mode="multiple"
-                  {...field}
-                  options={masterData?.data?.map((master) => ({
-                    label: getUserFio(master),
-                    value: master.id
-                  }))}
-                />
-              );
-            }}
-          />
+      {isModalOpen && (
+        <Modal title="Создание объекта" state={isModalOpen} setState={setModalOpen}>
+          <form className="flex flex-col gap-2 mt-4" onSubmit={handleSubmit(handleCreateFacilitiy)}>
+            <Controller
+              control={control}
+              name="facilityName"
+              rules={{
+                required: "Необходимо написать название объекта"
+              }}
+              render={({ field }) => {
+                return (
+                  <Input
+                    errorMessage={errors?.facilityName?.message}
+                    label="Наименование объекта"
+                    {...field}
+                  />
+                );
+              }}
+            />
+            <Controller
+              control={control}
+              name="masters"
+              render={({ field }) => {
+                return (
+                  <Select
+                    label="Мастер"
+                    loading={isMastersFetching}
+                    mode="multiple"
+                    {...field}
+                    options={masterData?.data?.map((master) => ({
+                      label: getUserFio(master),
+                      value: master.id
+                    }))}
+                  />
+                );
+              }}
+            />
 
-          <Button loading={isBtnLoading} htmlType="submit" className="mt-4">
-            Сохранить
-          </Button>
-        </form>
-      </Modal>
+            <Button loading={isBtnLoading} htmlType="submit" className="mt-4">
+              Сохранить
+            </Button>
+          </form>
+        </Modal>
+      )}
+      {isCreateModalOpen && (
+        <Modal
+          title="Создание нового сотрудника"
+          state={isCreateModalOpen}
+          setState={setCreateModalOpen}>
+          <form
+            className="flex flex-col gap-2 mt-4"
+            onSubmit={createWorkerHandleSubmit(handleCreate)}>
+            <Controller
+              control={createWorkerControl}
+              name="lastName"
+              rules={{
+                required: "Фамилия обязательна"
+              }}
+              render={({ field }) => (
+                <Input
+                  errorMessage={createWorkerErrors?.lastName?.message}
+                  label="Фамилия"
+                  {...field}
+                />
+              )}
+            />
+
+            <Controller
+              rules={{
+                required: "Имя обязательно"
+              }}
+              control={createWorkerControl}
+              name="firstName"
+              render={({ field }) => (
+                <Input
+                  errorMessage={createWorkerErrors?.firstName?.message}
+                  label="Имя"
+                  {...field}
+                />
+              )}
+            />
+
+            <Controller
+              rules={{
+                required: "Отчество обязательно"
+              }}
+              control={createWorkerControl}
+              name="middleName"
+              render={({ field }) => (
+                <Input
+                  errorMessage={createWorkerErrors?.middleName?.message}
+                  label="Отчество"
+                  {...field}
+                />
+              )}
+            />
+
+            <Controller
+              rules={{
+                required: "Должность обязательна"
+              }}
+              control={createWorkerControl}
+              name="positionId"
+              render={({ field }) => (
+                <Select
+                  optionFilterProp="label"
+                  options={positionsData?.data?.map((position) => ({
+                    value: position.id,
+                    label: position.name
+                  }))}
+                  showSearch
+                  errorMessage={createWorkerErrors?.positionId?.message}
+                  label="Должность"
+                  {...field}
+                />
+              )}
+            />
+
+            <Controller
+              control={createWorkerControl}
+              name="facilityId"
+              render={({ field }) => (
+                <Select
+                  optionFilterProp="label"
+                  options={allFacilities?.data?.items?.map((facility) => ({
+                    value: facility.id,
+                    label: facility.name
+                  }))}
+                  showSearch
+                  errorMessage={createWorkerErrors?.facilityId?.message}
+                  label="Объект"
+                  {...field}
+                />
+              )}
+            />
+
+            <Controller
+              rules={{
+                required: "Статус обязателен"
+              }}
+              control={createWorkerControl}
+              name="status"
+              render={({ field }) => (
+                <Select
+                  optionFilterProp="label"
+                  options={workersStatuses?.map((status) => ({
+                    value: status.value,
+                    label: status.label
+                  }))}
+                  showSearch
+                  errorMessage={errors?.status?.message}
+                  label="Статус"
+                  {...field}
+                />
+              )}
+            />
+
+            <Controller
+              rules={{
+                required: "Номер телефона обязателен",
+                pattern: {
+                  value: regexes.phone,
+                  message: "Номер телефона не соответствует стандарту"
+                }
+              }}
+              control={createWorkerControl}
+              name="phoneNumber"
+              render={({ field }) => (
+                <Input
+                  errorMessage={createWorkerErrors.phoneNumber?.message}
+                  placeholder="+71111111111 или 81111111111"
+                  label="Номер телефона"
+                  {...field}
+                />
+              )}
+            />
+
+            <Controller
+              rules={{
+                required: ""
+              }}
+              control={createWorkerControl}
+              name="isOutOfTown"
+              render={({ field }) => <Checkbox label="Местный" {...field} />}
+            />
+
+            <Controller
+              control={createWorkerControl}
+              name="registeredAddress"
+              render={({ field }) => <Input label="Адрес регистрации" {...field} />}
+            />
+            <Controller
+              control={createWorkerControl}
+              name="actualAddress"
+              render={({ field }) => <Input label="Адрес фактического проживания" {...field} />}
+            />
+
+            <div className="flex justify-center mt-4">
+              <Button htmlType="submit">Сохранить</Button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </>
   );
 };

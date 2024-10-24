@@ -18,12 +18,13 @@ import { PositionsService } from './positions.service';
 @Controller('positions')
 @ApiTags('Должности')
 @UseGuards(JwtAuthGuard)
-@Roles('admin')
+@Roles('admin', 'master')
 @UseGuards(RolesGuards)
 @ApiBearerAuth()
 export class PositionsController {
   constructor(private readonly positionsService: PositionsService) {}
 
+  @UseGuards(RolesGuards)
   @Post()
   create(@Body() createPositionDto: CreatePositionDto) {
     return this.positionsService.create(createPositionDto);

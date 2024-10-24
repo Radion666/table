@@ -7,7 +7,6 @@ import {
   IsOptional,
   IsPositive,
   IsString,
-  Length,
   Matches,
 } from 'class-validator';
 
@@ -21,9 +20,6 @@ export class CreateUserDto {
   @IsString({
     message: 'Должно быть строкой',
   })
-  @Length(6, 20, {
-    message: 'Длина логина должна быть не менее 6 символов',
-  })
   readonly login: string;
   //password
   @ApiProperty({
@@ -31,9 +27,6 @@ export class CreateUserDto {
     description: 'Пароль пользователя',
   })
   @IsNotEmpty()
-  @Length(7, 20, {
-    message: 'Длина пароля должна быть не менее 7 символов',
-  })
   readonly password: string;
   //lastName
   @ApiProperty({

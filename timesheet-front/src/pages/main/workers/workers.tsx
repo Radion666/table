@@ -10,6 +10,7 @@ import { Loader } from "~src/components/loader/loader";
 import { apiRequests } from "~src/shared/api/requests";
 import { regexes } from "~src/shared/constants/default";
 import { useAppSelector } from "~src/shared/hooks";
+import { useGetUser } from "~src/shared/hooks/useGetUser";
 import {
   useGetAllFacilities,
   useGetAllMasters,
@@ -25,6 +26,8 @@ import { Select } from "~src/shared/ui/select/select";
 import { getUserFio } from "~src/shared/utils/default";
 
 export const WorkersPage = () => {
+  const { userRole } = useGetUser();
+
   const { user } = useAppSelector((state) => state.userReducer);
 
   const [isModalOpen, setModalOpen] = useState<boolean>(false);
@@ -50,7 +53,7 @@ export const WorkersPage = () => {
       firstName: "",
       isOutOfTown: true,
       lastName: "",
-      masterId: null,
+      masterId: userRole === "master" ? user?.id : null,
       middleName: "",
       phoneNumber: "",
       positionId: null,
@@ -167,23 +170,25 @@ export const WorkersPage = () => {
             )}
           />
 
-          <Controller
-            control={control}
-            name="masterId"
-            render={({ field }) => (
-              <Select
-                optionFilterProp="label"
-                options={allMastersData?.data?.map((master) => ({
-                  value: master.id,
-                  label: getUserFio(master)
-                }))}
-                showSearch
-                errorMessage={errors?.masterId?.message}
-                label="Мастер"
-                {...field}
-              />
-            )}
-          />
+          {userRole !== "master" && (
+            <Controller
+              control={control}
+              name="masterId"
+              render={({ field }) => (
+                <Select
+                  optionFilterProp="label"
+                  options={allMastersData?.data?.map((master) => ({
+                    value: master.id,
+                    label: getUserFio(master)
+                  }))}
+                  showSearch
+                  errorMessage={errors?.masterId?.message}
+                  label="Мастер"
+                  {...field}
+                />
+              )}
+            />
+          )}
 
           <Controller
             rules={{

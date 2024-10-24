@@ -26,7 +26,7 @@ export const navbarItems: navBarItemType[] = [
     label: "Сотрудники",
     icon: "Worker",
     url: [ROUTE_CONSTANTS.EMPLOYEES],
-    allowedRoles: ["admin"]
+    allowedRoles: ["admin", "master"]
   },
   {
     label: "Объекты",

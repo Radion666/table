@@ -11,6 +11,7 @@ import { workersStatuses, workerStatuses } from "../utils/constants";
 
 import { apiRequests } from "~src/shared/api/requests";
 import { regexes } from "~src/shared/constants/default";
+import { useGetUser } from "~src/shared/hooks/useGetUser";
 import {
   defaultQueryKeys,
   refetchQuery,
@@ -27,6 +28,7 @@ import { Select } from "~src/shared/ui/select/select";
 import { getUserFio } from "~src/shared/utils/default";
 
 export const ActionsRenderer = (params: CustomCellRendererProps<actualWorkersResponseType>) => {
+  const { userRole } = useGetUser();
   const workerData = params.data;
 
   const [isModalOpen, setModalOpen] = useState<boolean>(false);
@@ -182,36 +184,40 @@ export const ActionsRenderer = (params: CustomCellRendererProps<actualWorkersRes
               </Button>
             )}
           </div>
-          <div className="flex flex-row items-center gap-5">
-            <Controller
-              control={control}
-              name="masterId"
-              render={({ field }) => (
-                <Select
-                  optionFilterProp="label"
-                  containerClassName={clsx(workerData?.masterPeriods?.length ? "w-5/6" : "w-full")}
-                  options={allMastersData?.data?.map((master) => ({
-                    value: master.id,
-                    label: getUserFio(master)
-                  }))}
-                  showSearch
-                  errorMessage={errors?.masterId?.message}
-                  label="Мастер"
-                  {...field}
-                />
+          {userRole !== "master" && (
+            <div className="flex flex-row items-center gap-5">
+              <Controller
+                control={control}
+                name="masterId"
+                render={({ field }) => (
+                  <Select
+                    optionFilterProp="label"
+                    containerClassName={clsx(
+                      workerData?.masterPeriods?.length ? "w-5/6" : "w-full"
+                    )}
+                    options={allMastersData?.data?.map((master) => ({
+                      value: master.id,
+                      label: getUserFio(master)
+                    }))}
+                    showSearch
+                    errorMessage={errors?.masterId?.message}
+                    label="Мастер"
+                    {...field}
+                  />
+                )}
+              />
+              {workerData?.masterPeriods?.length && (
+                <Button
+                  className="h-7 w-1/6 mt-[13px]"
+                  onClick={() => {
+                    setHistoryModalType("master");
+                    setHistoryModalOpen(true);
+                  }}>
+                  История
+                </Button>
               )}
-            />
-            {workerData?.masterPeriods?.length && (
-              <Button
-                className="h-7 w-1/6 mt-[13px]"
-                onClick={() => {
-                  setHistoryModalType("master");
-                  setHistoryModalOpen(true);
-                }}>
-                История
-              </Button>
-            )}
-          </div>
+            </div>
+          )}
           <div className="flex flex-row items-center gap-5">
             <Controller
               rules={{

@@ -57,7 +57,19 @@ export const Routing = () => {
               </>
             )}
             {user?.login && (
-              <Route path="*" element={<Navigate replace to={ROUTE_CONSTANTS.TIMESHEET_LOGS} />} />
+              <Route
+                path="*"
+                element={
+                  <Navigate
+                    replace
+                    to={
+                      userRole === "master"
+                        ? ROUTE_CONSTANTS.FACILITIES
+                        : ROUTE_CONSTANTS.FACILITIES
+                    }
+                  />
+                }
+              />
             )}
             {!user?.login && !isLoading && (
               <Route path="*" element={<Navigate replace to={ROUTE_CONSTANTS.LOGIN} />} />
