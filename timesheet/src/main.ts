@@ -9,7 +9,7 @@ import { TelegramTransport } from './common/telegram-transport/telegram-transpor
 async function bootstrap() {
   const PORT = process.env.PORT || 5000;
 
-  console.log('test22');
+  console.log('test2224242424');
 
   const app = await NestFactory.create(AppModule, {
     cors: true,
