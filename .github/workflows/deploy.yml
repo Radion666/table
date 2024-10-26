@@ -2,7 +2,7 @@ name: Deploy
 
 on:
     push:
-        branches: -main
+        branches: -master
 
 jobs:
     deploy:
@@ -27,5 +27,5 @@ jobs:
                     cd /projects/timesheet-project-docker
                     git pull           
                     docker-compose down
-                    docker-compose up -d --build 
+                    docker-compose up -d --build
                   EOF
