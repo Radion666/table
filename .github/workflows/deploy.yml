@@ -2,7 +2,8 @@ name: Deploy
 
 on:
     push:
-        branches: -master
+        branches:
+            - master
 
 jobs:
     deploy:
@@ -24,7 +25,7 @@ jobs:
               run: |
                   ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'EOF'
                     # Выполни команды деплоя на сервере
-                    cd /projects/timesheet-project-docker
+                    cd ${{ secrets.PROJECT_PATH }}
                     git pull           
                     docker-compose down
                     docker-compose up -d --build
