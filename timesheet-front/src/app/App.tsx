@@ -17,8 +17,6 @@ export const queryClient = new QueryClient({
 });
 
 export const App = () => {
-  console.log("test2224242424");
-
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>

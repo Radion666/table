@@ -1,32 +1,23 @@
-name: Deploy
+name: Deploy to VPS
 
 on:
     push:
         branches:
-            - master
+            - master # Измени на нужную ветку, если нужно
 
 jobs:
     deploy:
         runs-on: ubuntu-latest
 
         steps:
-            - name: Checkout repository
-              uses: actions/checkout@v2
-
-            - name: Set up SSH
-              uses: webfactory/ssh-agent@v0.5.3
+            - name: Deploy via SSH
+              uses: appleboy/ssh-action@master
               with:
-                  ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-            - name: Deploy to VPS
-              env:
-                  SSH_HOST: ${{ secrets.SSH_HOST }}
-                  SSH_USER: ${{ secrets.SSH_USER }}
-              run: |
-                  ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'EOF'
-                    # Выполни команды деплоя на сервере
-                    cd ${{ secrets.PROJECT_PATH }}
-                    git pull           
-                    docker compose down
-                    docker compose up -d --build
-                  EOF
+                  host: ${{ secrets.SSH_HOST }}
+                  username: ${{ secrets.SSH_USER }}
+                  key: ${{ secrets.SSH_PRIVATE_KEY }}
+                  script: |
+                      cd ${{ secrets.PATH_TO_PROJECT_PROD }}
+                      git restore .
+                      git pull origin main
+                      docker-compose up --build -d
