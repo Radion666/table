@@ -121,6 +121,11 @@ export class EmployeeService {
 
     const newEmployee = await this.employeeModel.create({
       ...createEmployeeDto,
+      lastFacilityId: createEmployeeDto?.facilityId ?? null,
+      lastIsOutOfTown: createEmployeeDto.isOutOfTown,
+      lastMasterId: createEmployeeDto?.masterId ?? null,
+      lastPositionId: createEmployeeDto?.positionId ?? null,
+      lastStatus: createEmployeeDto?.status,
     });
 
     if (newEmployee) {
@@ -138,11 +143,17 @@ export class EmployeeService {
   }
 
   async update(id: number, updateEmployeeDto: UpdateEmployeeDto) {
+    console.log(JSON.stringify(updateEmployeeDto));
     await this.validateDto(updateEmployeeDto, id);
 
     const [_, [data]] = await this.employeeModel.update(
       {
         ...updateEmployeeDto,
+        lastFacilityId: updateEmployeeDto?.facilityId ?? null,
+        lastIsOutOfTown: updateEmployeeDto.isOutOfTown,
+        lastMasterId: updateEmployeeDto?.masterId ?? null,
+        lastPositionId: updateEmployeeDto?.positionId ?? null,
+        lastStatus: updateEmployeeDto?.status,
       },
       {
         where: {
@@ -281,7 +292,23 @@ export class EmployeeService {
 
     const employees = await this.employeeModel.findAll({
       order: [['createdAt', 'ASC']],
+      attributes: {
+        exclude: [
+          'lastFacilityId',
+          'lastMasterId',
+          'lastPositionId',
+          'createdById',
+        ],
+      },
       include: [
+        {
+          model: Facilities,
+          attributes: ['id', 'name'],
+        },
+        {
+          model: Positions,
+          attributes: ['id', 'name'],
+        },
         {
           model: EmploymentPeriod,
           attributes: ['status', 'startDate', 'endDate', 'createdAt', 'id'],
@@ -352,6 +379,11 @@ export class EmployeeService {
         {
           model: User,
           as: 'creator',
+          attributes: ['id', 'firstName', 'lastName', 'middleName'],
+        },
+        {
+          model: User,
+          as: 'lastMaster',
           attributes: ['id', 'firstName', 'lastName', 'middleName'],
         },
       ],
@@ -485,8 +517,6 @@ export class EmployeeService {
       },
     });
 
-    console.log(JSON.stringify(employees));
-
     const allowedEmployees: Employee[] = [];
 
     for (let i = 0; i < employees?.length; i++) {
@@ -530,7 +560,9 @@ export class EmployeeService {
           middleName: employee?.middleName,
           position: {},
           employmentPeriods: allowedPeriods,
-          facilityPeriods: allowedFacilityEmployees,
+          facilityPeriods: allowedFacilityEmployees.filter(
+            (emp) => emp.employeeId === employee.id,
+          ),
         } as any);
       }
     }

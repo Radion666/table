@@ -33,7 +33,6 @@ export const EmployeesPage = () => {
       login: "",
       middleName: "",
       phoneNumber: "",
-      positionId: null,
       role_id: null,
       password: ""
     }
@@ -55,6 +54,7 @@ export const EmployeesPage = () => {
         ...data
       })
       .then(() => {
+        setModalOpen(false);
         refetch();
       });
   };
@@ -125,7 +125,7 @@ export const EmployeesPage = () => {
             )}
           />
 
-          <Controller
+          {/* <Controller
             rules={{
               required: "Должность обязательна"
             }}
@@ -144,7 +144,7 @@ export const EmployeesPage = () => {
                 {...field}
               />
             )}
-          />
+          /> */}
           <Controller
             rules={{
               required: "Номер телефона обязателен",

@@ -64,7 +64,6 @@ export const CellInput: FC<CellInputProps> = ({ value, handleChange, field }) =>
         <div className="h-full flex flex-col">
           {typeof value === "object" &&
             Object?.keys?.(value)?.map((key) => {
-              console.log(key);
               return (
                 <input
                   className="w-[95%] rounded-md ml-auto mr-auto h-1/3 border-[1px] text-center hover:border-blue-200"

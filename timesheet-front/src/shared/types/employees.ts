@@ -31,11 +31,25 @@ export interface actualWorkersResponseType {
   updatedAt: string;
   positionPeriods?: positionPeriodsType[];
   facilityPeriods: facilityPeriodsType[];
+  lastFacility?: lastfacilityType;
+  lastIsOutOfTown: boolean;
+  lastMaster?: masterPeriodsType;
+  lastPosition?: lastPositionType;
+  lastStatus: workerStatusType;
   creator?: Creator;
   masterPeriods: masterPeriodsType[];
   firstName: string;
   middleName: string;
   lastName: string;
+}
+
+interface lastPositionType extends defaultIdNameType {}
+
+interface lastfacilityType extends defaultIdNameType {}
+
+interface defaultIdNameType {
+  id: number;
+  name: string;
 }
 
 export interface positionPeriodsType {
@@ -73,6 +87,7 @@ export interface facilityPeriodsType {
     name: string;
     id: number;
   };
+  employeeId: number;
 }
 
 export interface outOfTownPeriodsType {

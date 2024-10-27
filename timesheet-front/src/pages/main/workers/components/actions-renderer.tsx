@@ -53,16 +53,16 @@ export const ActionsRenderer = (params: CustomCellRendererProps<actualWorkersRes
   } = useForm<Omit<createWorkerType, "createdById">>({
     defaultValues: {
       actualAddress: workerData?.actualAddress ?? "",
-      facilityId: workerData?.facilityPeriods?.[0]?.facility?.id ?? null,
+      facilityId: workerData?.lastFacility?.id ?? null,
       firstName: workerData?.firstName ?? "",
-      isOutOfTown: !workerData?.outOfTownPeriods?.[0]?.isOutOfTown,
+      isOutOfTown: !workerData?.lastIsOutOfTown,
       lastName: workerData?.lastName,
-      masterId: workerData?.masterPeriods?.[0]?.user?.id ?? null,
+      masterId: workerData?.lastMaster?.id ?? null,
       middleName: workerData?.middleName,
       phoneNumber: workerData?.phoneNumber,
-      positionId: workerData?.positionPeriods?.[0]?.position?.id ?? null,
+      positionId: workerData?.lastPosition?.id ?? null,
       registeredAddress: workerData?.registeredAddress,
-      status: workerData?.employmentPeriods?.[0]?.status ?? undefined
+      status: workerData?.lastStatus ?? undefined
     }
   });
 

@@ -147,7 +147,7 @@ export const TimesheetPage = () => {
           const element = copyOfPrev[i];
 
           const isEmployeeExistsInLogs = logsData?.data?.find(
-            (emp) => emp.employee.id === element.employeeId
+            (emp) => emp?.employee?.id === element?.employeeId
           );
 
           if (isEmployeeExistsInLogs) {
@@ -216,7 +216,7 @@ export const TimesheetPage = () => {
 
             copyOfPrev?.splice(copyOfPrev?.length - 1, 0, {
               dates: newDates,
-              employeeId: employee.employee.id,
+              employeeId: employee.employee?.id,
               facilityId: employee?.facilityId,
               employmentPeriods: [],
               facilityPeriods: [],

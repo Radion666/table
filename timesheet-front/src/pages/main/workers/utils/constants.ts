@@ -24,7 +24,7 @@ export const workersColumns: GridColumnsType<actualWorkersResponseType> = [
     minWidth: 120,
     flex: 1,
     valueGetter: (props) => {
-      const currentStatus = props?.data?.employmentPeriods?.[0]?.status;
+      const currentStatus = props?.data?.lastStatus;
       return currentStatus ? statuses[currentStatus] ?? "" : "";
     }
   },
@@ -38,7 +38,7 @@ export const workersColumns: GridColumnsType<actualWorkersResponseType> = [
     headerName: "Мастер",
     minWidth: 200,
     flex: 1,
-    valueGetter: (props) => getUserFio(props?.data?.masterPeriods?.[0]?.user)
+    valueGetter: (props) => getUserFio(props?.data?.lastMaster)
   },
   {
     headerName: "Номер телефона",
@@ -47,11 +47,11 @@ export const workersColumns: GridColumnsType<actualWorkersResponseType> = [
     field: "phoneNumber"
   },
   {
-    headerName: "Иногородний или нет",
+    headerName: "Местный или нет",
     minWidth: 170,
     flex: 1,
     valueGetter: (props) => {
-      const isOutOfTown = props?.data?.outOfTownPeriods?.[0]?.isOutOfTown;
+      const isOutOfTown = props?.data?.lastIsOutOfTown;
       if (isOutOfTown === undefined) return "";
       return isOutOfTown ? "Иногородний" : "Местный";
     }
@@ -61,37 +61,37 @@ export const workersColumns: GridColumnsType<actualWorkersResponseType> = [
     minWidth: 200,
     flex: 1,
     valueGetter: (props) => {
-      const position = props?.data?.positionPeriods?.[0]?.position?.name;
+      const position = props?.data?.lastPosition?.name;
       if (position === undefined) return "";
       return position;
     }
   },
-  {
-    headerName: "Прописка по паспорту",
-    minWidth: 200,
-    flex: 1,
-    valueGetter: (props) => {
-      const registeredAddress = props?.data?.registeredAddress;
-      if (registeredAddress === undefined) return "";
-      return registeredAddress;
-    }
-  },
-  {
-    headerName: "Прописка фактическая",
-    minWidth: 200,
-    flex: 1,
-    valueGetter: (props) => {
-      const actualAddress = props?.data?.actualAddress;
-      if (actualAddress === undefined) return "";
-      return actualAddress;
-    }
-  },
+  // {
+  //   headerName: "Прописка по паспорту",
+  //   minWidth: 200,
+  //   flex: 1,
+  //   valueGetter: (props) => {
+  //     const registeredAddress = props?.data?.registeredAddress;
+  //     if (registeredAddress === undefined) return "";
+  //     return registeredAddress;
+  //   }
+  // },
+  // {
+  //   headerName: "Прописка фактическая",
+  //   minWidth: 200,
+  //   flex: 1,
+  //   valueGetter: (props) => {
+  //     const actualAddress = props?.data?.actualAddress;
+  //     if (actualAddress === undefined) return "";
+  //     return actualAddress;
+  //   }
+  // },
   {
     headerName: "Объект",
     minWidth: 200,
     flex: 1,
     valueGetter: (props) => {
-      const facility = props?.data?.facilityPeriods?.[0]?.facility?.name;
+      const facility = props?.data?.lastFacility?.name;
       if (facility === undefined) return "";
       return facility;
     }

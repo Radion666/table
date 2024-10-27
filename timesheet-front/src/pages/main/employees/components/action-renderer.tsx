@@ -38,7 +38,6 @@ export const ActionsRenderer = (params: CustomCellRendererProps<usersEmployeeTyp
       lastName: userData?.lastName,
       middleName: userData?.middleName,
       phoneNumber: userData?.phoneNumber,
-      positionId: userData?.position?.id ?? null,
       role_id: userData?.role?.id ?? null,
       password: ""
     }
@@ -58,7 +57,7 @@ export const ActionsRenderer = (params: CustomCellRendererProps<usersEmployeeTyp
         Редактировать
       </Button>
 
-      <Modal title="Создание нового сотрудника" state={isModalOpen} setState={setModalOpen}>
+      <Modal title="Редактирование сотрудника" state={isModalOpen} setState={setModalOpen}>
         <form className="flex flex-col gap-2 mt-4" onSubmit={handleSubmit(handleUpdate)}>
           <Controller
             control={control}
@@ -104,7 +103,7 @@ export const ActionsRenderer = (params: CustomCellRendererProps<usersEmployeeTyp
             )}
           />
 
-          <Controller
+          {/* <Controller
             rules={{
               required: "Должность обязательна"
             }}
@@ -123,7 +122,7 @@ export const ActionsRenderer = (params: CustomCellRendererProps<usersEmployeeTyp
                 {...field}
               />
             )}
-          />
+          /> */}
           <Controller
             rules={{
               required: "Номер телефона обязателен",

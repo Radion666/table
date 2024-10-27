@@ -55,66 +55,82 @@ export const TableCell: FC<TableCellProps> = memo(
         for (let i = 0; i < facilityPeriods?.length; i++) {
           const facilityPeriod = facilityPeriods?.[i];
 
-          if (facilityPeriod?.endDate === null) {
+          const newFacilityPeriod = {
+            ...facilityPeriod,
+            startDate: dayjs(facilityPeriod.startDate)?.format(),
+            createdAt: dayjs(facilityPeriod.createdAt)?.format()
+          };
+
+          if (newFacilityPeriod?.endDate === null) {
             break;
           }
 
-          const startDate = dayjs(facilityPeriod?.startDate);
-          const endDate = dayjs(facilityPeriod?.endDate);
+          const startDate = dayjs(newFacilityPeriod?.startDate);
+          const endDate = dayjs(newFacilityPeriod?.endDate);
 
           if (
             (startDate?.isBefore(cellDate) || startDate?.isSame(cellDate, "day")) &&
-            (endDate?.isAfter(cellDate) || endDate?.isSame(cellDate))
+            (endDate?.isAfter(cellDate) || endDate?.isSame(cellDate, "day")) &&
+            dayjs(newFacilityPeriod?.endDate)?.diff(newFacilityPeriod.startDate, "hour") > 1
           ) {
             continue;
           } else {
-            setErrorMsg("Удален\nиз\nобъекта");
-            return true;
+            if (cellDate.isAfter(endDate) || cellDate.isSame(endDate, "day")) {
+              setErrorMsg("Удален\nиз\nобъекта");
+              return true;
+            }
           }
         }
 
         for (let i = 0; i < employmentPeriods?.length; i++) {
           const period = employmentPeriods?.[i];
 
-          const isAfterStartDate = cellDate?.isAfter(period.startDate);
-          const isBeforeEndDate = cellDate?.isBefore(period.endDate);
-          const isSameAsStartDate = cellDate?.isSame(period.startDate, "day");
-          const isSameAsEndDate = cellDate?.isSame(period.endDate, "day");
+          const newPeriod = {
+            ...period,
+            startDate: dayjs(period.startDate)?.format(),
+            createdAt: dayjs(period.createdAt)?.format(),
+            endDate: period.endDate ? dayjs(period.endDate)?.format() : null
+          };
+
+          const isAfterStartDate = cellDate?.isAfter(newPeriod.startDate);
+          const isBeforeEndDate = cellDate?.isBefore(newPeriod.endDate);
+          const isSameAsStartDate = cellDate?.isSame(newPeriod.startDate, "day");
+          const isSameAsEndDate = cellDate?.isSame(newPeriod.endDate, "day");
 
           const isCoincidingWithBoth = isSameAsStartDate && isSameAsEndDate;
 
-          if (period.status === "working") {
-            if (dayjs(period?.startDate)?.isAfter(cellDate)) {
+          if (newPeriod.status === "working") {
+            if (dayjs(newPeriod?.startDate)?.isAfter(cellDate)) {
               setErrorMsg("Н/У");
             }
           }
           if (
-            (period?.status === "archived" || period?.status === "fired") &&
-            period?.endDate === null &&
-            cellDate.isAfter(period?.startDate)
+            (newPeriod?.status === "archived" || newPeriod?.status === "fired") &&
+            newPeriod?.endDate === null &&
+            cellDate.isAfter(newPeriod?.startDate)
           ) {
-            setErrorMsg(workerStatuses[period?.status]);
+            setErrorMsg(workerStatuses[newPeriod?.status]);
           }
 
           if (
-            period.endDate === null &&
-            cellDate.isAfter(period?.startDate) &&
-            period?.status === "working"
+            newPeriod.endDate === null &&
+            cellDate.isAfter(newPeriod?.startDate) &&
+            newPeriod?.status === "working"
           ) {
             return false;
           } else if (
-            period.endDate !== null &&
-            period.status === "working" &&
-            dayjs(period?.startDate)?.isBefore(cellDate) &&
-            dayjs(period?.endDate)?.isAfter(cellDate)
+            newPeriod.endDate !== null &&
+            newPeriod.status === "working" &&
+            dayjs(newPeriod?.startDate)?.isBefore(cellDate) &&
+            dayjs(newPeriod?.endDate)?.isAfter(cellDate)
           ) {
             return false;
           } else if (
             (isAfterStartDate && isBeforeEndDate) ||
             (isCoincidingWithBoth &&
-              (period.endDate === null
+              (newPeriod.endDate === null
                 ? true
-                : dayjs(period?.endDate)?.diff(period.startDate, "hour") > 8))
+                : dayjs(newPeriod?.endDate)?.diff(newPeriod.startDate, "hour") > 8))
           ) {
             return false;
           }
@@ -123,7 +139,6 @@ export const TableCell: FC<TableCellProps> = memo(
         return true;
         // return new Date(parseDate(dayValue)) > new Date(firedAt);
       }
-      return false;
     }, [dayValue, employmentPeriods, facilityPeriods]);
 
     const allowedToMaster = useMemo(() => {

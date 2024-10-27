@@ -2,6 +2,7 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  StreamableFile,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
@@ -17,6 +18,16 @@ import { createOrUpdateWorkLogsDto } from './dto/create-work_log.dto';
 import { WorkDaysType } from './dto/types';
 import { UpdateWorkLogDto } from './dto/update-work_log.dto';
 import { WorkLog } from './work-logs.model';
+
+import { Workbook } from 'exceljs';
+import { getDaysInMonth } from 'src/common/utils/date-utils';
+import {
+  applyAlignment,
+  incrementColumn,
+  setSumWithStep,
+} from 'src/common/utils/excel-utils';
+import { PassThrough } from 'stream';
+import { testData, testEmployeesData } from './data';
 
 @Injectable()
 export class WorkLogsService {
@@ -301,11 +312,412 @@ export class WorkLogsService {
     return workLogs;
   }
 
-  findAll() {
-    return `This action returns all workLogs`;
+  async download() {
+    const dates = getDaysInMonth(0);
+
+    const workbook = new Workbook();
+    const worksheet = workbook.addWorksheet('Пример');
+
+    worksheet.mergeCells('A1:A4');
+    worksheet.mergeCells('B1:B4');
+    worksheet.mergeCells('C1:C4');
+
+    worksheet.columns = [
+      { header: 'Работник', key: 'id', width: 25 },
+      { header: 'Местный (0) / неместный (1)', key: 'name', width: 35 },
+      { header: '', key: '', width: 10 },
+    ];
+
+    let startColumn = 'D';
+
+    for (let i = 0; i < dates?.length; i++) {
+      const day = dates[i];
+      const isWeekend = day.isWeekend;
+
+      const dayCell = `${startColumn}1:${startColumn}2`;
+      const dayNameCell = `${startColumn}3:${startColumn}4`;
+
+      worksheet.getCell(dayCell).value = day.date;
+      worksheet.getCell(dayNameCell).value = day.dayName;
+
+      worksheet.mergeCells(dayCell);
+      worksheet.mergeCells(dayNameCell);
+
+      applyAlignment(
+        worksheet,
+        dayCell,
+        undefined,
+        undefined,
+        isWeekend ? true : false,
+      );
+
+      applyAlignment(
+        worksheet,
+        dayNameCell,
+        undefined,
+        undefined,
+        isWeekend ? true : false,
+      );
+
+      const upperCell = worksheet.getCell(`${startColumn}1:${startColumn}2`);
+      const bottomCell = worksheet.getCell(`${startColumn}3:${startColumn}4`);
+
+      upperCell.alignment = {
+        vertical: 'middle',
+        horizontal: 'center',
+      };
+
+      bottomCell.alignment = {
+        vertical: 'middle',
+        horizontal: 'center',
+      };
+
+      startColumn = incrementColumn(startColumn);
+    }
+
+    const nextColumn = incrementColumn(startColumn);
+    const totalSmens = incrementColumn(nextColumn);
+    const totalHours = incrementColumn(totalSmens);
+    const totalSmensWeekends = incrementColumn(totalHours);
+
+    const totalHoursRow = `${startColumn}1:${nextColumn}1`;
+    const totalDayHoursRow = `${startColumn}2:${nextColumn}2`;
+    const totalNigthHoursRow = `${startColumn}3:${nextColumn}3`;
+    const totalFirstTwoHoursRow = `${startColumn}4`;
+    const totalSecondTwoHoursRow = `${nextColumn}4`;
+    const totalSmensRow = `${totalSmens}1:${totalSmens}4`;
+    const totalHoursSecondRow = `${totalHours}1:${totalHours}4`;
+    const totalSmensWeekendsRow = `${totalSmensWeekends}1:${totalSmensWeekends}4`;
+
+    worksheet.mergeCells(totalHoursRow);
+    worksheet.mergeCells(totalDayHoursRow);
+    worksheet.mergeCells(totalNigthHoursRow);
+    worksheet.mergeCells(totalSmensRow);
+    worksheet.mergeCells(totalHoursSecondRow);
+    worksheet.mergeCells(totalSmensWeekendsRow);
+
+    applyAlignment(worksheet, totalHoursRow, 'Итого часов');
+    applyAlignment(worksheet, totalDayHoursRow, 'Дневные');
+    applyAlignment(worksheet, totalNigthHoursRow, 'Ночные');
+    applyAlignment(worksheet, totalFirstTwoHoursRow, 'Перв. 2 ч');
+    applyAlignment(worksheet, totalSecondTwoHoursRow, 'Более 2 ч');
+    applyAlignment(worksheet, totalSmensRow, 'Итого смен', 20);
+    applyAlignment(worksheet, totalHoursSecondRow, 'Итого часов (вых)', 20);
+    applyAlignment(worksheet, totalSmensWeekendsRow, 'Итого смен (вых)', 20);
+
+    const a1a2Cell = worksheet.getCell('A1:A2');
+    const b1b2Cell = worksheet.getCell('B1:B2');
+
+    a1a2Cell.alignment = {
+      vertical: 'middle',
+      horizontal: 'center',
+    };
+    b1b2Cell.alignment = {
+      vertical: 'middle',
+      horizontal: 'center',
+    };
+
+    let employeeStart = 5;
+    let employeeEnd = 7;
+
+    for (let i = 0; i < testEmployeesData?.length; i++) {
+      const employee = testEmployeesData[i];
+
+      const fioCell = `A${employeeStart}:A${employeeEnd}`;
+      const isLocalCell = `B${employeeStart}:B${employeeEnd}`;
+      const dayCell = `C${employeeStart}`;
+      const nightCell = `C${employeeStart + 1}`;
+      const overworkCell = `C${employeeStart + 2}`;
+
+      worksheet.getCell(fioCell).value = `${employee.firstName}`;
+      worksheet.getCell(isLocalCell).value = `1`;
+      worksheet.getCell(dayCell).value = 'д';
+      worksheet.getCell(nightCell).value = 'н';
+      worksheet.getCell(overworkCell).value = 'п';
+
+      worksheet.mergeCells(fioCell);
+      worksheet.mergeCells(isLocalCell);
+
+      applyAlignment(worksheet, fioCell);
+      applyAlignment(worksheet, isLocalCell);
+      applyAlignment(worksheet, dayCell);
+      applyAlignment(worksheet, nightCell);
+      applyAlignment(worksheet, overworkCell);
+
+      const foundEmployee = testData.find(
+        (el) => el.employee?.id === employee?.id,
+      );
+
+      let startColumn = 'D';
+
+      for (let j = 0; j < dates?.length; j++) {
+        const day = dates[j];
+        const isWeekend = day.isWeekend;
+
+        const cellData = foundEmployee?.workDays?.[day.fullDate];
+
+        if (typeof cellData === 'string') {
+          const cellId = `${startColumn}${employeeStart}:${startColumn}${employeeEnd}`;
+          worksheet.getCell(cellId).value = cellData;
+          worksheet.mergeCells(cellId);
+
+          applyAlignment(
+            worksheet,
+            cellId,
+            undefined,
+            undefined,
+            isWeekend ? true : undefined,
+          );
+        } else if (typeof cellData === 'object' && cellData !== null) {
+          const dayCellId = `${startColumn}${employeeStart}:${startColumn}${employeeStart}`;
+          const nightCellId = `${startColumn}${employeeStart + 1}:${startColumn}${employeeStart + 1}`;
+          const overworkCellId = `${startColumn}${employeeStart + 2}:${startColumn}${employeeStart + 2}`;
+
+          const dayTime = cellData?.day;
+          const nightTime = cellData?.night;
+          const overworkTime = cellData?.overwork;
+
+          const dayTimeCell = worksheet.getCell(dayCellId);
+          const nightTimeCell = worksheet.getCell(nightCellId);
+          const overworkTimeCell = worksheet.getCell(overworkCellId);
+
+          dayTimeCell.value = dayTime;
+          nightTimeCell.value = nightTime;
+          overworkTimeCell.value = overworkTime;
+
+          applyAlignment(
+            worksheet,
+            dayCellId,
+            undefined,
+            undefined,
+            isWeekend ? true : undefined,
+          );
+          applyAlignment(
+            worksheet,
+            nightCellId,
+            undefined,
+            undefined,
+            isWeekend ? true : undefined,
+          );
+          applyAlignment(
+            worksheet,
+            overworkCellId,
+            undefined,
+            undefined,
+            isWeekend ? true : undefined,
+          );
+        }
+
+        startColumn = incrementColumn(startColumn);
+      }
+
+      const nextColumn = incrementColumn(startColumn);
+      const totalSmens = incrementColumn(nextColumn);
+      const totalHoursWeekends = incrementColumn(totalSmens);
+      const totalSmensWeekends = incrementColumn(totalHoursWeekends);
+
+      const totalDayHoursCell = `${startColumn}${employeeStart}:${nextColumn}${employeeStart}`;
+      const totalNightHoursCell = `${startColumn}${employeeStart + 1}:${nextColumn}${employeeStart + 1}`;
+      const totalOverworkFirstHoursCell = `${startColumn}${employeeEnd}`;
+      const totalOverworkSecondHoursCell = `${nextColumn}${employeeEnd}`;
+
+      const totalSmensCell = `${totalSmens}${employeeStart}:${totalSmens}${employeeEnd}`;
+      const totalWeekendsHoursCell = `${totalHoursWeekends}${employeeStart}:${totalHoursWeekends}${employeeEnd}`;
+      const totalWeekendsSmensCell = `${totalSmensWeekends}${employeeStart}:${totalSmensWeekends}${employeeEnd}`;
+
+      worksheet.mergeCells(totalDayHoursCell);
+      worksheet.mergeCells(totalNightHoursCell);
+      worksheet.mergeCells(totalSmensCell);
+      worksheet.mergeCells(totalWeekendsHoursCell);
+      worksheet.mergeCells(totalWeekendsSmensCell);
+
+      const dayHoursCells: string[] = [];
+      const nightHoursCells: string[] = [];
+
+      const totalWeekendCells: string[] = [];
+
+      let countOfWorkDays: number = 0;
+
+      let countOfWeekendWorkDays: number = 0;
+
+      let hoursOfOverworkTwoHours: number = 0;
+      let hoursOfOverworkMoreTwoHours: number = 0;
+
+      let newStartColumn = 'D';
+
+      for (let j = 0; j < dates?.length; j++) {
+        const day = dates[j];
+        const isWeekend = day.isWeekend;
+        const cellData = foundEmployee?.workDays?.[day.fullDate];
+
+        if (typeof cellData === 'object' && cellData.overwork && !isWeekend) {
+          const value = +cellData.overwork;
+
+          if (value <= 2) {
+            hoursOfOverworkTwoHours += value;
+          }
+          if (value > 2) {
+            hoursOfOverworkTwoHours += 2;
+            hoursOfOverworkMoreTwoHours += value - 2;
+          }
+        }
+
+        if (typeof cellData === 'object' && !isWeekend) {
+          dayHoursCells.push(`${newStartColumn}${employeeStart}`);
+          nightHoursCells.push(`${newStartColumn}${employeeStart + 1}`);
+          if (+cellData?.day || +cellData?.night) {
+            countOfWorkDays += 1;
+          }
+        } else if (typeof cellData === 'object' && isWeekend) {
+          totalWeekendCells.push(`${newStartColumn}${employeeStart}`);
+          totalWeekendCells.push(`${newStartColumn}${employeeStart + 1}`);
+
+          if (+cellData.day || +cellData.night) {
+            countOfWeekendWorkDays += 1;
+          }
+        }
+
+        newStartColumn = incrementColumn(newStartColumn);
+      }
+
+      worksheet.getCell(totalDayHoursCell).value = {
+        formula: `SUM(${dayHoursCells.join(', ')})`,
+      };
+      worksheet.getCell(totalNightHoursCell).value = {
+        formula: `SUM(${nightHoursCells.join(', ')})`,
+      };
+      worksheet.getCell(totalOverworkFirstHoursCell).value =
+        hoursOfOverworkTwoHours;
+      worksheet.getCell(totalOverworkSecondHoursCell).value =
+        hoursOfOverworkMoreTwoHours;
+
+      worksheet.getCell(totalSmensCell).value = countOfWorkDays;
+      worksheet.getCell(totalWeekendsHoursCell).value = {
+        formula: `SUM(${totalWeekendCells.join(', ')})`,
+      };
+      worksheet.getCell(totalWeekendsSmensCell).value = countOfWeekendWorkDays;
+
+      applyAlignment(worksheet, totalDayHoursCell);
+      applyAlignment(worksheet, totalNightHoursCell);
+      applyAlignment(worksheet, totalOverworkFirstHoursCell);
+      applyAlignment(worksheet, totalOverworkSecondHoursCell);
+      applyAlignment(worksheet, totalSmensCell);
+      applyAlignment(worksheet, totalWeekendsHoursCell);
+      applyAlignment(worksheet, totalWeekendsSmensCell);
+
+      employeeStart = employeeStart + 3;
+      employeeEnd = employeeEnd + 3;
+    }
+
+    const totalDayCell = `A${employeeStart}`;
+    const totalNightCell = `A${employeeStart + 1}`;
+    const totalOverworkCell = `A${employeeEnd}`;
+
+    worksheet.getCell(totalDayCell).value = 'Итого: дневных';
+    worksheet.getCell(totalNightCell).value = 'Итого: ночных';
+    worksheet.getCell(totalOverworkCell).value = 'Итого: переработка';
+
+    applyAlignment(worksheet, totalDayCell);
+    applyAlignment(worksheet, totalNightCell);
+    applyAlignment(worksheet, totalOverworkCell);
+
+    let totalStartColumn = 'D';
+
+    for (let i = 0; i < dates?.length; i++) {
+      const dayTargetCellId = `${totalStartColumn}${employeeStart}`;
+      const nightTargetCellId = `${totalStartColumn}${employeeStart + 1}`;
+      const overworkTargetCellId = `${totalStartColumn}${employeeEnd}`;
+
+      const day = dates[i];
+      const isWeekend = day.isWeekend;
+
+      setSumWithStep(worksheet, dayTargetCellId, 5, employeeStart, isWeekend);
+      setSumWithStep(
+        worksheet,
+        nightTargetCellId,
+        6,
+        employeeStart + 1,
+        isWeekend,
+      );
+      setSumWithStep(
+        worksheet,
+        overworkTargetCellId,
+        7,
+        employeeEnd,
+        isWeekend,
+      );
+
+      totalStartColumn = incrementColumn(totalStartColumn);
+    }
+
+    const nextTotalColumn = incrementColumn(totalStartColumn);
+    const totalTotalSmens = incrementColumn(nextTotalColumn);
+    const totalTotalHoursWeekends = incrementColumn(totalTotalSmens);
+    const totalTotalSmensWeekends = incrementColumn(totalTotalHoursWeekends);
+
+    const totalDayHoursCell = `${totalStartColumn}${employeeStart}:${nextTotalColumn}${employeeStart}`;
+    const totalNightHoursCell = `${totalStartColumn}${employeeStart + 1}:${nextTotalColumn}${employeeStart + 1}`;
+    const totalOverworkFirstHoursCell = `${totalStartColumn}${employeeEnd}`;
+    const totalOverworkSecondHoursCell = `${nextTotalColumn}${employeeEnd}`;
+
+    const totalSmensCell = `${totalTotalSmens}${employeeStart}:${totalTotalSmens}${employeeEnd}`;
+    const totalWeekendsHoursCell = `${totalTotalHoursWeekends}${employeeStart}:${totalTotalHoursWeekends}${employeeEnd}`;
+    const totalWeekendsSmensCell = `${totalTotalSmensWeekends}${employeeStart}:${totalTotalSmensWeekends}${employeeEnd}`;
+
+    console.log(
+      `${totalTotalSmens}${employeeStart}:${totalTotalSmens}${employeeEnd}`,
+    );
+
+    worksheet.mergeCells(totalDayHoursCell);
+    worksheet.mergeCells(totalNightHoursCell);
+    worksheet.mergeCells(totalSmensCell);
+    worksheet.mergeCells(totalWeekendsHoursCell);
+    worksheet.mergeCells(totalWeekendsSmensCell);
+
+    setSumWithStep(worksheet, totalDayHoursCell, 5, employeeStart, false, 3);
+    setSumWithStep(worksheet, totalNightHoursCell, 6, employeeStart, false, 3);
+    setSumWithStep(
+      worksheet,
+      totalOverworkFirstHoursCell,
+      7,
+      employeeStart,
+      false,
+      3,
+    );
+    setSumWithStep(
+      worksheet,
+      totalOverworkSecondHoursCell,
+      7,
+      employeeStart,
+      false,
+      3,
+    );
+    setSumWithStep(worksheet, totalSmensCell, 5, employeeStart, false, 3);
+    setSumWithStep(
+      worksheet,
+      totalWeekendsHoursCell,
+      5,
+      employeeStart,
+      false,
+      3,
+    );
+    setSumWithStep(
+      worksheet,
+      totalWeekendsSmensCell,
+      5,
+      employeeStart,
+      false,
+      3,
+    );
+
+    const stream = new PassThrough();
+    await workbook.xlsx.write(stream);
+    stream.end();
+
+    return new StreamableFile(stream);
   }
 
-  findOne(id: number) {}
+  findAll() {}
 
   update(id: number, updateWorkLogDto: UpdateWorkLogDto) {
     return `This action updates a #${id} workLog`;
