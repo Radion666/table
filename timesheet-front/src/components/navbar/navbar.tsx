@@ -26,9 +26,7 @@ export const NavBar = () => {
 
   return (
     <div className="h-full flex items-center flex-col gap-5 bg-[#E5E5E5] p-5 min-w-40 max-w-40 justify-center max-md:h-20 max-md:min-w-[100vw] max-md:flex-row max-md:gap-3">
-      <button
-        onClick={handleLogout}
-        className="md:absolute md:top-10 max-md:hidden flex flex-col justify-center items-center">
+      <button className="md:absolute md:top-10 max-md:hidden flex flex-col justify-center items-center">
         <Icon name="User" size={24} className="hover:text-[#B74858]" />
         {getShortUserFio(user)}
       </button>
