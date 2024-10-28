@@ -158,7 +158,7 @@ export const CellRenderer = (params: CustomCellRendererProps<workLogsChangesType
                         className={clsx(
                           "flex flex-row justify-between w-full border-t-[1px]",
                           isImportantChanges && "text-red-500",
-                          isHasLessImportantMessage && "text-yellow-600"
+                          isHasLessImportantMessage && "text-yellow-300"
                         )}>
                         <div className="w-1/2 flex items-center justify-center h-full whitespace-pre text-center">
                           {wasValue}

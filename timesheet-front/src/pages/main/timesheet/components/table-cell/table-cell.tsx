@@ -48,9 +48,28 @@ export const TableCell: FC<TableCellProps> = memo(
     const { userRole } = useGetUser();
     const [errorMsg, setErrorMsg] = useState<string>("Недоступно");
 
+    const cellParsedDate = useMemo(() => {
+      if (dayValue && dateRegex.test(dayValue) && employmentPeriods?.length) {
+        return dayjs(parseDate(dayValue));
+      }
+      return undefined;
+    }, [dayValue, employmentPeriods?.length]);
+
     const isDisabled = useMemo(() => {
       if (dayValue && dateRegex.test(dayValue) && employmentPeriods?.length) {
         const cellDate = dayjs(parseDate(dayValue));
+
+        const today = dayjs();
+        const isTodayFifteenth = today.date() >= 15;
+        const currentMonth = today.month();
+        const currentYear = today.year();
+        if (
+          isTodayFifteenth &&
+          (cellDate.month() !== currentMonth || cellDate.year() !== currentYear)
+        ) {
+          setErrorMsg("");
+          return true;
+        }
 
         for (let i = 0; i < facilityPeriods?.length; i++) {
           const facilityPeriod = facilityPeriods?.[i];
@@ -61,24 +80,29 @@ export const TableCell: FC<TableCellProps> = memo(
             createdAt: dayjs(facilityPeriod.createdAt)?.format()
           };
 
-          if (newFacilityPeriod?.endDate === null) {
-            break;
-          }
-
           const startDate = dayjs(newFacilityPeriod?.startDate);
           const endDate = dayjs(newFacilityPeriod?.endDate);
 
           if (
+            newFacilityPeriod?.endDate === null &&
+            (cellDate.isSame(startDate, "day") || cellDate.isAfter(startDate))
+          ) {
+            break;
+          }
+
+          if (
             (startDate?.isBefore(cellDate) || startDate?.isSame(cellDate, "day")) &&
             (endDate?.isAfter(cellDate) || endDate?.isSame(cellDate, "day")) &&
-            dayjs(newFacilityPeriod?.endDate)?.diff(newFacilityPeriod.startDate, "hour") > 1
+            dayjs(endDate)?.diff(startDate, "hour") > 1
           ) {
-            continue;
+            break;
           } else {
             if (cellDate.isAfter(endDate) || cellDate.isSame(endDate, "day")) {
               setErrorMsg("Удален\nиз\nобъекта");
               return true;
             }
+            setErrorMsg("Н/у");
+            return true;
           }
         }
 
@@ -181,9 +205,9 @@ export const TableCell: FC<TableCellProps> = memo(
           className && className,
           "min-w-16 flex-1  border-r-[1px]  flex items-center justify-center text-center z-20  max-w-16 ",
           isWeekend && "bg-gray-300",
-          fieldType === "input" && "hover:bg-blue-200 hover:bg-opacity-20 transition-all",
+          fieldType === "input" && "",
           (isDisabled || !allowedToMaster || isNotAllowed) &&
-            "bg-slate-50 opacity-50 pointer-events-none cursor-not-allowed"
+            "bg-slate-50 opacity-50  cursor-not-allowed"
         )}>
         {isLast ? (
           <>
@@ -234,7 +258,12 @@ export const TableCell: FC<TableCellProps> = memo(
                 ) : fieldType === "info" ? (
                   <Indentificators />
                 ) : (
-                  <CellInput value={value} handleChange={handleChange} field={dayValue} />
+                  <CellInput
+                    value={value}
+                    handleChange={handleChange}
+                    field={dayValue}
+                    date={cellParsedDate}
+                  />
                 )}
               </>
             )}

@@ -442,16 +442,18 @@ export const TimesheetPage = () => {
         </div>
         <Button
           className="mr-5"
-          onClick={() =>
+          onClick={() => {
             apiRequests.saveWorkLogs(innerData, facilityId ? +facilityId : undefined).then(() => {
               toast.success("Успешно обновлено");
-            })
-          }>
+              setTimeout(() => {
+                window.location.reload();
+              }, 500);
+            });
+          }}>
           Сохранить
         </Button>
       </div>
       <div className="mb-2 text-center flex items-center justify-between flex-row-reverse gap-5">
-        <div className="text-2xl">Табель учета рабочего времени</div>
         {/* <Icon
           className={clsx("cursor-pointer text-[#343434], hover:text-[#B74858]")}
           name="Excel"
@@ -461,13 +463,7 @@ export const TimesheetPage = () => {
       <div className="flex-1" ref={containerRef}>
         <div
           ref={headerRef}
-          className="flex rounded-t-md  overflow-x-hidden scrollbar-hide border-l-[1px] border-r-[1px]"
-          style={{
-            minHeight: 110,
-            maxHeight: 110,
-            minWidth: "calc(100vw - 200px)",
-            maxWidth: "calc(100vw - 200px)"
-          }}>
+          className="flex rounded-t-md  overflow-x-hidden scrollbar-hide border-l-[1px] border-r-[1px] md:min-w-[calc(100vw-200px)] md:max-w-[calc(100vw-200px)] min-h-[110px] max-h-[110px]">
           {tableHeaders.map((day, index) => (
             <div
               key={day.label}
@@ -502,13 +498,7 @@ export const TimesheetPage = () => {
           ))}
         </div>
         <Scrollbar
-          className="w-full border-l-[1px] border-r-[1px] "
-          style={{
-            minHeight: "calc(100vh - 220px)",
-            maxHeight: "calc(100vh - 220px)",
-            minWidth: "calc(100vw - 200px)",
-            maxWidth: "calc(100vw - 200px)"
-          }}
+          className="w-full border-l-[1px] border-r-[1px] md:min-w-[calc(100vw-200px)] md:max-w-[calc(100vw-200px)] md:min-h-[calc(100vh-200px)] md:max-h-[calc(100vh-200px)] min-h-[calc(100vh-325px)] max-h-[calc(100vh-325px)] "
           viewRef={contentRef}
           onViewScroll={(props) => {
             headerRef?.current?.scrollTo({

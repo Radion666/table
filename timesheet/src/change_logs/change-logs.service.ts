@@ -22,16 +22,18 @@ export class ChangeLogsService {
     facilityId: number,
     date: string,
   ) {
-    this.changeLogModel.create({
-      workLogId: worklogId,
-      oldValue: oldValue,
-      newValue: newValue,
-      changes: changes,
-      userId: userId,
-      date: date,
-      facilityId: facilityId,
-      employeeId: employeeId,
-    });
+    if (Object.values(changes).length) {
+      this.changeLogModel.create({
+        workLogId: worklogId,
+        oldValue: oldValue,
+        newValue: newValue,
+        changes: changes,
+        userId: userId,
+        date: date,
+        facilityId: facilityId,
+        employeeId: employeeId,
+      });
+    }
   }
 
   async findAll(page: number, pageSize: number) {

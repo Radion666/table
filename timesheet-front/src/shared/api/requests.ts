@@ -205,8 +205,6 @@ export const apiRequests = {
       for (const j in element.dates) {
         const date = element.dates[j];
 
-        console.log(date);
-
         if (typeof date === "string") {
           newDates[j] = date === "" ? null : date;
         } else {

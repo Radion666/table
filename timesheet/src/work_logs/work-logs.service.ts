@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   HttpException,
   HttpStatus,
   Injectable,
@@ -154,14 +155,14 @@ export class WorkLogsService {
       const changes = {};
 
       for (const [date, value] of Object.entries(newDates)) {
-        console.log(date, value);
-        if (!value) continue;
+        const prevValue = existingLog?.workDays?.[date];
+        const newValue = value;
+
+        if (!value && !prevValue) continue;
+
         updatedWorkDays[date] = value;
 
         if (existingLog) {
-          const prevValue = existingLog?.workDays?.[date];
-          const newValue = value;
-
           if (JSON.stringify(prevValue) !== JSON.stringify(newValue)) {
             changes[date] = {
               was: existingLog?.workDays?.[date] ?? null,
@@ -264,32 +265,52 @@ export class WorkLogsService {
       }
     }
 
-    // if (firedAt) {
-    //   const invalidDates = Object.keys(dates).filter((date) => {
-    //     const value = dates[date];
-    //     let valueToCompare: boolean | WorkDaysType = value;
+    const dateOfFirstElement = Object.keys(dates)[0];
+    const [_, month, year] = dateOfFirstElement.split('.').map(Number);
 
-    //     if (
-    //       typeof value === 'object' &&
-    //       !value?.day &&
-    //       !value?.night &&
-    //       !value?.overwork
-    //     ) {
-    //       valueToCompare = false;
-    //     } else {
-    //       valueToCompare = value;
-    //     }
+    const date = `${month}-${year}`;
 
-    //     return (
-    //       !!valueToCompare && new Date(parseDate(date)) > new Date(firedAt)
-    //     );
-    //   });
-    //   if (invalidDates.length > 0) {
-    //     throw new Error(
-    //       `Employee was fired on ${firedAt}, cannot log dates after this date: ${invalidDates.join(', ')}`,
-    //     );
-    //   }
-    // }
+    const newDates = {};
+
+    for (const key in dates) {
+      const date = dates[key];
+
+      if (typeof date === 'string') {
+        newDates[key] = date;
+      } else if (typeof date === 'object') {
+        if (!date?.day && !date?.night && !date?.overwork) {
+          newDates[key] = null;
+          continue;
+        }
+        newDates[key] = date;
+      }
+    }
+
+    const existingLog = await this.workLogModel.findOne({
+      where: { employeeId, date: date, facilityId },
+    });
+
+    for (const [date, value] of Object.entries(newDates)) {
+      const prevValue = existingLog?.workDays?.[date];
+      const newValue = value;
+
+      const parsedDate = parseDate(date);
+
+      const today = dayjs();
+      const isTodayFifteenth = today.date() >= 15;
+      const currentMonth = today.month();
+      const currentYear = today.year();
+      if (
+        isTodayFifteenth &&
+        (dayjs(parsedDate).month() !== currentMonth ||
+          dayjs(parsedDate).year() !== currentYear) &&
+        JSON.stringify(prevValue) !== JSON.stringify(newValue)
+      ) {
+        throw new BadRequestException(
+          'Нельзя обновить данные за предыдущий месяц после 15 числа текущего месяца',
+        );
+      }
+    }
   }
 
   async findByDate(date: string, facilityId: number) {

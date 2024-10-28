@@ -1,3 +1,4 @@
+import Cross from "./icons/cross.svg";
 import Employees from "./icons/employees.svg";
 import Excel from "./icons/excel.svg";
 import EyeFilled from "./icons/eyeFilled.svg";
@@ -10,9 +11,11 @@ import NoRoutes from "./icons/no-routes.svg";
 import Position from "./icons/position.svg";
 import Roles from "./icons/roles.svg";
 import Timesheet from "./icons/timesheet.svg";
+import User from "./icons/user.svg";
 import Worker from "./icons/worker.svg";
 
 export {
+  Cross,
   Employees,
   Excel,
   EyeFilled,
@@ -25,5 +28,6 @@ export {
   Position,
   Roles,
   Timesheet,
+  User,
   Worker
 };
