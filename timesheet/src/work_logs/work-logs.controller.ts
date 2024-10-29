@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   StreamableFile,
   UseGuards,
 } from '@nestjs/common';
@@ -62,8 +63,11 @@ export class WorkLogsController {
 
   @Get('download')
   @Header('Content-Disposition', 'attachment; filename="SheetJSNest.xlsx"')
-  async downloadXlsxFile(): Promise<StreamableFile> {
-    return this.workLogsService.download();
+  async downloadXlsxFile(
+    @Query('date') date: string,
+    @Query('id') id: string,
+  ): Promise<StreamableFile> {
+    return this.workLogsService.download(date, +id);
   }
 
   // @Get(':id')

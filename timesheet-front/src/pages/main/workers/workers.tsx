@@ -223,9 +223,9 @@ export const WorkersPage = () => {
             name="phoneNumber"
             render={({ field }) => (
               <Input
-                errorMessage={errors.phoneNumber?.message}
-                placeholder="+71111111111 или 81111111111"
                 label="Номер телефона"
+                isPhone
+                errorMessage={errors.phoneNumber?.message}
                 {...field}
               />
             )}

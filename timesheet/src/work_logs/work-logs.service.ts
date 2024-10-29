@@ -10,7 +10,11 @@ import { InjectModel } from '@nestjs/sequelize';
 import dayjs from 'dayjs';
 import { ChangeLog } from 'src/change_logs/change-logs.model';
 import { ChangeLogsService } from 'src/change_logs/change-logs.service';
-import { parseDate } from 'src/common/utils/date-utils';
+import {
+  isValidDateFormat,
+  parseDate,
+  validateParamsDate,
+} from 'src/common/utils/date-utils';
 import { Employee } from 'src/employee/employee.model';
 import { Facilities } from 'src/facilities/facilities.model';
 import { Roles } from 'src/roles/role.model';
@@ -21,14 +25,15 @@ import { UpdateWorkLogDto } from './dto/update-work_log.dto';
 import { WorkLog } from './work-logs.model';
 
 import { Workbook } from 'exceljs';
+import { getShortUserFio, workerStatuses } from 'src/common/utils/common';
 import { getDaysInMonth } from 'src/common/utils/date-utils';
 import {
   applyAlignment,
   incrementColumn,
   setSumWithStep,
 } from 'src/common/utils/excel-utils';
+import { EmployeeService } from 'src/employee/employee.service';
 import { PassThrough } from 'stream';
-import { testData, testEmployeesData } from './data';
 
 @Injectable()
 export class WorkLogsService {
@@ -46,6 +51,7 @@ export class WorkLogsService {
     @InjectModel(Roles)
     private readonly rolesModel: typeof Roles,
     private workLogChangesLogs: ChangeLogsService,
+    private employeeService: EmployeeService,
   ) {}
 
   async createOrUpdateWorkLogs(
@@ -103,12 +109,30 @@ export class WorkLogsService {
 
     const errors: string[] = [];
 
+    const dateOfFirstElement = Object.keys(workLogs?.[0]?.dates)[0];
+    const [_, month, year] = dateOfFirstElement.split('.').map(Number);
+    const date = `${month}-${year}`;
+
+    if (!isValidDateFormat(date)) {
+      throw new BadRequestException(
+        'Переданная в параметрах дата имеет некорректный формат',
+      );
+    }
+
+    const facilityId = workLogs?.[0]?.facilityId;
+
+    const allowedEmployees = await this.employeeService.findByFacilityId(
+      facilityId,
+      date,
+    );
+
     for (const logData of workLogs) {
       try {
         await this.validateWorkLogDates(
           logData.employeeId,
           logData.dates as any,
           logData.facilityId,
+          allowedEmployees,
         );
       } catch (error) {
         errors.push(`${error.message}`);
@@ -221,8 +245,9 @@ export class WorkLogsService {
 
   async validateWorkLogDates(
     employeeId: number,
-    dates: Record<string, WorkDaysType>,
+    dates: WorkDaysType,
     facilityId: number,
+    allowedEmployees: Employee[],
   ): Promise<void> {
     if (!dates) {
       throw new Error('Не передан параметр dates');
@@ -237,6 +262,7 @@ export class WorkLogsService {
     if (!employee) {
       throw new Error('Employee not found');
     }
+    const employeeShortName = getShortUserFio(employee);
 
     const facility = await this.facilitiesModel.findByPk(facilityId);
     if (!facility) {
@@ -260,8 +286,32 @@ export class WorkLogsService {
         !allowdStringValues.includes(dateValue)
       ) {
         throw new Error(
-          `Передан значение для поля = ${dateKey} - значение ${dateValue}`,
+          `Переданное сотрудника ${employeeShortName} для даты ${dateKey} - некорректно, значение ${dateValue}`,
         );
+      }
+
+      if (typeof dateValue === 'object') {
+        const day = dateValue?.day ?? 0;
+        const night = dateValue?.night ?? 0;
+        const overwork = dateValue?.overwork ?? 0;
+
+        if (day > 8) {
+          throw new Error(`Значение дня не может превышать 8 часов`);
+        }
+
+        if (night > 8) {
+          throw new Error(`Значение ночи не может превышать 8 часов`);
+        }
+
+        if (overwork > 8) {
+          throw new Error(`Значение перербаотки не может превышать 8 часов`);
+        }
+
+        if (day + night + overwork > 24) {
+          throw new Error(
+            `Суммарное значение дня, ночи и переработок не может превышать 24 часа`,
+          );
+        }
       }
     }
 
@@ -269,6 +319,12 @@ export class WorkLogsService {
     const [_, month, year] = dateOfFirstElement.split('.').map(Number);
 
     const date = `${month}-${year}`;
+
+    if (!isValidDateFormat(date)) {
+      throw new BadRequestException(
+        'Переданная в параметрах дата имеет некорректный формат',
+      );
+    }
 
     const newDates = {};
 
@@ -311,9 +367,145 @@ export class WorkLogsService {
         );
       }
     }
+
+    const targetDate = dayjs(date, 'MM-YYYY');
+    const currentDate = dayjs();
+
+    const monthDifference = targetDate.diff(currentDate, 'month');
+
+    const allDaysInMonth = getDaysInMonth(monthDifference);
+
+    const foundEmployeeById = allowedEmployees?.find(
+      (employee) => employee.id === employeeId,
+    );
+
+    for (let i = 0; i < allDaysInMonth?.length; i++) {
+      const fullDate = allDaysInMonth[i].fullDate;
+      const parsedDate = dayjs(parseDate(fullDate));
+
+      if (dates[fullDate]) {
+        for (let j = 0; j < foundEmployeeById?.facilityPeriods?.length; j++) {
+          const facilityPeriod = foundEmployeeById?.facilityPeriods?.[j];
+
+          const newFacilityPeriod = {
+            ...facilityPeriod,
+            startDate: dayjs(facilityPeriod.startDate)?.format(),
+            createdAt: dayjs(facilityPeriod.createdAt)?.format(),
+          };
+
+          const startDate = dayjs(newFacilityPeriod?.startDate);
+          const endDate = dayjs(newFacilityPeriod?.endDate);
+
+          if (
+            newFacilityPeriod?.endDate === null &&
+            (parsedDate.isSame(startDate, 'day') ||
+              parsedDate.isAfter(startDate))
+          ) {
+            break;
+          }
+
+          if (
+            (startDate?.isBefore(parsedDate) ||
+              startDate?.isSame(parsedDate, 'day')) &&
+            (endDate?.isAfter(parsedDate) ||
+              endDate?.isSame(parsedDate, 'day')) &&
+            dayjs(endDate)?.diff(startDate, 'hour') > 1
+          ) {
+            break;
+          } else {
+            if (
+              parsedDate.isAfter(endDate) ||
+              parsedDate.isSame(endDate, 'day')
+            ) {
+              throw new BadRequestException(
+                `Сотрудник ${employeeShortName} не может быть заполнен на дату - ${fullDate} `,
+              );
+            }
+            throw new BadRequestException(
+              `Сотрудник ${employeeShortName} не был трудоустроен на дату - ${fullDate} `,
+            );
+          }
+        }
+
+        for (let i = 0; i < foundEmployeeById?.employmentPeriods?.length; i++) {
+          const period = foundEmployeeById?.employmentPeriods?.[i];
+
+          const newPeriod = {
+            ...period,
+            startDate: dayjs(period.startDate)?.format(),
+            createdAt: dayjs(period.createdAt)?.format(),
+            endDate: period.endDate ? dayjs(period.endDate)?.format() : null,
+          };
+
+          const isAfterStartDate = parsedDate?.isAfter(newPeriod.startDate);
+          const isBeforeEndDate = parsedDate?.isBefore(newPeriod.endDate);
+          const isSameAsStartDate = parsedDate?.isSame(
+            newPeriod.startDate,
+            'day',
+          );
+          const isSameAsEndDate = parsedDate?.isSame(newPeriod.endDate, 'day');
+
+          const isCoincidingWithBoth = isSameAsStartDate && isSameAsEndDate;
+
+          if (newPeriod.status === 'working') {
+            if (dayjs(newPeriod?.startDate)?.isAfter(parsedDate)) {
+              throw new BadRequestException(
+                `Сотрудник ${employeeShortName} не был трудоустроен на дату - ${fullDate} `,
+              );
+            }
+          }
+          if (
+            (newPeriod?.status === 'archived' ||
+              newPeriod?.status === 'fired') &&
+            newPeriod?.endDate === null &&
+            parsedDate.isAfter(newPeriod?.startDate)
+          ) {
+            throw new BadRequestException(
+              `Сотрудник ${employeeShortName} не был трудоустроен на момент - ${fullDate} `,
+            );
+          }
+
+          if (
+            newPeriod.endDate === null &&
+            parsedDate.isAfter(newPeriod?.startDate) &&
+            newPeriod?.status === 'working'
+          ) {
+            continue;
+          } else if (
+            newPeriod.endDate !== null &&
+            newPeriod.status === 'working' &&
+            dayjs(newPeriod?.startDate)?.isBefore(parsedDate) &&
+            dayjs(newPeriod?.endDate)?.isAfter(parsedDate)
+          ) {
+            continue;
+          } else if (
+            (isAfterStartDate && isBeforeEndDate) ||
+            (isCoincidingWithBoth &&
+              (newPeriod.endDate === null
+                ? true
+                : dayjs(newPeriod?.endDate)?.diff(newPeriod.startDate, 'hour') >
+                  8))
+          ) {
+            continue;
+          }
+        }
+      }
+    }
+  }
+
+  async findFacility(facilityId: number) {
+    const foundFacility = await this.facilitiesModel.findByPk(facilityId);
+
+    if (!foundFacility) {
+      throw new BadRequestException('Объект с переданным id не найден');
+    }
   }
 
   async findByDate(date: string, facilityId: number) {
+    await this.findFacility(facilityId);
+
+    validateParamsDate(date);
+
     const workLogs = await WorkLog.findAll({
       where: {
         date,
@@ -333,8 +525,24 @@ export class WorkLogsService {
     return workLogs;
   }
 
-  async download() {
-    const dates = getDaysInMonth(0);
+  async download(date: string, facilityId: number) {
+    await this.findFacility(facilityId);
+
+    validateParamsDate(date);
+
+    const targetDate = dayjs(date, 'MM-YYYY');
+    const currentDate = dayjs();
+
+    const monthDifference = targetDate.diff(currentDate, 'month');
+
+    const allowedEmployees = await this.employeeService.findByFacilityId(
+      facilityId,
+      date,
+    );
+
+    const workLogsData = await this.findByDate(date, facilityId);
+
+    const dates = getDaysInMonth(monthDifference);
 
     const workbook = new Workbook();
     const worksheet = workbook.addWorksheet('Пример');
@@ -441,8 +649,8 @@ export class WorkLogsService {
     let employeeStart = 5;
     let employeeEnd = 7;
 
-    for (let i = 0; i < testEmployeesData?.length; i++) {
-      const employee = testEmployeesData[i];
+    for (let i = 0; i < allowedEmployees?.length; i++) {
+      const employee = allowedEmployees[i];
 
       const fioCell = `A${employeeStart}:A${employeeEnd}`;
       const isLocalCell = `B${employeeStart}:B${employeeEnd}`;
@@ -450,8 +658,8 @@ export class WorkLogsService {
       const nightCell = `C${employeeStart + 1}`;
       const overworkCell = `C${employeeStart + 2}`;
 
-      worksheet.getCell(fioCell).value = `${employee.firstName}`;
-      worksheet.getCell(isLocalCell).value = `1`;
+      worksheet.getCell(fioCell).value = `${getShortUserFio(employee)}`;
+      worksheet.getCell(isLocalCell).value = employee.lastIsOutOfTown ? 1 : 0;
       worksheet.getCell(dayCell).value = 'д';
       worksheet.getCell(nightCell).value = 'н';
       worksheet.getCell(overworkCell).value = 'п';
@@ -465,7 +673,7 @@ export class WorkLogsService {
       applyAlignment(worksheet, nightCell);
       applyAlignment(worksheet, overworkCell);
 
-      const foundEmployee = testData.find(
+      const foundEmployee = workLogsData.find(
         (el) => el.employee?.id === employee?.id,
       );
 
@@ -475,7 +683,150 @@ export class WorkLogsService {
         const day = dates[j];
         const isWeekend = day.isWeekend;
 
+        const cellDate = dayjs(parseDate(day.fullDate));
+
         const cellData = foundEmployee?.workDays?.[day.fullDate];
+
+        const facilityPeriods = employee.facilityPeriods;
+
+        for (let i = 0; i < facilityPeriods?.length; i++) {
+          const facilityPeriod = facilityPeriods?.[i];
+
+          const newFacilityPeriod = {
+            ...facilityPeriod,
+            startDate: dayjs(facilityPeriod.startDate)?.format(),
+            createdAt: dayjs(facilityPeriod.createdAt)?.format(),
+          };
+
+          const startDate = dayjs(newFacilityPeriod?.startDate);
+          const endDate = dayjs(newFacilityPeriod?.endDate);
+
+          if (
+            newFacilityPeriod?.endDate === null &&
+            (cellDate.isSame(startDate, 'day') || cellDate.isAfter(startDate))
+          ) {
+            break;
+          }
+
+          if (
+            (startDate?.isBefore(cellDate) ||
+              startDate?.isSame(cellDate, 'day')) &&
+            (endDate?.isAfter(cellDate) || endDate?.isSame(cellDate, 'day')) &&
+            dayjs(endDate)?.diff(startDate, 'hour') > 1
+          ) {
+            break;
+          } else {
+            if (cellDate.isAfter(endDate) || cellDate.isSame(endDate, 'day')) {
+              const cellId = `${startColumn}${employeeStart}:${startColumn}${employeeEnd}`;
+              worksheet.getCell(cellId).value = 'Удален';
+              worksheet.mergeCells(cellId);
+
+              applyAlignment(
+                worksheet,
+                cellId,
+                undefined,
+                undefined,
+                isWeekend ? true : undefined,
+              );
+              break;
+            }
+            const cellId = `${startColumn}${employeeStart}:${startColumn}${employeeEnd}`;
+            worksheet.getCell(cellId).value = 'Н/у';
+            worksheet.mergeCells(cellId);
+
+            applyAlignment(
+              worksheet,
+              cellId,
+              undefined,
+              undefined,
+              isWeekend ? true : undefined,
+            );
+            break;
+          }
+        }
+
+        const employmentPeriods = employee?.employmentPeriods;
+
+        for (let i = 0; i < employmentPeriods?.length; i++) {
+          const period = employmentPeriods?.[i];
+
+          const newPeriod = {
+            ...period,
+            startDate: dayjs(period.startDate)?.format(),
+            createdAt: dayjs(period.createdAt)?.format(),
+            endDate: period.endDate ? dayjs(period.endDate)?.format() : null,
+          };
+
+          const isAfterStartDate = cellDate?.isAfter(newPeriod.startDate);
+          const isBeforeEndDate = cellDate?.isBefore(newPeriod.endDate);
+          const isSameAsStartDate = cellDate?.isSame(
+            newPeriod.startDate,
+            'day',
+          );
+          const isSameAsEndDate = cellDate?.isSame(newPeriod.endDate, 'day');
+
+          const isCoincidingWithBoth = isSameAsStartDate && isSameAsEndDate;
+
+          if (newPeriod.status === 'working') {
+            if (dayjs(newPeriod?.startDate)?.isAfter(cellDate)) {
+              const cellId = `${startColumn}${employeeStart}:${startColumn}${employeeEnd}`;
+              worksheet.getCell(cellId).value = 'Н/у';
+              worksheet.mergeCells(cellId);
+
+              applyAlignment(
+                worksheet,
+                cellId,
+                undefined,
+                undefined,
+                isWeekend ? true : undefined,
+              );
+              break;
+            }
+          }
+          if (
+            (newPeriod?.status === 'archived' ||
+              newPeriod?.status === 'fired') &&
+            newPeriod?.endDate === null &&
+            cellDate.isAfter(newPeriod?.startDate)
+          ) {
+            const cellId = `${startColumn}${employeeStart}:${startColumn}${employeeEnd}`;
+            worksheet.getCell(cellId).value = workerStatuses[newPeriod?.status];
+            worksheet.mergeCells(cellId);
+
+            applyAlignment(
+              worksheet,
+              cellId,
+              undefined,
+              undefined,
+              isWeekend ? true : undefined,
+            );
+            break;
+          }
+
+          if (
+            newPeriod.endDate === null &&
+            cellDate.isAfter(newPeriod?.startDate) &&
+            newPeriod?.status === 'working'
+          ) {
+            continue;
+          } else if (
+            newPeriod.endDate !== null &&
+            newPeriod.status === 'working' &&
+            dayjs(newPeriod?.startDate)?.isBefore(cellDate) &&
+            dayjs(newPeriod?.endDate)?.isAfter(cellDate)
+          ) {
+            continue;
+          } else if (
+            (isAfterStartDate && isBeforeEndDate) ||
+            (isCoincidingWithBoth &&
+              (newPeriod.endDate === null
+                ? true
+                : dayjs(newPeriod?.endDate)?.diff(newPeriod.startDate, 'hour') >
+                  8))
+          ) {
+            continue;
+          }
+        }
 
         if (typeof cellData === 'string') {
           const cellId = `${startColumn}${employeeStart}:${startColumn}${employeeEnd}`;
@@ -571,8 +922,8 @@ export class WorkLogsService {
         const isWeekend = day.isWeekend;
         const cellData = foundEmployee?.workDays?.[day.fullDate];
 
-        if (typeof cellData === 'object' && cellData.overwork && !isWeekend) {
-          const value = +cellData.overwork;
+        if (typeof cellData === 'object' && cellData?.overwork && !isWeekend) {
+          const value = +(cellData?.overwork ?? 0);
 
           if (value <= 2) {
             hoursOfOverworkTwoHours += value;
@@ -593,7 +944,7 @@ export class WorkLogsService {
           totalWeekendCells.push(`${newStartColumn}${employeeStart}`);
           totalWeekendCells.push(`${newStartColumn}${employeeStart + 1}`);
 
-          if (+cellData.day || +cellData.night) {
+          if (+cellData?.day || +cellData?.night) {
             countOfWeekendWorkDays += 1;
           }
         }
@@ -684,10 +1035,6 @@ export class WorkLogsService {
     const totalSmensCell = `${totalTotalSmens}${employeeStart}:${totalTotalSmens}${employeeEnd}`;
     const totalWeekendsHoursCell = `${totalTotalHoursWeekends}${employeeStart}:${totalTotalHoursWeekends}${employeeEnd}`;
     const totalWeekendsSmensCell = `${totalTotalSmensWeekends}${employeeStart}:${totalTotalSmensWeekends}${employeeEnd}`;
-
-    console.log(
-      `${totalTotalSmens}${employeeStart}:${totalTotalSmens}${employeeEnd}`,
-    );
 
     worksheet.mergeCells(totalDayHoursCell);
     worksheet.mergeCells(totalNightHoursCell);

@@ -15,6 +15,7 @@ interface CellInputProps {
   handleChange: (field: string, value: dateValueType, type?: string) => void;
   field: string;
   date?: Dayjs;
+  isDisabled?: boolean;
 }
 
 const cellLetters = [
@@ -40,7 +41,7 @@ const cellLetters = [
   }
 ];
 
-export const CellInput: FC<CellInputProps> = ({ value, handleChange, field, date }) => {
+export const CellInput: FC<CellInputProps> = ({ value, handleChange, field, date, isDisabled }) => {
   const [isModalOpen, setModalOpen] = useState<boolean>(false);
 
   const isFirstRender = useRef<boolean>(true);
@@ -114,8 +115,12 @@ export const CellInput: FC<CellInputProps> = ({ value, handleChange, field, date
             />
           )}
           <button
-            className="w-full h-full hover:bg-blue-200 hover:bg-opacity-20 transition-all"
+            className={clsx(
+              "w-full h-full hover:bg-blue-200 hover:bg-opacity-20 transition-all",
+              isDisabled && "cursor-not-allowed opacity-75"
+            )}
             onClick={() => {
+              if (isDisabled) return;
               setModalOpen(true);
             }}>
             {value}
@@ -126,7 +131,8 @@ export const CellInput: FC<CellInputProps> = ({ value, handleChange, field, date
           onMouseEnter={(e) => e.stopPropagation()}
           className={clsx(
             "h-full flex flex-col relative",
-            borderColor ? `border-[2px] border-solid ${borderColor}` : "border-none"
+            borderColor ? `border-[2px] border-solid ${borderColor}` : "border-none",
+            isDisabled && "cursor-not-allowed opacity-75"
           )}>
           {value && (
             <Icon

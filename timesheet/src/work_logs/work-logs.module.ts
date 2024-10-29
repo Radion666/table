@@ -4,6 +4,7 @@ import { AuthModule } from 'src/auth/auth.module';
 import { ChangeLog } from 'src/change_logs/change-logs.model';
 import { ChangeLogsService } from 'src/change_logs/change-logs.service';
 import { Employee } from 'src/employee/employee.model';
+import { EmployeeModule } from 'src/employee/employee.module';
 import { Facilities } from 'src/facilities/facilities.model';
 import { Roles } from 'src/roles/role.model';
 import { RolesModule } from 'src/roles/roles.module';
@@ -15,7 +16,7 @@ import { WorkLogsService } from './work-logs.service';
 
 @Module({
   controllers: [WorkLogsController],
-  providers: [WorkLogsService, ChangeLogsService],
+  providers: [WorkLogsService, ChangeLogsService, WorkLogsService],
   imports: [
     SequelizeModule.forFeature([
       WorkLog,
@@ -29,6 +30,7 @@ import { WorkLogsService } from './work-logs.service';
     AuthModule,
     UsersModule,
     RolesModule,
+    EmployeeModule,
   ],
 })
 export class WorkLogsModule {}

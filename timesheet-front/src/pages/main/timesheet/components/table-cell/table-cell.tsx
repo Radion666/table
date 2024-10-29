@@ -71,6 +71,11 @@ export const TableCell: FC<TableCellProps> = memo(
           return true;
         }
 
+        if (cellDate.isAfter(today)) {
+          setErrorMsg("");
+          return true;
+        }
+
         for (let i = 0; i < facilityPeriods?.length; i++) {
           const facilityPeriod = facilityPeriods?.[i];
 
@@ -263,6 +268,7 @@ export const TableCell: FC<TableCellProps> = memo(
                     handleChange={handleChange}
                     field={dayValue}
                     date={cellParsedDate}
+                    isDisabled={isDisabled}
                   />
                 )}
               </>

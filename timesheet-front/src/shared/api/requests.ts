@@ -162,6 +162,14 @@ export const apiRequests = {
     });
   },
 
+  downloadReport: async (facilityId: number, date: string) => {
+    return apiConfigRequests({
+      method: "get",
+      url: `work-logs/download?date=${date}&id=${facilityId}`,
+      responseType: "blob"
+    });
+  },
+
   getWorkersByFacilityId: async (facilityId: number, date: string) => {
     if (!facilityId) return;
 

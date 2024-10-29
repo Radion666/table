@@ -37,5 +37,6 @@ import { EmployeeService } from './employee.service';
     RolesModule,
     UsersModule,
   ],
+  exports: [EmployeeService],
 })
 export class EmployeeModule {}

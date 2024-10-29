@@ -10,7 +10,7 @@ export const getUserFio = (user?: any) => {
 export const getShortUserFio = (user: any) => {
   if (!user) return "";
 
-  return `${user?.lastName ?? ""} ${user?.firstName?.charAt(0) + "." ?? ""} ${
+  return `${user?.lastName ?? ""} ${user?.firstName?.charAt(0) + "."} ${
     user?.middleName?.charAt(0) ?? ""
   }`;
 };

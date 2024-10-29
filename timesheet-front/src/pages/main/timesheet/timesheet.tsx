@@ -17,6 +17,7 @@ import { Scrollbar } from "~src/components/scrollbar/Scrollbar";
 import { apiRequests } from "~src/shared/api/requests";
 import { monthsNameByNumberLocal } from "~src/shared/constants/default";
 import { Button } from "~src/shared/ui/button/button";
+import { Icon } from "~src/shared/ui/icon/icon";
 import { getShortUserFio, removeLeadingZeroFromDate } from "~src/shared/utils/default";
 
 type tableValueType = (object: employeeType) => string;
@@ -439,7 +440,32 @@ export const TimesheetPage = () => {
             }}>
             Следующий месяц
           </Button>
+          <div className="mb-2 text-center flex items-center justify-between flex-row-reverse gap-5 ">
+            <Icon
+              onClick={async () => {
+                apiRequests
+                  .downloadReport(
+                    facilityId ? +facilityId : 0,
+                    dayjs(currentDate)?.format("MM-YYYY")
+                  )
+                  .then(async (response) => {
+                    const url = window.URL.createObjectURL(new Blob([response.data]));
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "downloaded_file.xlsx";
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                  });
+              }}
+              className={clsx("cursor-pointer text-[#343434], hover:text-[#B74858]")}
+              name="Excel"
+              size={24}
+            />
+          </div>
         </div>
+
         <Button
           className="mr-5"
           onClick={() => {
@@ -453,13 +479,7 @@ export const TimesheetPage = () => {
           Сохранить
         </Button>
       </div>
-      <div className="mb-2 text-center flex items-center justify-between flex-row-reverse gap-5">
-        {/* <Icon
-          className={clsx("cursor-pointer text-[#343434], hover:text-[#B74858]")}
-          name="Excel"
-          size={24}
-        /> */}
-      </div>
+
       <div className="flex-1" ref={containerRef}>
         <div
           ref={headerRef}

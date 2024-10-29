@@ -158,8 +158,8 @@ export const EmployeesPage = () => {
             render={({ field }) => (
               <Input
                 errorMessage={errors.phoneNumber?.message}
-                placeholder="+71111111111 или 81111111111"
                 label="Номер телефона"
+                isPhone
                 {...field}
               />
             )}
