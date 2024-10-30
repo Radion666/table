@@ -42,10 +42,15 @@ export const useGetAllPositions = () => {
   };
 };
 
-export const useGetAllWorkers = () => {
+export const useGetAllWorkers = (params: { searchName?: string }) => {
+  const { searchName } = { ...params };
+
   const { ...data } = useQuery({
-    queryKey: ["all workers"],
-    queryFn: () => apiRequests.getWorkers(),
+    queryKey: ["all workers", searchName],
+    queryFn: () =>
+      apiRequests.getWorkers({
+        searchName
+      }),
     staleTime: 60000,
     gcTime: 60000
   });
@@ -57,6 +62,7 @@ export const useGetAllWorkers = () => {
 
 export const useGetAllMasters = () => {
   const { user } = useGetUser();
+
   const { ...data } = useQuery({
     queryKey: ["all masters"],
     queryFn: () => apiRequests.getEmployees("master"),

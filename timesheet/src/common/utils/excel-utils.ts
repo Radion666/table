@@ -62,15 +62,11 @@ export const setSumWithStep = (
 
         if (typeof cellValue === 'number') {
           formulaParts.push(`${firstCol}${row}:${secondCol}${row}`);
-        } else if ((cellValue as any).formula) {
+        } else if ((cellValue as any)?.formula) {
           formulaParts.push(cellValue);
         }
       }
     }
-  }
-
-  if (targetCellId.includes(':')) {
-    console.log(formulaParts);
   }
 
   // Если были найдены числовые ячейки, устанавливаем формулу

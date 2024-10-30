@@ -107,6 +107,11 @@ export interface workersByFacilityIdType {
   lastName: string;
   employmentPeriods: employmentPeriodsType[];
   facilityPeriods: facilityPeriodsType[];
+  lastIsOutOfTown: boolean;
+  lastPosition: {
+    id: number;
+    name: string;
+  };
 }
 
 export interface createWorkerType {

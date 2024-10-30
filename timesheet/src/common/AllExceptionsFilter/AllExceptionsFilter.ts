@@ -16,7 +16,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
   async catch(exception: unknown, host: ArgumentsHost) {
     const { httpAdapter } = this.httpAdapterHost;
-    console.log(exception);
 
     const typedException = exception as {
       response:

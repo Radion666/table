@@ -202,7 +202,6 @@ export class WorkLogsService {
       }
 
       if (existingLog) {
-        // console.log('im here', updatedWorkDays, existingLog);
         (
           await existingLog.update({
             workDays: { ...(updatedWorkDays as any) },
@@ -689,13 +688,17 @@ export class WorkLogsService {
 
         const facilityPeriods = employee.facilityPeriods;
 
+        let needToContinue: boolean = false;
+
         for (let i = 0; i < facilityPeriods?.length; i++) {
           const facilityPeriod = facilityPeriods?.[i];
 
           const newFacilityPeriod = {
             ...facilityPeriod,
             startDate: dayjs(facilityPeriod.startDate)?.format(),
-            createdAt: dayjs(facilityPeriod.createdAt)?.format(),
+            endDate: facilityPeriod.endDate
+              ? dayjs(facilityPeriod.endDate)?.format()
+              : null,
           };
 
           const startDate = dayjs(newFacilityPeriod?.startDate);
@@ -718,9 +721,11 @@ export class WorkLogsService {
           } else {
             if (cellDate.isAfter(endDate) || cellDate.isSame(endDate, 'day')) {
               const cellId = `${startColumn}${employeeStart}:${startColumn}${employeeEnd}`;
+              worksheet.unMergeCells(cellId);
               worksheet.getCell(cellId).value = 'Удален';
-              worksheet.mergeCells(cellId);
 
+              worksheet.mergeCells(cellId);
+              needToContinue = true;
               applyAlignment(
                 worksheet,
                 cellId,
@@ -731,8 +736,11 @@ export class WorkLogsService {
               break;
             }
             const cellId = `${startColumn}${employeeStart}:${startColumn}${employeeEnd}`;
+            worksheet.unMergeCells(cellId);
+
             worksheet.getCell(cellId).value = 'Н/у';
             worksheet.mergeCells(cellId);
+            needToContinue = true;
 
             applyAlignment(
               worksheet,
@@ -751,9 +759,8 @@ export class WorkLogsService {
           const period = employmentPeriods?.[i];
 
           const newPeriod = {
-            ...period,
+            ...period.toJSON(),
             startDate: dayjs(period.startDate)?.format(),
-            createdAt: dayjs(period.createdAt)?.format(),
             endDate: period.endDate ? dayjs(period.endDate)?.format() : null,
           };
 
@@ -770,7 +777,11 @@ export class WorkLogsService {
           if (newPeriod.status === 'working') {
             if (dayjs(newPeriod?.startDate)?.isAfter(cellDate)) {
               const cellId = `${startColumn}${employeeStart}:${startColumn}${employeeEnd}`;
+
+              if (worksheet.getCell(cellId).value) continue;
+
               worksheet.getCell(cellId).value = 'Н/у';
+              worksheet.unMergeCells(cellId);
               worksheet.mergeCells(cellId);
 
               applyAlignment(
@@ -790,9 +801,11 @@ export class WorkLogsService {
             cellDate.isAfter(newPeriod?.startDate)
           ) {
             const cellId = `${startColumn}${employeeStart}:${startColumn}${employeeEnd}`;
-            worksheet.getCell(cellId).value = workerStatuses[newPeriod?.status];
-            worksheet.mergeCells(cellId);
+            if (worksheet.getCell(cellId).value) continue;
 
+            worksheet.getCell(cellId).value = workerStatuses[newPeriod?.status];
+            worksheet.unMergeCells(cellId);
+            worksheet.mergeCells(cellId);
             applyAlignment(
               worksheet,
               cellId,
@@ -952,21 +965,28 @@ export class WorkLogsService {
         newStartColumn = incrementColumn(newStartColumn);
       }
 
-      worksheet.getCell(totalDayHoursCell).value = {
-        formula: `SUM(${dayHoursCells.join(', ')})`,
-      };
-      worksheet.getCell(totalNightHoursCell).value = {
-        formula: `SUM(${nightHoursCells.join(', ')})`,
-      };
+      worksheet.getCell(totalDayHoursCell).value = dayHoursCells?.length
+        ? {
+            formula: `SUM(${dayHoursCells.join(', ')})`,
+          }
+        : 0;
+      worksheet.getCell(totalNightHoursCell).value = nightHoursCells?.length
+        ? {
+            formula: `SUM(${nightHoursCells.join(', ')})`,
+          }
+        : 0;
       worksheet.getCell(totalOverworkFirstHoursCell).value =
         hoursOfOverworkTwoHours;
       worksheet.getCell(totalOverworkSecondHoursCell).value =
         hoursOfOverworkMoreTwoHours;
 
       worksheet.getCell(totalSmensCell).value = countOfWorkDays;
-      worksheet.getCell(totalWeekendsHoursCell).value = {
-        formula: `SUM(${totalWeekendCells.join(', ')})`,
-      };
+      worksheet.getCell(totalWeekendsHoursCell).value =
+        totalWeekendCells?.length
+          ? {
+              formula: `SUM(${totalWeekendCells.join(', ')})`,
+            }
+          : 0;
       worksheet.getCell(totalWeekendsSmensCell).value = countOfWeekendWorkDays;
 
       applyAlignment(worksheet, totalDayHoursCell);

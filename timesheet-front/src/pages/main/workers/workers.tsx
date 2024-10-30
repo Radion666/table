@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "react-toastify";
+import { useDebounceValue } from "usehooks-ts";
 
 import { workersColumns, workersStatuses } from "./utils/constants";
 
@@ -32,7 +33,16 @@ export const WorkersPage = () => {
 
   const [isModalOpen, setModalOpen] = useState<boolean>(false);
 
-  const { data: workersData, isFetching, refetch } = useGetAllWorkers();
+  const [searchName, setSearchName] = useState<string>("");
+  const [debouncedSearchName] = useDebounceValue(searchName, 500);
+
+  const {
+    data: workersData,
+    isFetching,
+    refetch
+  } = useGetAllWorkers({
+    searchName: debouncedSearchName
+  });
   const { data: positionsData, isFetching: isPositionsFetching } = useGetAllPositions();
   const { data: allFacilities, isFetching: isAllFacilitiesFetching } = useGetAllFacilities({
     page: 1,
@@ -83,7 +93,16 @@ export const WorkersPage = () => {
   return (
     <>
       <div className="flex flex-1 flex-col gap-5 justify-center p-5">
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between">
+          <div className="flex flex-row items-center gap-5 flex-1 flex-wrap">
+            <Input
+              label="Поиск по ФИО"
+              className="md:w-96"
+              value={searchName}
+              onChange={(e) => setSearchName(e.target.value)}
+            />
+          </div>
+
           <Button onClick={() => setModalOpen(true)}>Создать нового сотрудника</Button>
         </div>
         {workersData?.data && (

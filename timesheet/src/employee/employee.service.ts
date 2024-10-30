@@ -1,6 +1,7 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import dayjs from 'dayjs';
+import { Op } from 'sequelize';
 import {
   EmploymentPeriod,
   EmploymentStatus,
@@ -143,7 +144,6 @@ export class EmployeeService {
   }
 
   async update(id: number, updateEmployeeDto: UpdateEmployeeDto) {
-    console.log(JSON.stringify(updateEmployeeDto));
     await this.validateDto(updateEmployeeDto, id);
 
     const [_, [data]] = await this.employeeModel.update(
@@ -286,11 +286,30 @@ export class EmployeeService {
     }
   }
 
-  async findAll(user: User) {
+  async findAll(user: User, searchName?: string) {
     //TODO
     //Добавить проверку на user
 
+    const whereConditions = {};
+
+    if (searchName) {
+      const searchTerms = searchName
+        .split(' ')
+        .map((term) => term.trim())
+        .filter(Boolean);
+      whereConditions[Op.or] = searchTerms.map((term) => ({
+        [Op.or]: [
+          { lastName: { [Op.iLike]: `%${term}%` } },
+          { firstName: { [Op.iLike]: `%${term}%` } },
+          { middleName: { [Op.iLike]: `%${term}%` } },
+        ],
+      }));
+    }
+
     const employees = await this.employeeModel.findAll({
+      ...(searchName && {
+        where: whereConditions,
+      }),
       order: [['createdAt', 'ASC']],
       attributes: {
         exclude: [
@@ -511,10 +530,16 @@ export class EmployeeService {
       where: {
         id: allEmployeesIds,
       },
-      include: {
-        model: EmploymentPeriod,
-        attributes: ['status', 'startDate', 'endDate', 'createdAt'],
-      },
+      include: [
+        {
+          model: EmploymentPeriod,
+          attributes: ['status', 'startDate', 'endDate', 'createdAt'],
+        },
+        {
+          model: Positions,
+          attributes: ['id', 'name'],
+        },
+      ],
     });
 
     const allowedEmployees: Employee[] = [];
@@ -563,80 +588,11 @@ export class EmployeeService {
           facilityPeriods: allowedFacilityEmployees.filter(
             (emp) => emp.employeeId === employee.id,
           ),
+          lastPosition: employee.lastPosition,
+          lastIsOutOfTown: employee.lastIsOutOfTown,
         } as any);
       }
     }
-
-    //   for (let j = 0; j < employee?.employmentPeriods?.length; j++) {
-
-    //     if (
-    //       innerEndDate === null &&
-    //       innerStartDate?.isAfter(startDate) &&
-    //       innerStartDate?.isBefore(endDate)
-    //     ) {
-    //       console.log('c1');
-    //       allowedPeriods.push(employmentPeriod);
-    //     } else if (
-    //       innerEndDate === null &&
-    //       innerStartDate?.isBefore(startDate) &&
-    //       employmentPeriod?.status === 'working'
-    //     ) {
-    //       console.log('c2');
-    //       allowedPeriods.push(employmentPeriod);
-    //     } else if (
-    //       innerEndDate !== null &&
-    //       employmentPeriod?.status === 'working' &&
-    //       innerStartDate?.isBefore(startDate) &&
-    //       innerEndDate?.isAfter(endDate)
-    //     ) {
-    //       allowedPeriods.push(employmentPeriod);
-    //     } else if (
-    //       innerEndDate !== null &&
-    //       innerStartDate?.isAfter(startDate) &&
-    //       innerStartDate?.isBefore(endDate) &&
-    //       innerEndDate?.isAfter(startDate) &&
-    //       innerEndDate?.isBefore(endDate)
-    //     ) {
-    //       console.log('cl3');
-    //       allowedPeriods.push(employmentPeriod);
-    //     } else if (
-    //       innerEndDate !== null &&
-    //       innerEndDate?.isAfter(startDate) &&
-    //       innerEndDate?.isBefore(endDate)
-    //     ) {
-    //       console.log('cl4');
-    //       allowedPeriods.push(employmentPeriod);
-    //     } else if (
-    //       innerStartDate?.isAfter(startDate) &&
-    //       innerStartDate?.isBefore(endDate)
-    //     ) {
-    //       console.log('cl5');
-    //       allowedPeriods.push(employmentPeriod);
-    //     }
-    //   }
-    //   if (allowedPeriods?.length) {
-    //     allowedEmployees.push({
-    //       id: employee.id,
-    //       lastName: employee?.lastName,
-    //       firstName: employee?.firstName,
-    //       middleName: employee?.middleName,
-    //       facility: {
-
-    //         id: employee?.facility?.id,
-
-    //         name: employee?.facility?.name,
-    //       },
-    //       position: {
-
-    //         id: employee?.position?.id,
-
-    //         name: employee?.position?.name,
-    //       },
-    //       employmentPeriods: allowedPeriods,
-    //     } as any);
-    //   }
-    // }
-    // return allowedEmployees;
 
     return allowedEmployees;
   }

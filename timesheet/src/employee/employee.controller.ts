@@ -8,7 +8,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { Roles } from 'src/auth/roles-auth.decorator';
 import { RolesGuards } from 'src/auth/roles.guard';
@@ -36,8 +36,17 @@ export class EmployeeController {
 
   @Roles('admin', 'master')
   @Get()
-  findAll(@UserDecorator() user: User) {
-    return this.employeeService.findAll(user);
+  @ApiQuery({
+    name: 'searchName',
+    type: String,
+    description: 'Поиск по ФИО',
+    required: false,
+  })
+  findAll(
+    @UserDecorator() user: User,
+    @Query('searchName') searchName?: string,
+  ) {
+    return this.employeeService.findAll(user, searchName);
   }
 
   @Roles('admin', 'master')

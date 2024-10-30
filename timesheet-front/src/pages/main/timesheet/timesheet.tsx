@@ -11,7 +11,7 @@ import { defaultHeaders } from "../utils/constants";
 import { daysInMonth, getDaysInMonth } from "../utils/utils";
 
 import { TableCell } from "./components/table-cell/table-cell";
-import { employeeDatesType, employeeType, filledDateValueTye } from "./data";
+import { employeeDatesType, employeeTotalType, employeeType, filledDateValueTye } from "./data";
 
 import { Scrollbar } from "~src/components/scrollbar/Scrollbar";
 import { apiRequests } from "~src/shared/api/requests";
@@ -107,6 +107,8 @@ export const TimesheetPage = () => {
             facilityId: +facilityId,
             employmentPeriods: el.employmentPeriods,
             facilityPeriods: el.facilityPeriods,
+            lastIsOutOfTown: el.lastIsOutOfTown,
+            lastPosition: el.lastPosition,
             dates: {
               //@ts-ignore
               ...(newDates as never)
@@ -534,7 +536,9 @@ export const TimesheetPage = () => {
             }}>
             {rowVirtualizer.getVirtualItems().map((virtualRow) => {
               const ppl = innerData[virtualRow.index];
+
               const isLast = virtualRow.index === innerData?.length - 1;
+
               return (
                 <div
                   key={virtualRow.index}
@@ -557,6 +561,7 @@ export const TimesheetPage = () => {
                             <TableCell
                               key={index}
                               isLast={isLast}
+                              lastIsOutOfTown={ppl.lastIsOutOfTown}
                               className={day.className}
                               dayValue={day.value as any}
                               daysInMonth={isLast ? daysInMonth : undefined}

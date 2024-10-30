@@ -140,10 +140,15 @@ export const apiRequests = {
     });
   },
 
-  getWorkers: async () => {
+  getWorkers: async ({ searchName }: { searchName?: string }) => {
     return apiConfigRequests<actualWorkersResponseType[]>({
       method: "get",
-      url: "/employees"
+      url: "/employees",
+      params: {
+        ...(searchName && {
+          searchName
+        })
+      }
     });
   },
   createWorker: async (data: createWorkerType) => {

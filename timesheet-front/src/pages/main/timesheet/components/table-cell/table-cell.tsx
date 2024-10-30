@@ -29,6 +29,7 @@ interface TableCellProps {
   isLast?: boolean;
   employmentPeriods: employmentPeriodsType[];
   facilityPeriods: facilityPeriodsType[];
+  lastIsOutOfTown: boolean;
 }
 
 export const TableCell: FC<TableCellProps> = memo(
@@ -43,7 +44,8 @@ export const TableCell: FC<TableCellProps> = memo(
     headerCellType,
     isLast,
     employmentPeriods,
-    facilityPeriods
+    facilityPeriods,
+    lastIsOutOfTown
   }) => {
     const { userRole } = useGetUser();
     const [errorMsg, setErrorMsg] = useState<string>("Недоступно");
@@ -60,16 +62,6 @@ export const TableCell: FC<TableCellProps> = memo(
         const cellDate = dayjs(parseDate(dayValue));
 
         const today = dayjs();
-        const isTodayFifteenth = today.date() >= 15;
-        const currentMonth = today.month();
-        const currentYear = today.year();
-        if (
-          isTodayFifteenth &&
-          (cellDate.month() !== currentMonth || cellDate.year() !== currentYear)
-        ) {
-          setErrorMsg("");
-          return true;
-        }
 
         if (cellDate.isAfter(today)) {
           setErrorMsg("");
@@ -109,6 +101,17 @@ export const TableCell: FC<TableCellProps> = memo(
             setErrorMsg("Н/у");
             return true;
           }
+        }
+
+        const isTodayFifteenth = today.date() >= 15;
+        const currentMonth = today.month();
+        const currentYear = today.year();
+        if (
+          isTodayFifteenth &&
+          (cellDate.month() !== currentMonth || cellDate.year() !== currentYear)
+        ) {
+          setErrorMsg("");
+          return true;
         }
 
         for (let i = 0; i < employmentPeriods?.length; i++) {

@@ -41,6 +41,11 @@ export interface employeeType {
   employeeId: number;
   dates: employeeDatesType;
   total: employeeTotalType;
+  lastPosition: {
+    id: number;
+    name: string;
+  };
+  lastIsOutOfTown: boolean;
 }
 
 export type datesToBackType = Record<

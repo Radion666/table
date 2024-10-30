@@ -10,7 +10,7 @@ export const Button: FC<ButtonProps> = ({ ...props }) => {
     <AntdButton
       type="primary"
       {...props}
-      className={clsx("w-52 h-10", props.className && props.className)}
+      className={clsx("md:w-52 h-10", props.className && props.className)}
     />
   );
 };

@@ -14,10 +14,10 @@ export const defaultHeaders: headerType[] = [
   },
   {
     label: "Местный (0) / неместный (1)",
-    value: "local",
     className: "min-w-28 flex-1 sticky left-48 bg-white z-40 border-r-1 border-gray-500",
     fieldType: "text",
-    type: "location"
+    type: "location",
+    value: (obj) => String(obj.lastIsOutOfTown ? 1 : 0)
   },
   {
     label: "",
