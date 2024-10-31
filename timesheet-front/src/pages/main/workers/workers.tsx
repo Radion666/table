@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { useQuery } from "@tanstack/react-query";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { useDebounceValue } from "usehooks-ts";
@@ -7,7 +8,6 @@ import { useDebounceValue } from "usehooks-ts";
 import { workersColumns, workersStatuses } from "./utils/constants";
 
 import { GridTable } from "~src/components/grid-table/grid-table";
-import { Loader } from "~src/components/loader/loader";
 import { apiRequests } from "~src/shared/api/requests";
 import { regexes } from "~src/shared/constants/default";
 import { useAppSelector } from "~src/shared/hooks";
@@ -15,10 +15,9 @@ import { useGetUser } from "~src/shared/hooks/useGetUser";
 import {
   useGetAllFacilities,
   useGetAllMasters,
-  useGetAllPositions,
   useGetAllWorkers
 } from "~src/shared/hooks/useRequests";
-import { createWorkerType } from "~src/shared/types/employees";
+import { createWorkerType, workerStatusType } from "~src/shared/types/employees";
 import { Button } from "~src/shared/ui/button/button";
 import { Checkbox } from "~src/shared/ui/checkbox/checkbox";
 import { Input } from "~src/shared/ui/input/input";
@@ -35,25 +34,31 @@ export const WorkersPage = () => {
 
   const [searchName, setSearchName] = useState<string>("");
   const [debouncedSearchName] = useDebounceValue(searchName, 500);
+  const [selectedStatus, setSelectedStatus] = useState<workerStatusType>("working");
 
   const {
     data: workersData,
     isFetching,
+    isLoading,
     refetch
   } = useGetAllWorkers({
-    searchName: debouncedSearchName
+    searchName: debouncedSearchName,
+    status: selectedStatus
   });
-  const { data: positionsData, isFetching: isPositionsFetching } = useGetAllPositions();
+  // const { data: positionsData, isFetching: isPositionsFetching } = useGetAllPositions();
   const { data: allFacilities, isFetching: isAllFacilitiesFetching } = useGetAllFacilities({
     page: 1,
     pageSize: 1000
   });
+
   const { data: allMastersData, isLoading: isAllMastersLoading } = useGetAllMasters();
 
   const {
+    getValues,
     control,
     handleSubmit,
     reset,
+    watch,
     formState: { errors }
   } = useForm<createWorkerType>({
     defaultValues: {
@@ -72,6 +77,12 @@ export const WorkersPage = () => {
     }
   });
 
+  const { data: positionsData, isFetching: isPositionsFetching } = useQuery({
+    queryKey: ["facility by id", watch("facilityId")],
+    queryFn: () => apiRequests.getPositionsByFacilityId(getValues("facilityId") ?? undefined),
+    enabled: typeof getValues("facilityId") === "number"
+  });
+
   const handleCreate = async (data: createWorkerType) => {
     await apiRequests
       .createWorker({ ...data, createdById: user?.id as number, isOutOfTown: !data?.isOutOfTown })
@@ -86,10 +97,6 @@ export const WorkersPage = () => {
     reset();
   }, [isModalOpen]);
 
-  if (isFetching) {
-    return <Loader />;
-  }
-
   return (
     <>
       <div className="flex flex-1 flex-col gap-5 justify-center p-5">
@@ -101,6 +108,28 @@ export const WorkersPage = () => {
               value={searchName}
               onChange={(e) => setSearchName(e.target.value)}
             />
+            <Select
+              value={selectedStatus}
+              onChange={(e) => {
+                setSelectedStatus(e);
+              }}
+              label="Фильтрация по статусу"
+              className="md:w-96"
+              options={[
+                {
+                  label: "Работает",
+                  value: "working"
+                },
+                {
+                  label: "Уволен",
+                  value: "fired"
+                },
+                {
+                  label: "Архив",
+                  value: "archived"
+                }
+              ]}
+            />
           </div>
 
           <Button onClick={() => setModalOpen(true)}>Создать нового сотрудника</Button>
@@ -111,6 +140,9 @@ export const WorkersPage = () => {
             columns={workersColumns}
             defaultColDefParams={{
               sortable: true
+            }}
+            gridProps={{
+              loading: isFetching
             }}
           />
         )}
@@ -151,32 +183,12 @@ export const WorkersPage = () => {
           />
 
           <Controller
-            rules={{
-              required: "Должность обязательна"
-            }}
-            control={control}
-            name="positionId"
-            render={({ field }) => (
-              <Select
-                optionFilterProp="label"
-                options={positionsData?.data?.map((position) => ({
-                  value: position.id,
-                  label: position.name
-                }))}
-                showSearch
-                errorMessage={errors?.positionId?.message}
-                label="Должность"
-                {...field}
-              />
-            )}
-          />
-
-          <Controller
             control={control}
             name="facilityId"
             render={({ field }) => (
               <Select
                 optionFilterProp="label"
+                loading={isAllFacilitiesFetching}
                 options={allFacilities?.data?.items?.map((facility) => ({
                   value: facility.id,
                   label: facility.name
@@ -189,6 +201,28 @@ export const WorkersPage = () => {
             )}
           />
 
+          <Controller
+            rules={{
+              required: "Должность обязательна"
+            }}
+            control={control}
+            name="positionId"
+            render={({ field }) => (
+              <Select
+                optionFilterProp="label"
+                loading={isPositionsFetching}
+                options={positionsData?.data?.map((position) => ({
+                  value: position.id,
+                  label: position.name
+                }))}
+                showSearch
+                errorMessage={errors?.positionId?.message}
+                label="Должность"
+                {...field}
+              />
+            )}
+          />
+
           {userRole !== "master" && (
             <Controller
               control={control}
@@ -196,6 +230,7 @@ export const WorkersPage = () => {
               render={({ field }) => (
                 <Select
                   optionFilterProp="label"
+                  loading={isAllMastersLoading}
                   options={allMastersData?.data?.map((master) => ({
                     value: master.id,
                     label: getUserFio(master)

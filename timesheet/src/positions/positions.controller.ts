@@ -40,6 +40,11 @@ export class PositionsController {
     return this.positionsService.findOne(+id);
   }
 
+  @Get('byFacility/:id')
+  findByFacilityId(@Param('id') id: number) {
+    return this.positionsService.findByFacilityId(id);
+  }
+
   @Patch(':id')
   update(
     @Param('id') id: string,

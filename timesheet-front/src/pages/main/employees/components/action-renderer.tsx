@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { CustomCellRendererProps } from "ag-grid-react";
+import { Tooltip } from "antd";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 
@@ -14,6 +15,7 @@ import {
 } from "~src/shared/hooks/useRequests";
 import { CreateEmployeeType, usersEmployeeType } from "~src/shared/types/user";
 import { Button } from "~src/shared/ui/button/button";
+import { Icon } from "~src/shared/ui/icon/icon";
 import { Input } from "~src/shared/ui/input/input";
 import { Modal } from "~src/shared/ui/modal/modal";
 import { Select } from "~src/shared/ui/select/select";
@@ -53,9 +55,14 @@ export const ActionsRenderer = (params: CustomCellRendererProps<usersEmployeeTyp
 
   return (
     <>
-      <Button className="max-w-32 max-h-8" onClick={() => setModalOpen(true)}>
-        Редактировать
-      </Button>
+      <Tooltip placement="top" title="Редактировать">
+        <Icon
+          name="Edit"
+          onClick={() => setModalOpen(true)}
+          size={32}
+          className="cursor-pointer text-blue-500 hover:text-red-500 transition-colors min-h-[41px]"
+        />
+      </Tooltip>
 
       <Modal title="Редактирование сотрудника" state={isModalOpen} setState={setModalOpen}>
         <form className="flex flex-col gap-2 mt-4" onSubmit={handleSubmit(handleUpdate)}>

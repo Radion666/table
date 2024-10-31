@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class CreatePositionDto {
   @ApiProperty({
@@ -9,4 +15,13 @@ export class CreatePositionDto {
   @IsNotEmpty()
   @IsString()
   readonly name: string;
+
+  @ApiProperty({
+    example: '[1,2,3,4,5]',
+    description: 'Массив объектов',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsInt({ each: true })
+  readonly facilities: number[];
 }

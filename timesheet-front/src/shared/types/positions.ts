@@ -3,4 +3,8 @@ export interface positionType {
   name: string;
   createdAt: string;
   updatedAt: string;
+  facilities: {
+    id: number;
+    name: string;
+  }[];
 }

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 
+import { useQuery } from "@tanstack/react-query";
 import { CustomCellRendererProps } from "ag-grid-react";
-import { Timeline } from "antd";
+import { Timeline, Tooltip } from "antd";
 import clsx from "clsx";
 import dayjs from "dayjs";
 import { Controller, useForm } from "react-hook-form";
@@ -16,12 +17,12 @@ import {
   defaultQueryKeys,
   refetchQuery,
   useGetAllFacilities,
-  useGetAllMasters,
-  useGetAllPositions
+  useGetAllMasters
 } from "~src/shared/hooks/useRequests";
 import { actualWorkersResponseType, createWorkerType } from "~src/shared/types/employees";
 import { Button } from "~src/shared/ui/button/button";
 import { Checkbox } from "~src/shared/ui/checkbox/checkbox";
+import { Icon } from "~src/shared/ui/icon/icon";
 import { Input } from "~src/shared/ui/input/input";
 import { Modal } from "~src/shared/ui/modal/modal";
 import { Select } from "~src/shared/ui/select/select";
@@ -38,7 +39,7 @@ export const ActionsRenderer = (params: CustomCellRendererProps<actualWorkersRes
     "status" | "master" | "facility" | "position" | "outOfTown" | null
   >(null);
 
-  const { isFetching: isPositionsFetching, data: positionsData } = useGetAllPositions();
+  // const { isFetching: isPositionsFetching, data: positionsData } = useGetAllPositions();
   const { data: allFacilities, isFetching: isAllFacilitiesFetching } = useGetAllFacilities({
     page: 1,
     pageSize: 1000
@@ -49,7 +50,9 @@ export const ActionsRenderer = (params: CustomCellRendererProps<actualWorkersRes
     control,
     handleSubmit,
     reset,
-    formState: { errors }
+    formState: { errors },
+    watch,
+    getValues
   } = useForm<Omit<createWorkerType, "createdById">>({
     defaultValues: {
       actualAddress: workerData?.actualAddress ?? "",
@@ -64,6 +67,12 @@ export const ActionsRenderer = (params: CustomCellRendererProps<actualWorkersRes
       registeredAddress: workerData?.registeredAddress,
       status: workerData?.lastStatus ?? undefined
     }
+  });
+
+  const { data: positionsData, isFetching: isPositionsFetching } = useQuery({
+    queryKey: ["facility by id", watch("facilityId")],
+    queryFn: () => apiRequests.getPositionsByFacilityId(getValues("facilityId") ?? undefined),
+    enabled: typeof getValues("facilityId") === "number"
   });
 
   const handleUpdate = async (data: Omit<createWorkerType, "createdById">) => {
@@ -82,9 +91,14 @@ export const ActionsRenderer = (params: CustomCellRendererProps<actualWorkersRes
 
   return (
     <>
-      <Button className="max-w-32 max-h-8" onClick={() => setModalOpen(true)}>
-        Редактировать
-      </Button>
+      <Tooltip placement="top" title="Редактировать">
+        <Icon
+          name="Edit"
+          onClick={() => setModalOpen(true)}
+          size={32}
+          className="cursor-pointer text-blue-500 hover:text-red-500 transition-colors min-h-[41px]"
+        />
+      </Tooltip>
       <Modal title="Создание нового сотрудника" state={isModalOpen} setState={setModalOpen}>
         <form className="flex flex-col gap-2 mt-4" onSubmit={handleSubmit(handleUpdate)}>
           <Controller
@@ -119,6 +133,38 @@ export const ActionsRenderer = (params: CustomCellRendererProps<actualWorkersRes
           />
           <div className="flex flex-row items-center gap-5">
             <Controller
+              control={control}
+              name="facilityId"
+              render={({ field }) => (
+                <Select
+                  containerClassName={clsx(
+                    workerData?.facilityPeriods?.length ? "w-5/6" : "w-full"
+                  )}
+                  optionFilterProp="label"
+                  options={allFacilities?.data?.items?.map((facility) => ({
+                    value: facility.id,
+                    label: facility.name
+                  }))}
+                  showSearch
+                  errorMessage={errors?.facilityId?.message}
+                  label="Объект"
+                  {...field}
+                />
+              )}
+            />
+            {!!workerData?.facilityPeriods?.length && (
+              <Button
+                className="h-7 w-1/6 mt-[13px]"
+                onClick={() => {
+                  setHistoryModalType("facility");
+                  setHistoryModalOpen(true);
+                }}>
+                История
+              </Button>
+            )}
+          </div>
+          <div className="flex flex-row items-center gap-5">
+            <Controller
               rules={{
                 required: "Должность обязательна"
               }}
@@ -141,43 +187,11 @@ export const ActionsRenderer = (params: CustomCellRendererProps<actualWorkersRes
                 />
               )}
             />
-            {workerData?.positionPeriods?.length && (
+            {!!workerData?.positionPeriods?.length && (
               <Button
                 className="h-7 w-1/6 mt-[13px]"
                 onClick={() => {
                   setHistoryModalType("position");
-                  setHistoryModalOpen(true);
-                }}>
-                История
-              </Button>
-            )}
-          </div>
-          <div className="flex flex-row items-center gap-5">
-            <Controller
-              control={control}
-              name="facilityId"
-              render={({ field }) => (
-                <Select
-                  containerClassName={clsx(
-                    workerData?.facilityPeriods?.length ? "w-5/6" : "w-full"
-                  )}
-                  optionFilterProp="label"
-                  options={allFacilities?.data?.items?.map((facility) => ({
-                    value: facility.id,
-                    label: facility.name
-                  }))}
-                  showSearch
-                  errorMessage={errors?.facilityId?.message}
-                  label="Объект"
-                  {...field}
-                />
-              )}
-            />
-            {workerData?.facilityPeriods?.length && (
-              <Button
-                className="h-7 w-1/6 mt-[13px]"
-                onClick={() => {
-                  setHistoryModalType("facility");
                   setHistoryModalOpen(true);
                 }}>
                 История
@@ -206,7 +220,7 @@ export const ActionsRenderer = (params: CustomCellRendererProps<actualWorkersRes
                   />
                 )}
               />
-              {workerData?.masterPeriods?.length && (
+              {!!workerData?.masterPeriods?.length && (
                 <Button
                   className="h-7 w-1/6 mt-[13px]"
                   onClick={() => {
@@ -242,7 +256,7 @@ export const ActionsRenderer = (params: CustomCellRendererProps<actualWorkersRes
                 />
               )}
             />
-            {workerData?.employmentPeriods?.length && (
+            {!!workerData?.employmentPeriods?.length && (
               <Button
                 className="h-7 w-1/6 mt-[13px]"
                 onClick={() => {
@@ -289,7 +303,7 @@ export const ActionsRenderer = (params: CustomCellRendererProps<actualWorkersRes
               )}
             />
 
-            {workerData?.masterPeriods?.length && (
+            {!!workerData?.masterPeriods?.length && (
               <Button
                 className="h-7 w-1/6"
                 onClick={() => {

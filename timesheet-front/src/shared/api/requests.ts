@@ -6,7 +6,8 @@ import {
   actualWorkersResponseType,
   createWorkerType,
   workersByFacilityIdType,
-  workersResponseType
+  workersResponseType,
+  workerStatusType
 } from "../types/employees";
 import { facilitiyType, masterFacilityType } from "../types/facilities";
 import { workLogsChangeResponseType } from "../types/logs";
@@ -121,33 +122,52 @@ export const apiRequests = {
       url: "/positions"
     });
   },
-  createPosition: async ({ name }: Pick<positionType, "name">) => {
+  getPositionsByFacilityId: async (facilityId?: number) => {
+    if (!facilityId) return Promise.reject([]);
+    return apiConfigRequests<positionType[]>({
+      method: "get",
+      url: `positions/byFacility/${facilityId}`
+    });
+  },
+
+  createPosition: async ({ name, facilities }: Pick<positionType, "name" | "facilities">) => {
     return apiConfigRequests<positionType>({
       method: "post",
       url: "/positions",
       data: {
-        name
+        name,
+        ...(facilities?.length && {
+          facilities: facilities
+        })
       }
     });
   },
-  updatePosition: async ({ id, name }: Pick<positionType, "name" | "id">) => {
+  updatePosition: async ({
+    id,
+    name,
+    facilities
+  }: Pick<positionType, "name" | "id" | "facilities">) => {
     return apiConfigRequests<positionType>({
       method: "patch",
       url: `/positions/${id}`,
       data: {
-        name
+        name,
+        ...(facilities?.length && {
+          facilities
+        })
       }
     });
   },
 
-  getWorkers: async ({ searchName }: { searchName?: string }) => {
+  getWorkers: async ({ searchName, status }: { searchName?: string; status: workerStatusType }) => {
     return apiConfigRequests<actualWorkersResponseType[]>({
       method: "get",
       url: "/employees",
       params: {
         ...(searchName && {
           searchName
-        })
+        }),
+        status
       }
     });
   },

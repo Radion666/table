@@ -1,7 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Column, DataType, HasMany, Model, Table } from 'sequelize-typescript';
+import {
+  BelongsToMany,
+  Column,
+  DataType,
+  HasMany,
+  Model,
+  Table,
+} from 'sequelize-typescript';
 import { FacilityPeriod } from 'src/facility-periods/facility-periods.model';
 import { MasterFacilities } from 'src/master_facilities/master-facilities.model';
+import { PositionFacility } from 'src/positions-facility/positions-facility.model';
+import { Positions } from 'src/positions/positions.model';
 
 interface FacilitiyCreationAttrs {
   name: string;
@@ -61,4 +70,7 @@ export class Facilities extends Model<Facilities, FacilitiyCreationAttrs> {
 
   @HasMany(() => FacilityPeriod)
   facilityPeriods: FacilityPeriod[];
+
+  @BelongsToMany(() => Positions, () => PositionFacility)
+  positions: Positions[];
 }

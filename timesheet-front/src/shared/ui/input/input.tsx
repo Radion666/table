@@ -22,12 +22,12 @@ export const Input: FC<InputProps> = ({ isPassword, label, errorMessage, isPhone
         <MaskedInput
           mask={"+70000000000"}
           {...props}
-          className={clsx("w-full h-10", props.className && props.className)}
+          className={clsx("w-full min-h-10 max-h-10", props.className && props.className)}
         />
       ) : (
         <InputComponent
           {...props}
-          className={clsx("w-full h-10", props.className && props.className)}
+          className={clsx("w-full min-h-10 max-h-10", props.className && props.className)}
         />
       )}
 

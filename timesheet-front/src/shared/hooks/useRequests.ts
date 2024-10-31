@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { apiRequests } from "../api/requests";
+import { workerStatusType } from "../types/employees";
 
 import { useGetUser } from "./useGetUser";
 
@@ -18,7 +19,7 @@ export type defaultPaginatedType = { page: number; pageSize: number };
 
 export const useGetAllFacilities = (params: defaultPaginatedType) => {
   const { ...data } = useQuery({
-    queryKey: ["all facilities", params.page, params.pageSize],
+    queryKey: ["all facilities", params?.page, params?.pageSize],
     queryFn: () => apiRequests.getAllFacilities({ ...params }),
     staleTime: 60000,
     gcTime: 60000
@@ -42,14 +43,15 @@ export const useGetAllPositions = () => {
   };
 };
 
-export const useGetAllWorkers = (params: { searchName?: string }) => {
-  const { searchName } = { ...params };
+export const useGetAllWorkers = (params: { searchName?: string; status: workerStatusType }) => {
+  const { searchName, status } = { ...params };
 
   const { ...data } = useQuery({
-    queryKey: ["all workers", searchName],
+    queryKey: ["all workers", searchName, status],
     queryFn: () =>
       apiRequests.getWorkers({
-        searchName
+        searchName,
+        status
       }),
     staleTime: 60000,
     gcTime: 60000

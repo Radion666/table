@@ -30,6 +30,8 @@ interface TableCellProps {
   employmentPeriods: employmentPeriodsType[];
   facilityPeriods: facilityPeriodsType[];
   lastIsOutOfTown: boolean;
+  userShortName?: string;
+  userPosition?: string;
 }
 
 export const TableCell: FC<TableCellProps> = memo(
@@ -45,7 +47,9 @@ export const TableCell: FC<TableCellProps> = memo(
     isLast,
     employmentPeriods,
     facilityPeriods,
-    lastIsOutOfTown
+    lastIsOutOfTown,
+    userPosition,
+    userShortName
   }) => {
     const { userRole } = useGetUser();
     const [errorMsg, setErrorMsg] = useState<string>("Недоступно");
@@ -98,7 +102,7 @@ export const TableCell: FC<TableCellProps> = memo(
               setErrorMsg("Удален\nиз\nобъекта");
               return true;
             }
-            setErrorMsg("Н/у");
+            // setErrorMsg("Н/у");
             return true;
           }
         }
@@ -133,7 +137,7 @@ export const TableCell: FC<TableCellProps> = memo(
 
           if (newPeriod.status === "working") {
             if (dayjs(newPeriod?.startDate)?.isAfter(cellDate)) {
-              setErrorMsg("Н/У");
+              // setErrorMsg("Н/У");
             }
           }
           if (
@@ -211,11 +215,11 @@ export const TableCell: FC<TableCellProps> = memo(
         tabIndex={-1}
         className={clsx(
           className && className,
-          "min-w-16 flex-1  border-r-[1px]  flex items-center justify-center text-center z-20  max-w-16 ",
+          "min-w-12 flex-1  border-r-[1px]  flex items-center justify-center text-center z-20  max-w-12",
           isWeekend && "bg-gray-300",
           fieldType === "input" && "",
           (isDisabled || !allowedToMaster || isNotAllowed) &&
-            "bg-slate-50 opacity-50  cursor-not-allowed"
+            "bg-slate-100 opacity-50  cursor-not-allowed"
         )}>
         {isLast ? (
           <>
@@ -265,6 +269,11 @@ export const TableCell: FC<TableCellProps> = memo(
                   <>{label}</>
                 ) : fieldType === "info" ? (
                   <Indentificators />
+                ) : fieldType === "employee" ? (
+                  <div>
+                    <div>{userShortName ?? ""}</div>
+                    <div className="text-gray-300">{userPosition ?? ""}</div>
+                  </div>
                 ) : (
                   <CellInput
                     value={value}

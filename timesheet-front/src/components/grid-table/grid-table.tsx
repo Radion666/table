@@ -7,6 +7,8 @@ import "ag-grid-community/styles/ag-grid.css"; // Mandatory CSS required by the 
 import "ag-grid-community/styles/ag-theme-quartz.css"; // Optional Theme applied to the Data Grid
 import clsx from "clsx";
 
+import { Loader } from "../loader/loader";
+
 export type GridColumnsType<T> = (ColDef<T> | ColGroupDef<T>)[];
 
 interface GridTableProps {
@@ -48,6 +50,7 @@ export const GridTable: FC<GridTableProps> = ({
       rowSelection: undefined,
       rowMultiSelectWithClick: false,
       animateRows: false,
+      loadingOverlayComponent: Loader,
       ...gridOptionsParams
     };
   }, [defaultColDefParams, gridOptionsParams]);

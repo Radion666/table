@@ -1,5 +1,15 @@
-import { Column, DataType, HasMany, Model, Table } from 'sequelize-typescript';
+import {
+  BelongsToMany,
+  Column,
+  DataType,
+  HasMany,
+  Model,
+  Table,
+} from 'sequelize-typescript';
+import { Facility } from 'src/facilities/entities/facility.entity';
+import { Facilities } from 'src/facilities/facilities.model';
 import { PositionPeriod } from 'src/position-periods/position-periods.model';
+import { PositionFacility } from 'src/positions-facility/positions-facility.model';
 
 @Table({ tableName: 'positions' })
 export class Positions extends Model<Positions> {
@@ -19,4 +29,7 @@ export class Positions extends Model<Positions> {
 
   @HasMany(() => PositionPeriod)
   positionPeriods: PositionPeriod[];
+
+  @BelongsToMany(() => Facilities, () => PositionFacility)
+  facilities: Facility[];
 }

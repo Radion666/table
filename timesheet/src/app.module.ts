@@ -18,6 +18,7 @@ import { FacilityPeriodsModule } from './facility-periods/facility-periods.modul
 import { MasterPeriodsModule } from './master-periods/master-periods.module';
 import { PositionPeriodsModule } from './position-periods/position-periods.module';
 import { OutOfTownPeriodsModule } from './out-of-town-periods/out-of-town-periods.module';
+import { PositionsFacilityModule } from './positions-facility/positions-facility.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { OutOfTownPeriodsModule } from './out-of-town-periods/out-of-town-period
     MasterPeriodsModule,
     PositionPeriodsModule,
     OutOfTownPeriodsModule,
+    PositionsFacilityModule,
   ],
   controllers: [],
   providers: [

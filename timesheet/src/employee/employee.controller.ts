@@ -13,6 +13,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { Roles } from 'src/auth/roles-auth.decorator';
 import { RolesGuards } from 'src/auth/roles.guard';
 import { UserDecorator } from 'src/common/UserDecorator/UserDecorator';
+import { EmploymentStatus } from 'src/employment-periods/employment-periods.model';
 import { User } from 'src/users/user.model';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
@@ -42,11 +43,18 @@ export class EmployeeController {
     description: 'Поиск по ФИО',
     required: false,
   })
+  @ApiQuery({
+    name: 'status',
+    type: String,
+    description: 'Статус сотрудников',
+    required: false,
+  })
   findAll(
     @UserDecorator() user: User,
     @Query('searchName') searchName?: string,
+    @Query('status') status?: EmploymentStatus,
   ) {
-    return this.employeeService.findAll(user, searchName);
+    return this.employeeService.findAll(user, searchName, status);
   }
 
   @Roles('admin', 'master')

@@ -1,4 +1,9 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import dayjs from 'dayjs';
 import { Op } from 'sequelize';
@@ -56,6 +61,23 @@ export class EmployeeService {
       throw new HttpException(
         'Пользователь с таким номером телефона уже существует',
         HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const position = await this.positionModel.findOne({
+      where: { id: createEmployeeDto.positionId },
+      include: [
+        {
+          model: Facilities,
+          where: { id: createEmployeeDto.facilityId }, // Фильтруем по facilityId
+          through: { attributes: [] }, // Исключаем атрибуты промежуточной таблицы
+        },
+      ],
+    });
+
+    if (!position) {
+      throw new BadRequestException(
+        'Переданная должность не связана с указанным объектом',
       );
     }
 
@@ -286,11 +308,11 @@ export class EmployeeService {
     }
   }
 
-  async findAll(user: User, searchName?: string) {
+  async findAll(user: User, searchName?: string, status?: EmploymentStatus) {
     //TODO
     //Добавить проверку на user
 
-    const whereConditions = {};
+    const whereConditions = {} as any;
 
     if (searchName) {
       const searchTerms = searchName
@@ -306,8 +328,17 @@ export class EmployeeService {
       }));
     }
 
+    if (status) {
+      if (
+        !Object.values(EmploymentStatus).includes(status as EmploymentStatus)
+      ) {
+        throw new BadRequestException('Был передан не существуюющий статус');
+      }
+      whereConditions.lastStatus = status; // Добавляем условие для статуса
+    }
+
     const employees = await this.employeeModel.findAll({
-      ...(searchName && {
+      ...((searchName || status) && {
         where: whereConditions,
       }),
       order: [['createdAt', 'ASC']],

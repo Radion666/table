@@ -2,19 +2,21 @@ import { TotalCellRenderer } from "../timesheet/components/total-cell-renderer/t
 import { TotalHeaderRenderer } from "../timesheet/components/total-header-renderer/total-header-renderer";
 import { headerType } from "../timesheet/timesheet";
 
+import { TableLocationHeader } from "./../timesheet/components/table-location-header/table-location-header";
+
 export const defaultHeaders: headerType[] = [
   {
     label: "Работник",
-    // value: (obj) => `${obj.fullName} + ${obj.position}`,
-    value: (obj) => `${obj.fullName}`,
+    value: (obj) => `${obj.fullName} + ${obj.lastPosition?.name}`,
+    // value: () => <TableEmployeeRenderer />,
 
-    className: "min-w-48 flex-1 sticky left-0 bg-white z-40 ",
-    fieldType: "text",
+    className: "!min-w-48 flex-1 sticky left-0 bg-white z-40 ",
+    fieldType: "employee",
     type: "worker"
   },
   {
-    label: "Местный (0) / неместный (1)",
-    className: "min-w-28 flex-1 sticky left-48 bg-white z-40 border-r-1 border-gray-500",
+    label: TableLocationHeader,
+    className: "min-w-12 flex-1 sticky left-48 bg-white z-40 border-r-1 border-gray-500 max-w-12",
     fieldType: "text",
     type: "location",
     value: (obj) => String(obj.lastIsOutOfTown ? 1 : 0)
@@ -31,7 +33,7 @@ export const defaultHeaders: headerType[] = [
     fieldType: "text",
     renderer: TotalHeaderRenderer,
     cellRenderer: TotalCellRenderer,
-    className: "min-w-[395px]",
+    className: "!min-w-[395px]",
     type: "total"
   }
   // {

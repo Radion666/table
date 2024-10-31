@@ -17,6 +17,16 @@ export const positionsColumns: GridColumnsType<positionType> = [
     flex: 1
   },
   {
+    headerName: "Объекты",
+    field: "name",
+    minWidth: 200,
+    flex: 1,
+    valueGetter: (props) => {
+      const data = props?.data?.facilities;
+      return data?.map((el) => el.name).join(", ") || "";
+    }
+  },
+  {
     headerName: "Действия",
     minWidth: 200,
     flex: 1,

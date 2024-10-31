@@ -22,10 +22,10 @@ import { getShortUserFio, removeLeadingZeroFromDate } from "~src/shared/utils/de
 
 type tableValueType = (object: employeeType) => string;
 
-export type fieldType = "input" | "text" | "info";
+export type fieldType = "input" | "text" | "info" | "employee";
 export type headerCellType = "worker" | "location" | "field" | "total" | "info";
 export interface headerType {
-  label: string;
+  label: string | (() => React.JSX.Element);
   type: headerCellType;
   value: keyof employeeType | tableValueType | string;
   className?: HTMLProps<HTMLElement>["className"];
@@ -414,10 +414,9 @@ export const TimesheetPage = () => {
 
   return (
     <div className="flex flex-col flex-1 p-5 ">
-      <div className="flex justify-between">
+      <div className="flex justify-between mb-4">
         <div className="flex gap-5 items-center">
-          <div>
-            <span className="font-bold">Текущая дата: </span>{" "}
+          <div className="font-bold">
             {monthsNameByNumberLocal[currentMonth]} {currentYear}
           </div>
           <Button
@@ -485,13 +484,13 @@ export const TimesheetPage = () => {
       <div className="flex-1" ref={containerRef}>
         <div
           ref={headerRef}
-          className="flex rounded-t-md  overflow-x-hidden scrollbar-hide border-l-[1px] border-r-[1px] md:min-w-[calc(100vw-200px)] md:max-w-[calc(100vw-200px)] min-h-[110px] max-h-[110px]">
+          className="flex rounded-t-md  overflow-x-hidden scrollbar-hide border-l-[1px] border-r-[1px] md:min-w-[calc(100vw-140px)] md:max-w-[calc(100vw-140px)] min-h-[110px] max-h-[110px]">
           {tableHeaders.map((day, index) => (
             <div
-              key={day.label}
+              key={index}
               className={clsx(
                 day.className && day.className,
-                "min-w-16 border-b-[1px] border-b-black flex-1 border-r-[1px] bg-[#fafafa]  shadow-md flex items-center justify-center text-center ",
+                "min-w-12 max-w-12 border-b-[1px] border-b-black flex-1 border-r-[1px] bg-[#fafafa]  shadow-md flex items-center justify-center text-center ",
                 day.isWeekend && "bg-gray-300",
                 day.dayName && "flex flex-col"
               )}>
@@ -507,7 +506,7 @@ export const TimesheetPage = () => {
                       day.dayName && "border-b-[1px] flex items-center justify-center h-1/2 w-full",
                       !day.dayName && "h-full"
                     )}>
-                    {day.label}
+                    {typeof day.label === "string" ? day.label : day.label()}
                   </div>
                   {day.dayName && (
                     <div className="uppercase h-1/2 items-center justify-center flex">
@@ -520,7 +519,7 @@ export const TimesheetPage = () => {
           ))}
         </div>
         <Scrollbar
-          className="w-full border-l-[1px] border-r-[1px] md:min-w-[calc(100vw-200px)] md:max-w-[calc(100vw-200px)] md:min-h-[calc(100vh-200px)] md:max-h-[calc(100vh-200px)] min-h-[calc(100vh-325px)] max-h-[calc(100vh-325px)] "
+          className="w-full border-l-[1px] border-r-[1px] md:min-w-[calc(100vw-140px)] md:max-w-[calc(100vw-140px)] md:min-h-[calc(100vh-200px)] md:max-h-[calc(100vh-200px)] min-h-[calc(100vh-325px)] max-h-[calc(100vh-325px)] "
           viewRef={contentRef}
           onViewScroll={(props) => {
             headerRef?.current?.scrollTo({
@@ -536,6 +535,7 @@ export const TimesheetPage = () => {
             }}>
             {rowVirtualizer.getVirtualItems().map((virtualRow) => {
               const ppl = innerData[virtualRow.index];
+              ppl.fullName;
 
               const isLast = virtualRow.index === innerData?.length - 1;
 
@@ -570,6 +570,8 @@ export const TimesheetPage = () => {
                               label={
                                 typeof day.value === "function" ? day.value(ppl) : ppl[day.value]
                               }
+                              userShortName={ppl.fullName}
+                              userPosition={ppl?.lastPosition?.name}
                               employmentPeriods={ppl.employmentPeriods}
                               facilityPeriods={ppl?.facilityPeriods}
                               value={ppl?.dates?.[day.value]}
