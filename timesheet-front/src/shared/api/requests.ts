@@ -9,7 +9,11 @@ import {
   workersResponseType,
   workerStatusType
 } from "../types/employees";
-import { facilitiyType, masterFacilityType } from "../types/facilities";
+import {
+  facilitiyType,
+  facilityTimesheetSettingType,
+  masterFacilityType
+} from "../types/facilities";
 import { workLogsChangeResponseType } from "../types/logs";
 import { positionType } from "../types/positions";
 import { roleType } from "../types/roles";
@@ -65,13 +69,16 @@ export const apiRequests = {
     });
   },
 
-  getEmployees: (type?: string) => {
+  getEmployees: (type?: string, facilityId?: number) => {
     return apiConfigRequests<usersEmployeeType[]>({
       method: "get",
       url: "/users/employees",
       params: {
         ...(type && {
           type
+        }),
+        ...(facilityId && {
+          facilityId
         })
       }
     });
@@ -87,21 +94,42 @@ export const apiRequests = {
       }
     });
   },
-  createFacility: (name: string) => {
+  createFacility: ({
+    name,
+    mastersIds,
+    settings
+  }: {
+    name: string;
+    mastersIds: number[];
+    settings: facilityTimesheetSettingType;
+  }) => {
     return apiConfigRequests<facilitiyType>({
       method: "post",
       url: "/facilities",
       data: {
-        name
+        name,
+        mastersIds,
+        settings
       }
     });
   },
-  updateFacilityName: ({ id, newName }: { id: number; newName: string }) => {
+  updateFacilityName: ({
+    id,
+    newName,
+    mastersIds
+  }: {
+    id: number;
+    newName: string;
+    mastersIds: number[];
+  }) => {
     return apiConfigRequests({
       method: "patch",
       url: `/facilities/${id}`,
       data: {
-        name: newName
+        name: newName,
+        ...(mastersIds?.length && {
+          mastersIds
+        })
       }
     });
   },
@@ -210,6 +238,16 @@ export const apiRequests = {
   /**
    * Формат MM-YYYY
    */
+
+  getFacilityId: async (id?: number) => {
+    if (!id) return Promise.reject([]);
+    const { data } = await apiConfigRequests<facilitiyType>({
+      method: "get",
+      url: `/facilities/${id}`
+    });
+    return data;
+  },
+
   getWorkLogs: (date: string, id?: number) => {
     if (!id) return;
     return apiConfigRequests<employeesFromBackType[]>({
@@ -244,7 +282,8 @@ export const apiRequests = {
           newDates[j] = {
             day: +date?.day,
             night: +date?.night,
-            overwork: +date?.overwork
+            overwork: +date?.overwork,
+            total: +date?.total
           };
         }
       }

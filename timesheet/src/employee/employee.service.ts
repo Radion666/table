@@ -14,6 +14,7 @@ import {
 import { Facilities } from 'src/facilities/facilities.model';
 import { FacilityPeriod } from 'src/facility-periods/facility-periods.model';
 import { MasterPeriod } from 'src/master-periods/master-periods.model';
+import { MasterFacilities } from 'src/master_facilities/master-facilities.model';
 import { OutOfTownPeriod } from 'src/out-of-town-periods/out-of-town-periods';
 import { PositionPeriod } from 'src/position-periods/position-periods.model';
 import { Positions } from 'src/positions/positions.model';
@@ -41,6 +42,8 @@ export class EmployeeService {
     private outOfTownPeriodModel: typeof OutOfTownPeriod,
     @InjectModel(PositionPeriod)
     private positionPeriodModel: typeof PositionPeriod,
+    @InjectModel(MasterFacilities)
+    private masterFacilitiesModel: typeof MasterFacilities,
   ) {}
 
   async validateDto(createEmployeeDto: UpdateEmployeeDto, id?: number) {
@@ -69,8 +72,8 @@ export class EmployeeService {
       include: [
         {
           model: Facilities,
-          where: { id: createEmployeeDto.facilityId }, // Фильтруем по facilityId
-          through: { attributes: [] }, // Исключаем атрибуты промежуточной таблицы
+          where: { id: createEmployeeDto.facilityId },
+          through: { attributes: [] },
         },
       ],
     });
@@ -88,6 +91,17 @@ export class EmployeeService {
     if (!isPositionExists && createEmployeeDto.positionId) {
       throw new HttpException(
         `Должности с id - ${createEmployeeDto.positionId} не найден`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const isFacilityExists = await this.facilityModel.findByPk(
+      createEmployeeDto.facilityId,
+    );
+
+    if (!isFacilityExists && createEmployeeDto.facilityId) {
+      throw new HttpException(
+        `Объект с id - ${createEmployeeDto.facilityId} не найден`,
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -114,17 +128,20 @@ export class EmployeeService {
           HttpStatus.BAD_REQUEST,
         );
       }
-    }
 
-    const isFacilityExists = await this.facilityModel.findByPk(
-      createEmployeeDto.facilityId,
-    );
+      const isMasterRelatedToFacility =
+        await this.masterFacilitiesModel.findOne({
+          where: {
+            master_id: isRelatedMaster?.id,
+            facility_id: isFacilityExists?.id,
+          },
+        });
 
-    if (!isFacilityExists && createEmployeeDto.facilityId) {
-      throw new HttpException(
-        `Объект с id - ${createEmployeeDto.facilityId} не найден`,
-        HttpStatus.BAD_REQUEST,
-      );
+      if (!isMasterRelatedToFacility) {
+        throw new BadRequestException(
+          'Мастер не относится к выбранному объекту',
+        );
+      }
     }
   }
 

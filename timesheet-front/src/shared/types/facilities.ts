@@ -10,6 +10,7 @@ export interface facilitiyType {
     master_id: number;
     master: Pick<UserType, "lastName" | "firstName" | "middleName" | "phoneNumber">;
   }[];
+  settings: facilityTimesheetSettingType;
 }
 
 export interface masterFacilityType {
@@ -19,4 +20,17 @@ export interface masterFacilityType {
 export interface createFacilityWithMasterType {
   facilityName: string;
   masters: number[];
+  settings: facilityTimesheetSettingType;
 }
+
+export interface facilityTimesheetSettingType {
+  letters: true;
+  integers: worksheetTableFacilitySettingIntegersType;
+}
+
+export type worksheetTableFacilitySettingIntegersType = {
+  allowDay: boolean;
+  allowNight: boolean;
+  allowOverwork: boolean;
+  allowOnlyTotal: boolean;
+};

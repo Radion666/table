@@ -21,15 +21,13 @@ export const RolesPage = () => {
 
   return (
     <div className="flex flex-1 justify-center p-5 ">
-      {data?.data && (
-        <GridTable
-          rowData={data?.data?.filter((role) => role.name !== "worker")}
-          columns={rolesColumns}
-          defaultColDefParams={{
-            sortable: true
-          }}
-        />
-      )}
+      <GridTable
+        rowData={data?.data?.filter((role) => role.name !== "worker") ?? []}
+        columns={rolesColumns}
+        defaultColDefParams={{
+          sortable: true
+        }}
+      />
     </div>
   );
 };

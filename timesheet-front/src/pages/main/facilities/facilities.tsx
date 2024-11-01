@@ -20,7 +20,10 @@ import {
   useGetAllPositions
 } from "~src/shared/hooks/useRequests";
 import { createWorkerType } from "~src/shared/types/employees";
-import { createFacilityWithMasterType } from "~src/shared/types/facilities";
+import {
+  createFacilityWithMasterType,
+  worksheetTableFacilitySettingIntegersType
+} from "~src/shared/types/facilities";
 import { Button } from "~src/shared/ui/button/button";
 import { Checkbox } from "~src/shared/ui/checkbox/checkbox";
 import { Input } from "~src/shared/ui/input/input";
@@ -47,6 +50,45 @@ export const FacilitiesPage = () => {
 
   const { data: masterData, isFetching: isMastersFetching } = useGetAllMasters();
 
+  const [facilitySettings, setFacilitySettings] = useState<
+    Pick<createFacilityWithMasterType, "settings">
+  >({
+    settings: {
+      integers: {
+        allowDay: true,
+        allowNight: true,
+        allowOverwork: true,
+        allowOnlyTotal: false
+      },
+      letters: true
+    }
+  });
+
+  const updateFacilitySettings = (
+    key: keyof worksheetTableFacilitySettingIntegersType,
+    value: boolean
+  ) => {
+    setFacilitySettings((prev) => ({
+      settings: {
+        ...prev.settings,
+        integers: {
+          ...prev?.settings?.integers,
+          [key]: value,
+          ...((key === "allowDay" || key === "allowNight" || key === "allowOverwork") &&
+            value && {
+              allowOnlyTotal: false
+            }),
+          ...(key === "allowOnlyTotal" &&
+            value && {
+              allowDay: false,
+              allowNight: false,
+              allowOverwork: false
+            })
+        }
+      }
+    }));
+  };
+
   const {
     control,
     formState: { errors },
@@ -71,31 +113,18 @@ export const FacilitiesPage = () => {
       return toast.error("Необходимо заполнить наименование");
     }
     setBtnLoading(true);
+
     apiRequests
-      .createFacility(facilityName)
-      .then(async (res) => {
-        const data = res.data;
-
-        const masters = selectedMasters.map((masterId) => +masterId);
-
-        if (data.id && masters?.length) {
-          await apiRequests
-            .updateMasterFacility({
-              facility_id: data?.id,
-              master_id: selectedMasters.map((masterId) => +masterId)
-            })
-            .then(() => {
-              setModalOpen(false);
-              reset();
-              toast.success("Объект был создан");
-              refetch();
-            });
-        } else {
-          reset();
-          setModalOpen(false);
-          toast.success("Объект был создан");
-          refetch();
-        }
+      .createFacility({
+        mastersIds: selectedMasters.map((masterId) => +masterId),
+        name: facilityName,
+        settings: facilitySettings.settings
+      })
+      .then(() => {
+        setModalOpen(false);
+        reset();
+        toast.success("Объект был создан");
+        refetch();
       })
       .finally(() => {
         setBtnLoading(false);
@@ -164,15 +193,15 @@ export const FacilitiesPage = () => {
           </div>
         )}
 
-        {data?.data && (
-          <>
-            <GridTable
-              rowData={data?.data?.items}
-              columns={facilitiesColumns}
-              defaultColDefParams={{
-                sortable: true
-              }}
-            />
+        <>
+          <GridTable
+            rowData={data?.data?.items ?? []}
+            columns={facilitiesColumns}
+            defaultColDefParams={{
+              sortable: true
+            }}
+          />
+          {data?.data && (
             <Pagination
               onChange={onChange}
               current={currentPage}
@@ -183,8 +212,8 @@ export const FacilitiesPage = () => {
               pageSize={pageSize}
               align="center"
             />
-          </>
-        )}
+          )}
+        </>
       </div>
       {isModalOpen && (
         <Modal title="Создание объекта" state={isModalOpen} setState={setModalOpen}>
@@ -223,8 +252,51 @@ export const FacilitiesPage = () => {
                 );
               }}
             />
+            <div>
+              <div className="text-center font-medium ">Настройки в табеле</div>
+              <div className="flex justify-center items-center mt-5 w-full justify-between">
+                <div>
+                  <Checkbox
+                    checked={facilitySettings?.settings?.integers?.allowOnlyTotal}
+                    label="Общее значение для ячейки"
+                    onChange={(e) => {
+                      updateFacilitySettings("allowOnlyTotal", e?.target?.checked);
+                    }}
+                  />
+                </div>
+                <div>
+                  <div>
+                    <Checkbox
+                      label="День"
+                      checked={facilitySettings?.settings?.integers?.allowDay}
+                      onChange={(e) => {
+                        updateFacilitySettings("allowDay", e?.target?.checked);
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <Checkbox
+                      label="Ночь"
+                      checked={facilitySettings?.settings?.integers?.allowNight}
+                      onChange={(e) => {
+                        updateFacilitySettings("allowNight", e?.target?.checked);
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <Checkbox
+                      label="Переработки"
+                      checked={facilitySettings?.settings?.integers?.allowOverwork}
+                      onChange={(e) => {
+                        updateFacilitySettings("allowOverwork", e?.target?.checked);
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
 
-            <Button loading={isBtnLoading} htmlType="submit" className="mt-4">
+            <Button loading={isBtnLoading} htmlType="submit" className="mt-4 ml-auto mr-auto">
               Сохранить
             </Button>
           </form>

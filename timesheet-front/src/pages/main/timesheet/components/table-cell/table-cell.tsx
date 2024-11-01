@@ -1,7 +1,7 @@
 import { FC, HTMLProps, memo, useMemo, useState } from "react";
 
 import clsx from "clsx";
-import dayjs from "dayjs";
+import dayjs, { Dayjs } from "dayjs";
 
 import { dateValueType, employeeType } from "../../data";
 import { fieldType, headerCellType } from "../../timesheet";
@@ -13,6 +13,7 @@ import { dateRegex, daysInMonth, parseDate } from "~src/pages/main/utils/utils";
 import { workerStatuses } from "~src/pages/main/workers/utils/constants";
 import { useGetUser } from "~src/shared/hooks/useGetUser";
 import { employmentPeriodsType, facilityPeriodsType } from "~src/shared/types/employees";
+import { facilityTimesheetSettingType } from "~src/shared/types/facilities";
 
 interface TableCellProps {
   label: string;
@@ -32,7 +33,21 @@ interface TableCellProps {
   lastIsOutOfTown: boolean;
   userShortName?: string;
   userPosition?: string;
+  facilitySettings?: facilityTimesheetSettingType;
 }
+
+const checkDate = (dateToCheck: Dayjs) => {
+  const today = dayjs();
+  const dayOfMonth = today.date();
+
+  const date = dayjs(dateToCheck);
+
+  if (dayOfMonth >= 15) {
+    return date.isBefore(today.startOf("month"));
+  } else {
+    return date.isBefore(today.subtract(1, "month").startOf("month"));
+  }
+};
 
 export const TableCell: FC<TableCellProps> = memo(
   ({
@@ -49,7 +64,8 @@ export const TableCell: FC<TableCellProps> = memo(
     facilityPeriods,
     lastIsOutOfTown,
     userPosition,
-    userShortName
+    userShortName,
+    facilitySettings
   }) => {
     const { userRole } = useGetUser();
     const [errorMsg, setErrorMsg] = useState<string>("Недоступно");
@@ -107,13 +123,7 @@ export const TableCell: FC<TableCellProps> = memo(
           }
         }
 
-        const isTodayFifteenth = today.date() >= 15;
-        const currentMonth = today.month();
-        const currentYear = today.year();
-        if (
-          isTodayFifteenth &&
-          (cellDate.month() !== currentMonth || cellDate.year() !== currentYear)
-        ) {
+        if (checkDate(cellDate)) {
           setErrorMsg("");
           return true;
         }
@@ -210,6 +220,55 @@ export const TableCell: FC<TableCellProps> = memo(
       return false;
     }, [dayValue, isLast]);
 
+    const integers = facilitySettings?.integers;
+
+    const getAllowableHours = () => {
+      const result = [];
+
+      if (integers?.allowOnlyTotal) {
+        return ["часов"];
+      }
+
+      if (integers?.allowDay) {
+        result.push("дневных");
+      }
+      if (integers?.allowNight) {
+        result.push("ночных");
+      }
+      if (integers?.allowOverwork) {
+        result.push("переработка");
+      }
+
+      return result.length > 0 ? result : [];
+    };
+
+    const getAllowedFields = () => {
+      const fields = [];
+
+      if (integers?.allowOnlyTotal) {
+        return ["total"];
+      }
+
+      if (integers?.allowDay) {
+        fields.push("day");
+      }
+      if (integers?.allowNight) {
+        fields.push("night");
+      }
+      if (integers?.allowOverwork) {
+        fields.push("overwork");
+      }
+
+      return fields.length > 0 ? fields : [];
+    };
+
+    const allowableHours = getAllowableHours();
+    const numberOfHours = allowableHours.length;
+
+    const allowedFields = getAllowedFields();
+
+    const heightPercentage = numberOfHours === 1 ? 100 : 100 / numberOfHours;
+
     return (
       <div
         tabIndex={-1}
@@ -225,13 +284,13 @@ export const TableCell: FC<TableCellProps> = memo(
           <>
             {headerCellType === "worker" ? (
               <div className="flex flex-col h-full w-full">
-                <div className="h-1/3 border-b-[1px] flex items-center justify-center">
-                  Итого: дневных
-                </div>
-                <div className="h-1/3 border-b-[1px] flex items-center justify-center">
-                  Итого: ночных
-                </div>
-                <div className="h-1/3 flex items-center justify-center">Итого: переработка</div>
+                {allowableHours?.map((el) => (
+                  <div
+                    className="border-b-[1px] flex items-center justify-center"
+                    style={{ height: `${heightPercentage}%` }}>
+                    Итого: {el}
+                  </div>
+                ))}
               </div>
             ) : (
               <>
@@ -241,15 +300,13 @@ export const TableCell: FC<TableCellProps> = memo(
                   <>
                     {headerCellType === "field" && typeof value === "object" ? (
                       <div className="flex flex-col w-full h-full">
-                        <div className="h-1/3 w-full flex items-center justify-center border-b-[1px]">
-                          {value?.day}
-                        </div>
-                        <div className="h-1/3 w-full flex items-center justify-center border-b-[1px]">
-                          {value?.night}
-                        </div>
-                        <div className="h-1/3 w-full flex items-center justify-center">
-                          {value?.overwork}
-                        </div>
+                        {allowedFields?.map((fld) => (
+                          <div
+                            className=" w-full flex items-center justify-center border-b-[1px]"
+                            style={{ height: `${heightPercentage}%` }}>
+                            {value[`${fld}`]}
+                          </div>
+                        ))}
                       </div>
                     ) : (
                       ""
@@ -268,7 +325,7 @@ export const TableCell: FC<TableCellProps> = memo(
                 {fieldType === "text" ? (
                   <>{label}</>
                 ) : fieldType === "info" ? (
-                  <Indentificators />
+                  <Indentificators facilitySettings={facilitySettings} />
                 ) : fieldType === "employee" ? (
                   <div>
                     <div>{userShortName ?? ""}</div>
@@ -281,6 +338,7 @@ export const TableCell: FC<TableCellProps> = memo(
                     field={dayValue}
                     date={cellParsedDate}
                     isDisabled={isDisabled}
+                    facilitySettings={facilitySettings}
                   />
                 )}
               </>

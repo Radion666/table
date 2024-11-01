@@ -1,16 +1,5 @@
 import { employmentPeriodsType, facilityPeriodsType } from "~src/shared/types/employees";
 
-const people: employeeType[] = [];
-
-for (let i = 1; i <= 2; i++) {
-  people.push({
-    fullName: `ФИО ${i}`, // Замените на реальные имена, если нужно
-    position: `Профессия ${i}`, // Можно заменить на реальные профессии
-    local: Math.round(Math.random()), // Случайно выбираем 0 или 1
-    dates: {}
-  });
-}
-
 export interface employeeTotalType {
   hoursOfDay: number;
   hoursOfNight: number;
@@ -19,6 +8,7 @@ export interface employeeTotalType {
   countOfWeekendWorkDays: number;
   hoursOfOverworkTwoHours: number;
   hoursOfOverworkMoreTwoHours: number;
+  hoursOfOnlyTotalHours: number;
 }
 
 export type employeeDatesType = Record<
@@ -28,6 +18,7 @@ export type employeeDatesType = Record<
       day: string;
       night: string;
       overwork: string;
+      total: string;
     }
 >;
 
@@ -55,6 +46,7 @@ export type datesToBackType = Record<
       day: number;
       night: number;
       overwork: number;
+      total: number;
     }
   | null
 >;
@@ -65,6 +57,7 @@ export type dateToBackValueType =
       day: number;
       night: number;
       overwork: number;
+      total: number;
     }
   | null;
 
@@ -91,12 +84,12 @@ export type dateValueType =
       day: string;
       night: string;
       overwork: string;
+      total: string;
     };
 
 export interface filledDateValueTye {
   day: string;
   night: string;
   overwork: string;
+  total: string;
 }
-
-export { people };

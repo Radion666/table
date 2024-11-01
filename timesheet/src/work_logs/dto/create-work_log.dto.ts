@@ -35,6 +35,10 @@ class DailyLogDTO {
   @IsOptional()
   @IsString()
   overwork?: string;
+
+  @IsOptional()
+  @IsString()
+  total?: string;
 }
 
 class TotalDTO {

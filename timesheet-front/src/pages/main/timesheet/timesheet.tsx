@@ -16,6 +16,7 @@ import { employeeDatesType, employeeTotalType, employeeType, filledDateValueTye 
 import { Scrollbar } from "~src/components/scrollbar/Scrollbar";
 import { apiRequests } from "~src/shared/api/requests";
 import { monthsNameByNumberLocal } from "~src/shared/constants/default";
+import { facilityTimesheetSettingType } from "~src/shared/types/facilities";
 import { Button } from "~src/shared/ui/button/button";
 import { Icon } from "~src/shared/ui/icon/icon";
 import { getShortUserFio, removeLeadingZeroFromDate } from "~src/shared/utils/default";
@@ -32,9 +33,21 @@ export interface headerType {
   fieldType: fieldType;
   isWeekend?: boolean;
   dayName?: string;
-  renderer?: MemoExoticComponent<() => React.JSX.Element>;
+  renderer?: MemoExoticComponent<
+    ({
+      facilityTimesheetSetting
+    }: {
+      facilityTimesheetSetting?: facilityTimesheetSettingType;
+    }) => React.JSX.Element
+  >;
   cellRenderer?: MemoExoticComponent<
-    ({ employeeTotal }: { employeeTotal: employeeTotalType }) => React.JSX.Element
+    ({
+      employeeTotal,
+      facilityTimesheetSetting
+    }: {
+      employeeTotal: employeeTotalType;
+      facilityTimesheetSetting?: facilityTimesheetSettingType;
+    }) => React.JSX.Element
   >;
 }
 
@@ -53,6 +66,24 @@ export const TimesheetPage = () => {
     queryKey: [facilityId, currentDate, "table data by date facility"],
     queryFn: () => apiRequests.getWorkLogs(dayjs(currentDate)?.format("MM-YYYY"), +facilityId)
   });
+
+  const { data: facilityByIdData } = useQuery({
+    queryKey: ["facility by id", facilityId],
+    queryFn: () => apiRequests.getFacilityId(+facilityId),
+    enabled: facilityId !== undefined,
+    gcTime: 600000,
+    staleTime: 600000
+  });
+
+  const [facilitySettings, setFacilitySettings] = useState<
+    facilityTimesheetSettingType | undefined
+  >(undefined);
+
+  useEffect(() => {
+    if (facilityByIdData) {
+      setFacilitySettings(facilityByIdData?.settings);
+    }
+  }, [facilityByIdData]);
 
   const { data: allWorkers, isLoading: allWorkersLoading } = useQuery({
     queryKey: ["all worker by id", facilityId, currentDate],
@@ -81,6 +112,9 @@ export const TimesheetPage = () => {
 
   useEffect(() => {
     const newDates = {};
+
+    const integers = facilitySettings?.integers;
+
     for (let i = 0; i < daysInMonth.length; i++) {
       const day = daysInMonth[i].date;
       newDates[day] = "";
@@ -92,7 +126,8 @@ export const TimesheetPage = () => {
       filledDates[i] = {
         day: "0",
         night: "0",
-        overwork: "0"
+        overwork: "0",
+        total: "0"
       };
     }
 
@@ -120,7 +155,8 @@ export const TimesheetPage = () => {
               hoursOfNight: 0,
               hoursOfOverworkMoreTwoHours: 0,
               hoursOfOverworkTwoHours: 0,
-              hoursOfWeekendWorkDays: 0
+              hoursOfWeekendWorkDays: 0,
+              hoursOfOnlyTotalHours: 0
             }
           };
         }),
@@ -168,9 +204,15 @@ export const TimesheetPage = () => {
                   newDates[keyOfNew] = "";
                 } else {
                   newDates[keyOfNew] = {
-                    day: String(newDate?.day),
-                    night: String(newDate?.night),
-                    overwork: String(newDate?.overwork)
+                    ...(integers?.allowOnlyTotal
+                      ? {
+                          total: String(newDate.total)
+                        }
+                      : {
+                          ...(integers?.allowDay && { day: String(newDate.day) }),
+                          ...(integers?.allowNight && { night: String(newDate.night) }),
+                          ...(integers?.allowOverwork && { overwork: String(newDate.overwork) })
+                        })
                   };
                 }
               }
@@ -209,9 +251,15 @@ export const TimesheetPage = () => {
                   newDates[keyOfNew] = "";
                 } else {
                   newDates[keyOfNew] = {
-                    day: String(newDate?.day),
-                    night: String(newDate?.night),
-                    overwork: String(newDate?.overwork)
+                    ...(integers?.allowOnlyTotal
+                      ? {
+                          total: String(newDate.total)
+                        }
+                      : {
+                          ...(integers?.allowDay && { day: String(newDate.day) }),
+                          ...(integers?.allowNight && { night: String(newDate.night) }),
+                          ...(integers?.allowOverwork && { overwork: String(newDate.overwork) })
+                        })
                   };
                 }
               }
@@ -235,7 +283,8 @@ export const TimesheetPage = () => {
                 hoursOfNight: 0,
                 hoursOfOverworkMoreTwoHours: 0,
                 hoursOfOverworkTwoHours: 0,
-                hoursOfWeekendWorkDays: 0
+                hoursOfWeekendWorkDays: 0,
+                hoursOfOnlyTotalHours: 0
               }
             });
           }
@@ -252,7 +301,7 @@ export const TimesheetPage = () => {
         setInnerData(newInnerData);
       }
     }
-  }, [allWorkers?.data, daysInMonth, facilityId, logsData?.data]);
+  }, [allWorkers?.data, daysInMonth, facilityId, facilitySettings?.integers, logsData?.data]);
 
   const rowVirtualizer = useVirtualizer({
     count: innerData.length,
@@ -300,10 +349,15 @@ export const TimesheetPage = () => {
       let countOfWeekendWorkDays: number = 0;
       let hoursOfOverworkTwoHours: number = 0;
       let hoursOfOverworkMoreTwoHours: number = 0;
+      let hoursOfOnlyTotalHours: number = 0;
 
       for (const i in copyOfPrev[indexOfCurrentId].dates) {
         const element = copyOfPrev[indexOfCurrentId].dates[i];
         const isWeekend = daysInMonth.find((day) => day.date === i)?.isWeekend;
+
+        if (typeof element === "object" && facilitySettings?.integers) {
+          hoursOfOnlyTotalHours += +element.total;
+        }
 
         if (typeof element === "object" && element.overwork && !isWeekend) {
           const value = +element.overwork;
@@ -318,13 +372,15 @@ export const TimesheetPage = () => {
         }
 
         if (typeof element === "object" && !isWeekend) {
-          hoursOfDay += +element.day;
-          hoursOfNight += +element.night;
-          if (+element?.day || +element?.night) countOfWorkDays += 1;
+          hoursOfDay += +element.day || 0 || +element?.total || 0;
+          hoursOfNight += +(element.night || 0) || +element?.total || 0;
+          if (+element?.day || +element?.night || +element?.total) countOfWorkDays += 1;
         } else if (typeof element === "object" && isWeekend) {
-          hoursOfWeekendWorkDays += (+element?.day || 0) + (+element.night || 0);
+          hoursOfWeekendWorkDays += facilitySettings?.integers?.allowOnlyTotal
+            ? +element?.total
+            : (+element?.day || 0) + (+element.night || 0);
 
-          if (+element.day || +element.night) {
+          if (+element.day || +element.night || +element?.total) {
             countOfWeekendWorkDays += 1;
           }
         }
@@ -337,7 +393,8 @@ export const TimesheetPage = () => {
         countOfWeekendWorkDays,
         hoursOfWeekendWorkDays,
         hoursOfOverworkTwoHours,
-        hoursOfOverworkMoreTwoHours
+        hoursOfOverworkMoreTwoHours,
+        hoursOfOnlyTotalHours
       };
       return copyOfPrev;
     });
@@ -352,6 +409,7 @@ export const TimesheetPage = () => {
         let totalDayHours: number = 0;
         let totalNigthHours: number = 0;
         let totalOverworkHours: number = 0;
+        let totalTotalHours: number = 0;
 
         const date = totalDays[i].date;
 
@@ -366,12 +424,14 @@ export const TimesheetPage = () => {
             totalDayHours += +currentDayValue.day;
             totalNigthHours += +currentDayValue.night;
             totalOverworkHours += +currentDayValue.overwork;
+            totalTotalHours += +currentDayValue?.total;
           }
         }
         copyOfPrev[copyOfPrev?.length - 1].dates[date] = {
           day: String(totalDayHours),
           night: String(totalNigthHours),
-          overwork: String(totalOverworkHours)
+          overwork: String(totalOverworkHours),
+          total: String(totalTotalHours)
         };
       }
 
@@ -382,6 +442,7 @@ export const TimesheetPage = () => {
       let countOfWeekendWorkDays: number = 0;
       let hoursOfOverworkTwoHours: number = 0;
       let hoursOfOverworkMoreTwoHours: number = 0;
+      let hoursOfOnlyTotalHours: number = 0;
 
       const totalOfAllElements = copyOfPrev?.flatMap((prevCopy) =>
         prevCopy.isTotal ? undefined : prevCopy.total
@@ -396,6 +457,7 @@ export const TimesheetPage = () => {
         countOfWeekendWorkDays += +(totalOfElement?.countOfWeekendWorkDays ?? 0);
         hoursOfOverworkTwoHours += +(totalOfElement?.hoursOfOverworkTwoHours ?? 0);
         hoursOfOverworkMoreTwoHours += +(totalOfElement?.hoursOfOverworkMoreTwoHours ?? 0);
+        hoursOfOnlyTotalHours += +(totalOfElement?.hoursOfOnlyTotalHours ?? 0);
       }
 
       copyOfPrev[copyOfPrev.length - 1].total = {
@@ -405,7 +467,8 @@ export const TimesheetPage = () => {
         countOfWeekendWorkDays,
         hoursOfWeekendWorkDays,
         hoursOfOverworkTwoHours,
-        hoursOfOverworkMoreTwoHours
+        hoursOfOverworkMoreTwoHours,
+        hoursOfOnlyTotalHours
       };
 
       return copyOfPrev;
@@ -473,7 +536,7 @@ export const TimesheetPage = () => {
             apiRequests.saveWorkLogs(innerData, facilityId ? +facilityId : undefined).then(() => {
               toast.success("Успешно обновлено");
               setTimeout(() => {
-                window.location.reload();
+                // window.location.reload();
               }, 500);
             });
           }}>
@@ -496,7 +559,7 @@ export const TimesheetPage = () => {
               )}>
               {day.renderer ? (
                 <>
-                  <day.renderer />
+                  <day.renderer facilityTimesheetSetting={facilitySettings} />
                 </>
               ) : (
                 <div className="w-full h-full">
@@ -535,7 +598,6 @@ export const TimesheetPage = () => {
             }}>
             {rowVirtualizer.getVirtualItems().map((virtualRow) => {
               const ppl = innerData[virtualRow.index];
-              ppl.fullName;
 
               const isLast = virtualRow.index === innerData?.length - 1;
 
@@ -556,7 +618,10 @@ export const TimesheetPage = () => {
                       return (
                         <>
                           {day?.cellRenderer ? (
-                            <day.cellRenderer employeeTotal={ppl.total} />
+                            <day.cellRenderer
+                              employeeTotal={ppl.total}
+                              facilityTimesheetSetting={facilitySettings}
+                            />
                           ) : (
                             <TableCell
                               key={index}
@@ -577,12 +642,15 @@ export const TimesheetPage = () => {
                               value={ppl?.dates?.[day.value]}
                               isWeekend={day.isWeekend ?? false}
                               id={ppl.employeeId}
+                              facilitySettings={facilitySettings}
                               handleChange={(field, value, type) => {
                                 setInnerData((prev) => {
                                   const copyOfPrev = structuredClone(prev);
                                   const indexOfCurrentId = copyOfPrev.findIndex(
                                     (prevField) => prevField.employeeId === ppl.employeeId
                                   );
+
+                                  const integers = facilitySettings?.integers;
 
                                   if (type) {
                                     copyOfPrev[indexOfCurrentId].dates = {
@@ -604,9 +672,15 @@ export const TimesheetPage = () => {
                                     copyOfPrev[indexOfCurrentId].dates = {
                                       ...copyOfPrev[indexOfCurrentId].dates,
                                       [field]: {
-                                        day: "",
-                                        night: "",
-                                        overwork: ""
+                                        ...(integers?.allowOnlyTotal
+                                          ? {
+                                              total: ""
+                                            }
+                                          : {
+                                              ...(integers?.allowDay && { day: "" }),
+                                              ...(integers?.allowNight && { night: "" }),
+                                              ...(integers?.allowOverwork && { overwork: "" })
+                                            })
                                       }
                                     };
                                   } else {

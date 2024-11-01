@@ -46,8 +46,17 @@ export class UsersController {
     description: 'Наименование роли EN',
     required: false,
   })
-  getEmployees(@Query('type') type?: string) {
-    return this.usersService.getEmployees(type);
+  @ApiQuery({
+    name: 'facilityId',
+    type: Number,
+    description: 'ID объекта',
+    required: false,
+  })
+  getEmployees(
+    @Query('type') type?: string,
+    @Query('facilityId') facilityId?: number,
+  ) {
+    return this.usersService.getEmployees(type, facilityId);
   }
 
   @Patch(':id')

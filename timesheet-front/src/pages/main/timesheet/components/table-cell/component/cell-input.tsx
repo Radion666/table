@@ -5,6 +5,7 @@ import dayjs, { Dayjs } from "dayjs";
 
 import { dateValueType } from "../../../data";
 
+import { facilityTimesheetSettingType } from "~src/shared/types/facilities";
 import { Button } from "~src/shared/ui/button/button";
 import { Icon } from "~src/shared/ui/icon/icon";
 import { Modal } from "~src/shared/ui/modal/modal";
@@ -16,6 +17,7 @@ interface CellInputProps {
   field: string;
   date?: Dayjs;
   isDisabled?: boolean;
+  facilitySettings?: facilityTimesheetSettingType;
 }
 
 const cellLetters = [
@@ -41,7 +43,14 @@ const cellLetters = [
   }
 ];
 
-export const CellInput: FC<CellInputProps> = ({ value, handleChange, field, date, isDisabled }) => {
+export const CellInput: FC<CellInputProps> = ({
+  value,
+  handleChange,
+  field,
+  date,
+  isDisabled,
+  facilitySettings
+}) => {
   const [isModalOpen, setModalOpen] = useState<boolean>(false);
 
   const isFirstRender = useRef<boolean>(true);
@@ -94,6 +103,8 @@ export const CellInput: FC<CellInputProps> = ({ value, handleChange, field, date
       setBorderColor("");
     }
   }, [value]);
+
+  const integers = facilitySettings?.integers;
 
   return (
     <>
@@ -148,7 +159,7 @@ export const CellInput: FC<CellInputProps> = ({ value, handleChange, field, date
             Object?.keys?.(value)?.map((key) => {
               return (
                 <input
-                  className="w-[95%] rounded-md ml-auto mr-auto h-1/3 border-[1px] text-center hover:border-blue-200"
+                  className="w-[95%] rounded-md ml-auto mr-auto  border-[1px] text-center hover:border-blue-200"
                   value={value[key]}
                   onChange={(e) => {
                     const value = e.target.value;
@@ -159,10 +170,34 @@ export const CellInput: FC<CellInputProps> = ({ value, handleChange, field, date
 
                     const regex = /^[0-8]?$/;
                     const overworkRegex = /^(0|[1-9]|1[0-2])$/;
+                    const totalRegex = /^(0|[1-9]|1[0-9]|2[0-4])$/;
 
-                    if ((key === "overwork" ? overworkRegex : regex).test(value)) {
+                    let isValid = false;
+
+                    if (integers?.allowOnlyTotal) {
+                      isValid = totalRegex.test(value);
+                    } else if (
+                      integers?.allowDay &&
+                      integers?.allowNight &&
+                      integers?.allowOverwork
+                    ) {
+                      isValid = regex.test(value);
+                    } else if (
+                      (integers?.allowDay && integers?.allowNight) ||
+                      (integers?.allowNight && integers?.allowOverwork) ||
+                      (integers?.allowDay && integers?.allowOverwork)
+                    ) {
+                      isValid = overworkRegex.test(value);
+                    } else {
+                      isValid = totalRegex.test(value);
+                    }
+
+                    if (isValid) {
                       handleChange(field, value, key);
                     }
+                  }}
+                  style={{
+                    height: `${100 / Object.keys(value).length}%`
                   }}
                 />
               );

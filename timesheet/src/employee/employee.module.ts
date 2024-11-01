@@ -6,6 +6,7 @@ import { EmploymentPeriod } from 'src/employment-periods/employment-periods.mode
 import { Facilities } from 'src/facilities/facilities.model';
 import { FacilityPeriod } from 'src/facility-periods/facility-periods.model';
 import { MasterPeriod } from 'src/master-periods/master-periods.model';
+import { MasterFacilities } from 'src/master_facilities/master-facilities.model';
 import { OutOfTownPeriod } from 'src/out-of-town-periods/out-of-town-periods';
 import { PositionPeriod } from 'src/position-periods/position-periods.model';
 import { Positions } from 'src/positions/positions.model';
@@ -32,6 +33,7 @@ import { EmployeeService } from './employee.service';
       MasterPeriod,
       OutOfTownPeriod,
       PositionPeriod,
+      MasterFacilities,
     ]),
     AuthModule,
     RolesModule,

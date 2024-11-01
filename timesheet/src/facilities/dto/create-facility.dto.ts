@@ -1,5 +1,23 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsNotEmpty,
+  IsObject,
+  IsOptional,
+  IsString,
+} from 'class-validator';
+
+export interface facilityTimeSheetSettingType {
+  letters: true;
+  integers: worksheetTableFacilitySettingIntegersType;
+}
+
+export type worksheetTableFacilitySettingIntegersType = {
+  allowDay: boolean;
+  allowNight: boolean;
+  allowOverwork: boolean;
+  allowOnlyTotal: boolean;
+};
 
 export class CreateFacilityDto {
   @ApiProperty({
@@ -25,4 +43,15 @@ export class CreateFacilityDto {
   @IsString()
   @IsOptional()
   readonly description: string;
+
+  @ApiProperty({
+    example: '[1,2,3,4,5]',
+    description: 'Массив мастеров',
+  })
+  @IsOptional()
+  @IsArray()
+  mastersIds?: number[];
+
+  @IsObject()
+  settings: facilityTimeSheetSettingType;
 }

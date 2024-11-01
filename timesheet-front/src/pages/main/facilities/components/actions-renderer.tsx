@@ -53,34 +53,19 @@ export const ActionsRenderer = memo((params: CustomCellRendererProps<facilitiyTy
     if (!facilityName) {
       return toast.error("Необходимо заполнить наименование объека");
     }
-    if (facilityName?.trim() !== params?.data?.name?.trim()) {
-      await apiRequests
-        .updateFacilityName({
-          id: +params?.data?.id,
-          newName: facilityName
-        })
-        .then(() => {
-          setModalOpen(false);
+    await apiRequests
+      .updateFacilityName({
+        id: +params?.data?.id,
+        newName: facilityName,
+        mastersIds: selectedMasters.map((masterId) => +masterId)
+      })
+      .then(() => {
+        setModalOpen(false);
 
-          queryClient.refetchQueries({
-            queryKey: ["all facilities"]
-          });
+        queryClient.refetchQueries({
+          queryKey: ["all facilities"]
         });
-    }
-
-    if (selectedMasters) {
-      await apiRequests
-        .updateMasterFacility({
-          facility_id: params?.data?.id,
-          master_id: selectedMasters.map((masterId) => +masterId)
-        })
-        .then(() => {
-          setModalOpen(false);
-          queryClient.refetchQueries({
-            queryKey: ["all facilities"]
-          });
-        });
-    }
+      });
   };
 
   const navigate = useNavigate();

@@ -12,11 +12,7 @@ import { apiRequests } from "~src/shared/api/requests";
 import { regexes } from "~src/shared/constants/default";
 import { useAppSelector } from "~src/shared/hooks";
 import { useGetUser } from "~src/shared/hooks/useGetUser";
-import {
-  useGetAllFacilities,
-  useGetAllMasters,
-  useGetAllWorkers
-} from "~src/shared/hooks/useRequests";
+import { useGetAllFacilities, useGetAllWorkers } from "~src/shared/hooks/useRequests";
 import { createWorkerType, workerStatusType } from "~src/shared/types/employees";
 import { Button } from "~src/shared/ui/button/button";
 import { Checkbox } from "~src/shared/ui/checkbox/checkbox";
@@ -51,15 +47,14 @@ export const WorkersPage = () => {
     pageSize: 1000
   });
 
-  const { data: allMastersData, isLoading: isAllMastersLoading } = useGetAllMasters();
-
   const {
     getValues,
     control,
     handleSubmit,
     reset,
     watch,
-    formState: { errors }
+    formState: { errors },
+    setValue
   } = useForm<createWorkerType>({
     defaultValues: {
       createdById: user?.id,
@@ -75,6 +70,19 @@ export const WorkersPage = () => {
       registeredAddress: "",
       status: "working"
     }
+  });
+
+  useEffect(() => {
+    setValue("masterId", null);
+    setValue("positionId", null);
+  }, [watch("facilityId")]);
+
+  const { data: allMastersData, isLoading: isAllMastersLoading } = useQuery({
+    queryKey: ["all masters", getValues("facilityId")],
+    queryFn: () => apiRequests.getEmployees("master", getValues("facilityId") ?? undefined),
+    staleTime: 60000,
+    gcTime: 60000,
+    enabled: userRole !== "master" && !!watch("facilityId")
   });
 
   const { data: positionsData, isFetching: isPositionsFetching } = useQuery({
@@ -134,18 +142,17 @@ export const WorkersPage = () => {
 
           <Button onClick={() => setModalOpen(true)}>Создать нового сотрудника</Button>
         </div>
-        {workersData?.data && (
-          <GridTable
-            rowData={workersData?.data}
-            columns={workersColumns}
-            defaultColDefParams={{
-              sortable: true
-            }}
-            gridProps={{
-              loading: isFetching
-            }}
-          />
-        )}
+
+        <GridTable
+          rowData={workersData?.data ?? []}
+          columns={workersColumns}
+          defaultColDefParams={{
+            sortable: true
+          }}
+          gridProps={{
+            loading: isFetching
+          }}
+        />
       </div>
       <Modal title="Создание нового сотрудника" state={isModalOpen} setState={setModalOpen}>
         <form className="flex flex-col gap-2 mt-4" onSubmit={handleSubmit(handleCreate)}>

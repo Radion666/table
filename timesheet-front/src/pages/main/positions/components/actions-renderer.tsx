@@ -103,7 +103,7 @@ export const ActionsRenderer = (params: CustomCellRendererProps<positionType>) =
                   loading={isFacilitiesLoading}
                   mode="multiple"
                   options={allFacilities?.data?.items?.map((facility) => ({
-                    label: facility.id,
+                    label: facility.name,
                     value: facility.id
                   }))}
                   {...field}

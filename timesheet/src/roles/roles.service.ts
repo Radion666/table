@@ -44,6 +44,14 @@ export class RolesService {
     return role?.name;
   }
 
+  async findMasterId() {
+    return await this?.rolesRepository?.findOne({
+      where: {
+        name: 'master',
+      },
+    });
+  }
+
   async update(id: number, updateRoleDto: UpdateRoleDto) {
     const [_, [updatedRole]] = await this.rolesRepository.update(
       updateRoleDto,

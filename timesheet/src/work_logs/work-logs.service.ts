@@ -11,6 +11,7 @@ import dayjs from 'dayjs';
 import { ChangeLog } from 'src/change_logs/change-logs.model';
 import { ChangeLogsService } from 'src/change_logs/change-logs.service';
 import {
+  cleanData,
   isValidDateFormat,
   parseDate,
   validateParamsDate,
@@ -25,7 +26,11 @@ import { UpdateWorkLogDto } from './dto/update-work_log.dto';
 import { WorkLog } from './work-logs.model';
 
 import { Workbook } from 'exceljs';
-import { getShortUserFio, workerStatuses } from 'src/common/utils/common';
+import {
+  checkDateForSheetValidation,
+  getShortUserFio,
+  workerStatuses,
+} from 'src/common/utils/common';
 import { getDaysInMonth } from 'src/common/utils/date-utils';
 import {
   applyAlignment,
@@ -33,6 +38,7 @@ import {
   setSumWithStep,
 } from 'src/common/utils/excel-utils';
 import { EmployeeService } from 'src/employee/employee.service';
+import { worksheetTableFacilitySettingIntegersType } from 'src/facilities/dto/create-facility.dto';
 import { PassThrough } from 'stream';
 
 @Injectable()
@@ -121,6 +127,11 @@ export class WorkLogsService {
 
     const facilityId = workLogs?.[0]?.facilityId;
 
+    const facilitySettings = await this.facilitiesModel.findByPk(facilityId);
+    const integers = facilitySettings?.settings?.integers;
+
+    const isTotalInteger = integers?.allowOnlyTotal;
+
     const allowedEmployees = await this.employeeService.findByFacilityId(
       facilityId,
       date,
@@ -133,6 +144,7 @@ export class WorkLogsService {
           logData.dates as any,
           logData.facilityId,
           allowedEmployees,
+          integers,
         );
       } catch (error) {
         errors.push(`${error.message}`);
@@ -154,21 +166,47 @@ export class WorkLogsService {
 
       const date = `${month}-${year}`;
 
-      const newDates = {};
+      const newDatesCopy = {};
 
       for (const key in dates) {
         const date = dates[key];
 
         if (typeof date === 'string') {
-          newDates[key] = date;
+          newDatesCopy[key] = date;
         } else if (typeof date === 'object') {
-          if (!date?.day && !date?.night && !date?.overwork) {
-            newDates[key] = null;
+          if (
+            isTotalInteger
+              ? !date?.total
+              : (integers?.allowDay &&
+                  integers?.allowNight &&
+                  integers?.allowOverwork &&
+                  !date?.day &&
+                  !date?.night &&
+                  !date?.overwork) ||
+                (integers?.allowDay &&
+                  integers?.allowNight &&
+                  !date?.day &&
+                  !date?.night) ||
+                (integers?.allowDay &&
+                  integers?.allowOverwork &&
+                  !date?.day &&
+                  !date?.overwork) ||
+                (integers?.allowNight &&
+                  integers?.allowOverwork &&
+                  !date?.night &&
+                  !date?.overwork) ||
+                (integers?.allowDay && !date?.day) ||
+                (integers?.allowNight && !date?.night) ||
+                (integers?.allowOverwork && !date?.overwork)
+          ) {
+            newDatesCopy[key] = null;
             continue;
           }
-          newDates[key] = date;
+          newDatesCopy[key] = date;
         }
       }
+
+      const newDates = cleanData(newDatesCopy, integers);
 
       const existingLog = await this.workLogModel.findOne({
         where: { employeeId, date: date, facilityId },
@@ -247,6 +285,7 @@ export class WorkLogsService {
     dates: WorkDaysType,
     facilityId: number,
     allowedEmployees: Employee[],
+    integers: worksheetTableFacilitySettingIntegersType,
   ): Promise<void> {
     if (!dates) {
       throw new Error('Не передан параметр dates');
@@ -293,23 +332,95 @@ export class WorkLogsService {
         const day = dateValue?.day ?? 0;
         const night = dateValue?.night ?? 0;
         const overwork = dateValue?.overwork ?? 0;
+        const total = dateValue?.total ?? 0;
 
-        if (day > 8) {
-          throw new Error(`Значение дня не может превышать 8 часов`);
-        }
+        if (integers?.allowOnlyTotal) {
+          if (day || night || overwork) {
+            throw new Error(
+              `В этой настройке табеля запрещено заполнять день, ночь или переработки`,
+            );
+          }
+          if (total > 24) {
+            throw new Error(
+              `Суммарное значение ячейки не может превышать 24 часа`,
+            );
+          }
+        } else {
+          if (total && !integers?.allowOnlyTotal) {
+            throw new Error(
+              `В этой настройке табеля запрещено одиночную оценку`,
+            );
+          }
+          if (integers?.allowDay === false && day) {
+            throw new Error(`Поле "день" запрещено заполнять`);
+          }
+          if (integers?.allowNight === false && night) {
+            throw new Error(`Поле "ночь" запрещено заполнять`);
+          }
+          if (integers?.allowOverwork === false && overwork) {
+            throw new Error(`Поле "переработка" запрещено заполнять`);
+          }
 
-        if (night > 8) {
-          throw new Error(`Значение ночи не может превышать 8 часов`);
-        }
+          const selectedCount =
+            (integers?.allowDay ? 1 : 0) +
+            (integers?.allowNight ? 1 : 0) +
+            (integers?.allowOverwork ? 1 : 0);
 
-        if (overwork > 8) {
-          throw new Error(`Значение перербаотки не может превышать 8 часов`);
-        }
+          const localTotal = (day || 0) + (night || 0) + (overwork || 0);
 
-        if (day + night + overwork > 24) {
-          throw new Error(
-            `Суммарное значение дня, ночи и переработок не может превышать 24 часа`,
-          );
+          if (selectedCount === 3) {
+            if (day > 8) {
+              throw new Error(`Значение дня не может превышать 8 часов`);
+            }
+            if (night > 8) {
+              throw new Error(`Значение ночи не может превышать 8 часов`);
+            }
+            if (overwork > 8) {
+              throw new Error(
+                `Значение переработки не может превышать 8 часов`,
+              );
+            }
+            if (localTotal > 24) {
+              throw new Error(
+                `Суммарное значение ячеек за дату не может превышать 24 часа`,
+              );
+            }
+          } else if (selectedCount === 2) {
+            if (day > 8 && integers?.allowDay) {
+              throw new Error(`Значение дня не может превышать 8 часов`);
+            }
+            if (night > 8 && integers?.allowNight) {
+              throw new Error(`Значение ночи не может превышать 8 часов`);
+            }
+            if (overwork > 8 && integers?.allowOverwork) {
+              throw new Error(
+                `Значение переработки не может превышать 8 часов`,
+              );
+            }
+            if (localTotal > 16) {
+              throw new Error(
+                `Суммарное значение ячеек за дату превышать 24 часа`,
+              );
+            }
+          } else if (selectedCount === 1) {
+            if (day > 8 && integers?.allowDay) {
+              throw new Error(`Значение дня не может превышать 8 часа`);
+            }
+            if (night > 8 && integers?.allowNight) {
+              throw new Error(`Значение ночи не может превышать 8 часа`);
+            }
+            if (overwork > 24 && integers?.allowOverwork) {
+              throw new Error(
+                `Значение переработки не может превышать 24 часа`,
+              );
+            }
+
+            if (localTotal > 24) {
+              throw new Error(
+                `Суммарное значение ячеек за дату не может превышать 24 часа`,
+              );
+            }
+          }
         }
       }
     }
@@ -325,6 +436,8 @@ export class WorkLogsService {
       );
     }
 
+    const isTotalInteger = integers?.allowOnlyTotal;
+
     const newDates = {};
 
     for (const key in dates) {
@@ -333,7 +446,31 @@ export class WorkLogsService {
       if (typeof date === 'string') {
         newDates[key] = date;
       } else if (typeof date === 'object') {
-        if (!date?.day && !date?.night && !date?.overwork) {
+        if (
+          isTotalInteger
+            ? !date?.total
+            : (integers?.allowDay &&
+                integers?.allowNight &&
+                integers?.allowOverwork &&
+                !date?.day &&
+                !date?.night &&
+                !date?.overwork) ||
+              (integers?.allowDay &&
+                integers?.allowNight &&
+                !date?.day &&
+                !date?.night) ||
+              (integers?.allowDay &&
+                integers?.allowOverwork &&
+                !date?.day &&
+                !date?.overwork) ||
+              (integers?.allowNight &&
+                integers?.allowOverwork &&
+                !date?.night &&
+                !date?.overwork) ||
+              (integers?.allowDay && !date?.day) ||
+              (integers?.allowNight && !date?.night) ||
+              (integers?.allowOverwork && !date?.overwork)
+        ) {
           newDates[key] = null;
           continue;
         }
@@ -351,14 +488,8 @@ export class WorkLogsService {
 
       const parsedDate = parseDate(date);
 
-      const today = dayjs();
-      const isTodayFifteenth = today.date() >= 15;
-      const currentMonth = today.month();
-      const currentYear = today.year();
       if (
-        isTodayFifteenth &&
-        (dayjs(parsedDate).month() !== currentMonth ||
-          dayjs(parsedDate).year() !== currentYear) &&
+        checkDateForSheetValidation(parsedDate) &&
         JSON.stringify(prevValue) !== JSON.stringify(newValue)
       ) {
         throw new BadRequestException(

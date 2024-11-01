@@ -25,7 +25,7 @@ export const TimeSheetLogsPage = () => {
 
   return (
     <div className="flex flex-1 flex-col gap-5 justify-center p-5">
-      {data?.data && <GridTable columns={workLogLogsColumns} rowData={data?.data?.items} />}
+      <GridTable columns={workLogLogsColumns} rowData={data?.data?.items ?? []} />
       {data?.data && (
         <Pagination
           onChange={onChange}

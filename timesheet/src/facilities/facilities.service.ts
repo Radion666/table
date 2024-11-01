@@ -5,6 +5,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Op } from 'sequelize';
 import { MasterFacilities } from 'src/master_facilities/master-facilities.model';
 import { Roles } from 'src/roles/role.model';
 import { User } from 'src/users/user.model';
@@ -20,6 +21,7 @@ export class FacilitiesService {
     private masterFacilitiesRepository: typeof MasterFacilities,
     @InjectModel(Roles) private rolesRepositoryy: typeof Roles,
     @InjectModel(User) private userReposity: typeof User,
+    // private masterFacilitiesService: MasterFacilitiesService,
   ) {}
 
   async create(createFacilityDto: CreateFacilityDto) {
@@ -27,6 +29,7 @@ export class FacilitiesService {
       await this.facilitiesRepository.findOne({
         where: {
           name: createFacilityDto.name,
+          settings: createFacilityDto.settings,
         },
       })
     ) {
@@ -35,7 +38,133 @@ export class FacilitiesService {
         HttpStatus.BAD_REQUEST,
       );
     }
-    return this.facilitiesRepository.create(createFacilityDto);
+    const createdFacility =
+      await this.facilitiesRepository.create(createFacilityDto);
+
+    await this.setMasterFacilities(
+      createdFacility?.id,
+      createFacilityDto?.mastersIds,
+    );
+
+    return createdFacility;
+  }
+
+  async validateMastersById(id: number) {
+    const masterRoleId = await this?.rolesRepositoryy?.findOne({
+      where: {
+        name: 'master',
+      },
+    });
+    const isFoundUser = await this.userReposity.findByPk(id);
+
+    if (!isFoundUser) {
+      throw new BadRequestException('Переданный мастер не найден');
+    }
+
+    if (isFoundUser?.role_id !== masterRoleId?.id) {
+      throw new BadRequestException('Переданный мастер является некорректным');
+    }
+  }
+
+  async setMasterFacilities(facilityId: number, mastersIds: number[]) {
+    if (mastersIds?.length) {
+      for (let i = 0; i < mastersIds?.length; i++) {
+        const master = mastersIds?.[i];
+        await this.validateMastersById(master);
+      }
+    }
+    await this.updateMasterFacility(facilityId, mastersIds ?? []);
+  }
+
+  async updateMasterFacility(id: number, mastersIds: number[]) {
+    if (!id) {
+      throw new HttpException(
+        'ID объекта не был передан',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const currentFacility = await this.masterFacilitiesRepository.findOne({
+      where: {
+        facility_id: id,
+      },
+    });
+
+    if (Array.isArray(mastersIds) && mastersIds?.length === 0) {
+      if (currentFacility) {
+        return this?.masterFacilitiesRepository?.destroy({
+          where: {
+            facility_id: id,
+          },
+        });
+      }
+
+      return;
+    }
+
+    if (!currentFacility) {
+      const newRelations = mastersIds.map((master_id) => ({
+        facility_id: id,
+        master_id,
+      }));
+
+      return await this.masterFacilitiesRepository.bulkCreate(newRelations);
+    }
+
+    await this.findOne(id);
+
+    const existingRelations = await this.masterFacilitiesRepository.findAll({
+      where: { facility_id: id },
+    });
+
+    const existingMasterIds = existingRelations.map(
+      (relation) => relation.master_id,
+    );
+
+    const mastersToUpdate = mastersIds;
+
+    const mastersToAdd = mastersToUpdate.filter(
+      (id) => !existingMasterIds.includes(id),
+    );
+
+    const mastersToRemove = existingMasterIds.filter(
+      (id) => !mastersToUpdate.includes(id),
+    );
+
+    for (const master_id of mastersToUpdate) {
+      await this.masterFacilitiesRepository.update(
+        { master_id },
+        {
+          where: {
+            facility_id: id,
+            master_id: master_id,
+          },
+          returning: true,
+        },
+      );
+    }
+
+    if (mastersToAdd.length > 0) {
+      const newRelations = mastersToAdd.map((master_id) => ({
+        master_id,
+        facility_id: id,
+      }));
+
+      await this.masterFacilitiesRepository.bulkCreate(newRelations);
+    }
+
+    if (mastersToRemove.length > 0) {
+      await this.masterFacilitiesRepository.destroy({
+        where: {
+          master_id: { [Op.in]: mastersToRemove },
+          facility_id: id,
+        },
+      });
+    }
+    const updatedRelations = await this.masterFacilitiesRepository.findAll({
+      where: { facility_id: id },
+    });
+    return updatedRelations;
   }
 
   async findAll(user: User, page: number, pageSize: number) {
@@ -151,18 +280,19 @@ export class FacilitiesService {
         HttpStatus.NOT_FOUND,
       );
     }
+    return foundFacility;
   }
 
   async update(id: number, updateFacilityDto: UpdateFacilityDto) {
     await this.findOne(id);
 
-    if (
-      await this.facilitiesRepository.findOne({
-        where: {
-          name: updateFacilityDto.name,
-        },
-      })
-    ) {
+    const foundFacility = await this.facilitiesRepository.findOne({
+      where: {
+        name: updateFacilityDto.name,
+      },
+    });
+
+    if (foundFacility && foundFacility?.id !== id) {
       throw new HttpException(
         'Объект с таким наименованием уже существует',
         HttpStatus.BAD_REQUEST,
@@ -178,6 +308,12 @@ export class FacilitiesService {
         returning: true,
       },
     );
+
+    await this.updateMasterFacility(
+      updatedFacilitiy.id,
+      updateFacilityDto.mastersIds ?? [],
+    );
+
     return updatedFacilitiy;
   }
 }

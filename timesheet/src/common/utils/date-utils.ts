@@ -91,3 +91,63 @@ export const validateParamsDate = (date: string) => {
     );
   }
 };
+
+export const cleanData = (data, integers) => {
+  const cleanedData = {};
+
+  for (const date in data) {
+    const entry = data[date];
+
+    // Если entry равно null, просто оставляем его
+    if (entry === null) {
+      cleanedData[date] = null;
+      continue;
+    }
+
+    if (typeof entry === 'string') {
+      cleanedData[date] = entry;
+      continue;
+    }
+
+    const { day, night, overwork } = entry;
+
+    if (integers.allowOnlyTotal) {
+      // Если allowOnlyTotal, удаляем day, night и overwork
+      cleanedData[date] = {
+        total: entry.total || null, // Оставляем только total
+      };
+    } else {
+      // Если allowDay, оставляем day
+      if (integers.allowDay) {
+        cleanedData[date] = { day: day || null };
+      }
+
+      // Если allowNight, оставляем night
+      if (integers.allowNight) {
+        cleanedData[date] = {
+          ...cleanedData[date],
+          night: night || null,
+        };
+      }
+
+      // Если allowOverwork, оставляем overwork
+      if (integers.allowOverwork) {
+        cleanedData[date] = {
+          ...cleanedData[date],
+          overwork: overwork || null,
+        };
+      }
+
+      // Если в cleanedData нет никаких полей, возвращаем null
+      if (
+        !cleanedData[date]?.day &&
+        !cleanedData[date]?.night &&
+        !cleanedData[date]?.overwork
+      ) {
+        cleanedData[date] = null;
+      }
+    }
+  }
+
+  return cleanedData;
+};

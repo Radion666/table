@@ -13,12 +13,7 @@ import { workersStatuses, workerStatuses } from "../utils/constants";
 import { apiRequests } from "~src/shared/api/requests";
 import { regexes } from "~src/shared/constants/default";
 import { useGetUser } from "~src/shared/hooks/useGetUser";
-import {
-  defaultQueryKeys,
-  refetchQuery,
-  useGetAllFacilities,
-  useGetAllMasters
-} from "~src/shared/hooks/useRequests";
+import { defaultQueryKeys, refetchQuery, useGetAllFacilities } from "~src/shared/hooks/useRequests";
 import { actualWorkersResponseType, createWorkerType } from "~src/shared/types/employees";
 import { Button } from "~src/shared/ui/button/button";
 import { Checkbox } from "~src/shared/ui/checkbox/checkbox";
@@ -44,9 +39,9 @@ export const ActionsRenderer = (params: CustomCellRendererProps<actualWorkersRes
     page: 1,
     pageSize: 1000
   });
-  const { data: allMastersData, isLoading: isAllMastersLoading } = useGetAllMasters();
 
   const {
+    setValue,
     control,
     handleSubmit,
     reset,
@@ -67,6 +62,19 @@ export const ActionsRenderer = (params: CustomCellRendererProps<actualWorkersRes
       registeredAddress: workerData?.registeredAddress,
       status: workerData?.lastStatus ?? undefined
     }
+  });
+
+  useEffect(() => {
+    setValue("masterId", null);
+    setValue("positionId", null);
+  }, [watch("facilityId")]);
+
+  const { data: allMastersData, isLoading: isAllMastersLoading } = useQuery({
+    queryKey: ["all masters", getValues("facilityId")],
+    queryFn: () => apiRequests.getEmployees("master", getValues("facilityId") ?? undefined),
+    staleTime: 60000,
+    gcTime: 60000,
+    enabled: userRole !== "master" && !!watch("facilityId")
   });
 
   const { data: positionsData, isFetching: isPositionsFetching } = useQuery({

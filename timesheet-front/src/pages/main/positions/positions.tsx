@@ -80,15 +80,13 @@ export const PositionsPage = () => {
         <div className="flex justify-end">
           <Button onClick={() => setModalOpen(true)}>Создать новую должность</Button>
         </div>
-        {positionsData?.data && (
-          <GridTable
-            rowData={positionsData?.data}
-            columns={positionsColumns}
-            defaultColDefParams={{
-              sortable: true
-            }}
-          />
-        )}
+        <GridTable
+          rowData={positionsData?.data ?? []}
+          columns={positionsColumns}
+          defaultColDefParams={{
+            sortable: true
+          }}
+        />
       </div>
       <Modal title="Создание должности" state={isModalOpen} setState={setModalOpen}>
         <form className="flex flex-col gap-2 mt-4" onSubmit={handleSubmit(createPosition)}>

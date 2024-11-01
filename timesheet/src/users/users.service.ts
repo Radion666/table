@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   HttpException,
   HttpStatus,
   Injectable,
@@ -7,6 +8,7 @@ import {
 import { InjectModel } from '@nestjs/sequelize';
 import { hash } from 'bcryptjs';
 import { Op } from 'sequelize';
+import { MasterFacilities } from 'src/master_facilities/master-facilities.model';
 import { Positions } from 'src/positions/positions.model';
 import { Roles } from 'src/roles/role.model';
 import { RolesService } from 'src/roles/roles.service';
@@ -155,7 +157,7 @@ export class UsersService {
     return users;
   }
 
-  async getEmployees(type?: string) {
+  async getEmployees(type?: string, facilityId?: number) {
     const allowedRoles =
       await this.roleService.getAllRoleNamesExcludingWorker();
 
@@ -190,6 +192,17 @@ export class UsersService {
             model: Roles,
             attributes: ['id', 'name', 'alt_name'],
           },
+
+          ...(facilityId
+            ? [
+                {
+                  model: MasterFacilities,
+                  where: { facility_id: facilityId },
+                  attributes: [],
+                  required: true,
+                },
+              ]
+            : []),
         ],
       });
     }
@@ -222,5 +235,18 @@ export class UsersService {
     });
 
     return employees;
+  }
+
+  async validateMastersById(id: number) {
+    const masterRoleId = await this.roleService.findMasterId();
+    const isFoundUser = await this.userRepository.findByPk(id);
+
+    if (!isFoundUser) {
+      throw new BadRequestException('Переданный мастер не найден');
+    }
+
+    if (isFoundUser?.role_id !== masterRoleId?.id) {
+      throw new BadRequestException('Переданный мастер является некорректным');
+    }
   }
 }

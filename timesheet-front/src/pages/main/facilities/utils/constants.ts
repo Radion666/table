@@ -29,6 +29,31 @@ export const facilitiesColumns: GridColumnsType<facilitiyType> = [
     }
   },
   {
+    headerName: "Настройки для числовых значений",
+    minWidth: 300,
+    valueGetter: (props) => {
+      const settings = props?.data?.settings?.integers;
+
+      const result = [];
+
+      if (settings?.allowDay) {
+        result.push("День");
+      }
+      if (settings?.allowNight) {
+        result.push("Ночь");
+      }
+      if (settings?.allowOverwork) {
+        result.push("Переработка");
+      }
+
+      if (settings?.allowOnlyTotal) {
+        result.push("Общие значения");
+      }
+
+      return result.length > 0 ? result.join(", ") : "";
+    }
+  },
+  {
     headerName: "Редактирование",
     minWidth: 300,
     flex: 1,

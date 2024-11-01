@@ -114,7 +114,9 @@ export class PositionsService {
       updatePositionDto.facilities &&
       updatePositionDto.facilities.length > 0
     ) {
-      await updatedPosition.$set('facilities', updatePositionDto.facilities); // Обновляем связи с объектами facilities
+      await updatedPosition.$set('facilities', updatePositionDto.facilities);
+    } else if (!updatePositionDto?.facilities) {
+      await updatedPosition.$set('facilities', []);
     }
 
     return updatedPosition;
