@@ -80,8 +80,6 @@ export const WorkersPage = () => {
   const { data: allMastersData, isLoading: isAllMastersLoading } = useQuery({
     queryKey: ["all masters", getValues("facilityId")],
     queryFn: () => apiRequests.getEmployees("master", getValues("facilityId") ?? undefined),
-    staleTime: 60000,
-    gcTime: 60000,
     enabled: userRole !== "master" && !!watch("facilityId")
   });
 

@@ -43,8 +43,6 @@ export const EmployeesPage = () => {
   const { data: roles, isFetching: isRolesFetching } = useQuery({
     queryKey: ["all roles"],
     queryFn: () => apiRequests.getRoles(),
-    staleTime: 1000000,
-    gcTime: 1000000,
     enabled: isModalOpen
   });
 

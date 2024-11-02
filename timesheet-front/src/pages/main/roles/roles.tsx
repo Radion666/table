@@ -10,9 +10,7 @@ export const RolesPage = () => {
   const { data, isFetching } = useQuery({
     queryKey: ["all roles"],
     queryFn: () => apiRequests.getRoles(),
-    retry: false,
-    gcTime: 100000,
-    staleTime: 100000
+    retry: false
   });
 
   if (isFetching) {

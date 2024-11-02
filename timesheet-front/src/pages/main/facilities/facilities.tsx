@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { Pagination } from "antd";
 import { Controller, useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 import { workersStatuses } from "../workers/utils/constants";
@@ -41,6 +42,8 @@ export const FacilitiesPage = () => {
     page: currentPage,
     pageSize: pageSize
   });
+
+  const [windowWidth, setWindowWidth] = useState<number>();
 
   useEffect(() => {
     if (data?.data?.totalPage) {
@@ -175,13 +178,28 @@ export const FacilitiesPage = () => {
     reset();
   }, [isModalOpen]);
 
+  useEffect(() => {
+    const checkWidth = () => {
+      setWindowWidth(window.innerWidth);
+    };
+    checkWidth();
+
+    window.addEventListener("resize", checkWidth);
+
+    return () => {
+      window.removeEventListener("resize", checkWidth);
+    };
+  }, []);
+
+  const navigate = useNavigate();
+
   if (isFetching) {
     return <Loader />;
   }
 
   return (
     <>
-      <div className="flex flex-1 flex-col gap-5 justify-center p-5">
+      <div className="flex flex-1 flex-col gap-5 justify-start p-5">
         {userRole !== "master" && (
           <div className="flex justify-end">
             <Button onClick={() => setModalOpen(true)}>Создать новый объект</Button>
@@ -194,14 +212,54 @@ export const FacilitiesPage = () => {
         )}
 
         <>
-          <GridTable
-            rowData={data?.data?.items ?? []}
-            columns={facilitiesColumns}
-            defaultColDefParams={{
-              sortable: true
-            }}
-          />
-          {data?.data && (
+          {(windowWidth ?? 1000) > 640 ? (
+            <GridTable
+              rowData={data?.data?.items ?? []}
+              columns={facilitiesColumns}
+              defaultColDefParams={{
+                sortable: true
+              }}
+            />
+          ) : (
+            <div className="flex flex-col gap-2 overflow-y-auto">
+              {data?.data?.items?.map((item) => {
+                const settings = item?.settings?.integers;
+
+                const result = [];
+
+                if (settings?.allowDay) {
+                  result.push("День");
+                }
+                if (settings?.allowNight) {
+                  result.push("Ночь");
+                }
+                if (settings?.allowOverwork) {
+                  result.push("Переработка");
+                }
+
+                if (settings?.allowOnlyTotal) {
+                  result.push("Общие значения");
+                }
+
+                return (
+                  <div className="border-[1px] p-4 rounded-md flex justify-between items-center ">
+                    <div>
+                      <div>{item.name}</div>
+                      {!!result?.length && <span className="text-sm">{result.join(", ")}</span>}
+                    </div>
+                    <Button
+                      onClick={() => {
+                        navigate(`/timesheet/${item?.id}`);
+                      }}>
+                      Табель
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {data?.data?.totalPage > 1 && (
             <Pagination
               onChange={onChange}
               current={currentPage}

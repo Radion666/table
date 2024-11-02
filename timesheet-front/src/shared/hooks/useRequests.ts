@@ -20,9 +20,7 @@ export type defaultPaginatedType = { page: number; pageSize: number };
 export const useGetAllFacilities = (params: defaultPaginatedType) => {
   const { ...data } = useQuery({
     queryKey: ["all facilities", params?.page, params?.pageSize],
-    queryFn: () => apiRequests.getAllFacilities({ ...params }),
-    staleTime: 60000,
-    gcTime: 60000
+    queryFn: () => apiRequests.getAllFacilities({ ...params })
   });
 
   return {
@@ -33,9 +31,7 @@ export const useGetAllFacilities = (params: defaultPaginatedType) => {
 export const useGetAllPositions = () => {
   const { ...data } = useQuery({
     queryKey: ["all positions"],
-    queryFn: () => apiRequests.getAllPositions(),
-    staleTime: 60000,
-    gcTime: 60000
+    queryFn: () => apiRequests.getAllPositions()
   });
 
   return {
@@ -52,9 +48,7 @@ export const useGetAllWorkers = (params: { searchName?: string; status: workerSt
       apiRequests.getWorkers({
         searchName,
         status
-      }),
-    staleTime: 60000,
-    gcTime: 60000
+      })
   });
 
   return {
@@ -68,8 +62,6 @@ export const useGetAllMasters = () => {
   const { ...data } = useQuery({
     queryKey: ["all masters"],
     queryFn: () => apiRequests.getEmployees("master"),
-    staleTime: 60000,
-    gcTime: 60000,
     enabled: user?.role?.name !== "master"
   });
 
@@ -82,8 +74,6 @@ export const useGetAllRoles = (enabled?: boolean) => {
   const { ...data } = useQuery({
     queryKey: ["all roles"],
     queryFn: () => apiRequests.getRoles(),
-    staleTime: 1000000,
-    gcTime: 1000000,
     enabled: enabled
   });
   return { ...data };
@@ -92,9 +82,7 @@ export const useGetAllRoles = (enabled?: boolean) => {
 export const useGetAllEmployees = () => {
   const { ...data } = useQuery({
     queryKey: ["all employees"],
-    queryFn: () => apiRequests.getEmployees(),
-    staleTime: 10000,
-    gcTime: 10000
+    queryFn: () => apiRequests.getEmployees()
   });
   return { ...data };
 };
@@ -106,9 +94,7 @@ export const useGetAllLogs = ({ page, pageSize }: { page: number; pageSize: numb
       apiRequests.getLogs({
         page,
         pageSize
-      }),
-    staleTime: 10000,
-    gcTime: 10000
+      })
   });
   return { ...data };
 };

@@ -16,22 +16,40 @@ const daysOfWeekShort = {
   saturday: "Сб"
 };
 
-export const getDaysInMonth = (value: number) => {
+export const getDaysInMonth = (value: number, isRestircted: boolean = false) => {
   const daysInMonth: daysInMonth[] = [];
   const startOfMonth = dayjs().add(value, "month").startOf("month");
   const endOfMonth = dayjs().add(value, "month").endOf("month");
 
-  const totalDays = endOfMonth.date();
+  if (isRestircted) {
+    const today = dayjs();
+    const yesterday = today.subtract(1, "day");
+    const dayBeforeYesterday = today.subtract(2, "day");
 
-  for (let i = 0; i < totalDays; i++) {
-    const currentDay = startOfMonth.clone().add(i, "day");
-    const dayOfCurrentDay = currentDay.day();
-    const dayName = currentDay.format("dddd");
-    daysInMonth.push({
-      date: currentDay.format("DD.MM.YYYY"),
-      isWeekend: dayOfCurrentDay === 0 || dayOfCurrentDay === 6,
-      dayName: daysOfWeekShort[dayName.toLowerCase()]
-    });
+    const relevantDays = [today, yesterday, dayBeforeYesterday].filter((day) =>
+      day.isSame(startOfMonth, "month")
+    );
+
+    for (const day of relevantDays) {
+      daysInMonth.push({
+        date: day.format("DD.MM.YYYY"),
+        isWeekend: day.day() === 0 || day.day() === 6,
+        dayName: daysOfWeekShort[day.format("dddd").toLowerCase()]
+      });
+    }
+  } else {
+    const totalDays = endOfMonth.date();
+
+    for (let i = 0; i < totalDays; i++) {
+      const currentDay = startOfMonth.clone().add(i, "day");
+      const dayOfCurrentDay = currentDay.day();
+      const dayName = currentDay.format("dddd");
+      daysInMonth.push({
+        date: currentDay.format("DD.MM.YYYY"),
+        isWeekend: dayOfCurrentDay === 0 || dayOfCurrentDay === 6,
+        dayName: daysOfWeekShort[dayName.toLowerCase()]
+      });
+    }
   }
 
   return daysInMonth;

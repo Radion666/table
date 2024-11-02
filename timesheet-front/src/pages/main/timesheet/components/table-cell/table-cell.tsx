@@ -109,8 +109,8 @@ export const TableCell: FC<TableCellProps> = memo(
 
           if (
             (startDate?.isBefore(cellDate) || startDate?.isSame(cellDate, "day")) &&
-            (endDate?.isAfter(cellDate) || endDate?.isSame(cellDate, "day")) &&
-            dayjs(endDate)?.diff(startDate, "hour") > 1
+            (endDate?.isAfter(cellDate) || endDate?.isSame(cellDate, "day"))
+            // && dayjs(endDate)?.diff(startDate, "hour") > 1
           ) {
             break;
           } else {
@@ -146,6 +146,10 @@ export const TableCell: FC<TableCellProps> = memo(
           const isCoincidingWithBoth = isSameAsStartDate && isSameAsEndDate;
 
           if (newPeriod.status === "working") {
+            if (cellDate?.isSame(newPeriod.startDate, "day") && newPeriod.endDate === null) {
+              return false;
+            }
+
             if (dayjs(newPeriod?.startDate)?.isAfter(cellDate)) {
               // setErrorMsg("Н/У");
             }
@@ -173,10 +177,8 @@ export const TableCell: FC<TableCellProps> = memo(
             return false;
           } else if (
             (isAfterStartDate && isBeforeEndDate) ||
-            (isCoincidingWithBoth &&
-              (newPeriod.endDate === null
-                ? true
-                : dayjs(newPeriod?.endDate)?.diff(newPeriod.startDate, "hour") > 8))
+            (isCoincidingWithBoth && (newPeriod.endDate === null ? true : true))
+            // dayjs(newPeriod?.endDate)?.diff(newPeriod.startDate, "hour") > 8
           ) {
             return false;
           }
@@ -319,7 +321,7 @@ export const TableCell: FC<TableCellProps> = memo(
         ) : (
           <>
             {isDisabled && !isNotAllowed ? (
-              <div className="overflow-hidden text-sm">{errorMsg}</div>
+              <div className="overflow-hidden text-sm text-ellipsis text-nowrap">{errorMsg}</div>
             ) : (
               <>
                 {fieldType === "text" ? (
@@ -337,7 +339,7 @@ export const TableCell: FC<TableCellProps> = memo(
                     handleChange={handleChange}
                     field={dayValue}
                     date={cellParsedDate}
-                    isDisabled={isDisabled}
+                    isDisabled={isDisabled || !allowedToMaster || isNotAllowed}
                     facilitySettings={facilitySettings}
                   />
                 )}
