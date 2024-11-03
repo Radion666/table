@@ -48,8 +48,11 @@ export const setSumWithStep = (
     if (!targetCellId.includes(':')) {
       const cellValue = worksheet.getCell(`${column}${row}`).value;
 
-      if (typeof cellValue === 'number') {
+      console.log(cellValue, +cellValue);
+      if (typeof +cellValue === 'number' && !isNaN(+cellValue)) {
         formulaParts.push(`${column}${row}`);
+      } else if ((cellValue as any)?.formula) {
+        formulaParts.push((cellValue as any)?.formula);
       }
     } else {
       const [firstLetter, secondLetter] = targetCellId.split(':');

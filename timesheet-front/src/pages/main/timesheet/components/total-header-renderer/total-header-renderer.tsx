@@ -56,7 +56,7 @@ export const TotalHeaderRenderer: FC<TotalHeaderRendererProps> = memo(
                   }}>
                   {!!Array.isArray(field) &&
                     field?.map((fld) => (
-                      <div className="w-full  text-center  border-r-[1px] p-1 flex items-center justify-center">
+                      <div className="w-full text-xs text-center  border-r-[1px] p-1 flex items-center justify-center">
                         {fld}
                       </div>
                     ))}

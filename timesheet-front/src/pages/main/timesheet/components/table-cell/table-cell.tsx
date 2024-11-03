@@ -83,7 +83,7 @@ export const TableCell: FC<TableCellProps> = memo(
 
         const today = dayjs();
 
-        if (cellDate.isAfter(today)) {
+        if (cellDate.isAfter(today, "day")) {
           setErrorMsg("");
           return true;
         }
@@ -99,6 +99,7 @@ export const TableCell: FC<TableCellProps> = memo(
 
           const startDate = dayjs(newFacilityPeriod?.startDate);
           const endDate = dayjs(newFacilityPeriod?.endDate);
+          console.log(cellDate.format(), startDate.format());
 
           if (
             newFacilityPeriod?.endDate === null &&

@@ -24,6 +24,7 @@ import { createWorkerType } from "~src/shared/types/employees";
 import { facilityTimesheetSettingType } from "~src/shared/types/facilities";
 import { Button } from "~src/shared/ui/button/button";
 import { Checkbox } from "~src/shared/ui/checkbox/checkbox";
+import { Icon } from "~src/shared/ui/icon/icon";
 import { Input } from "~src/shared/ui/input/input";
 import { Modal } from "~src/shared/ui/modal/modal";
 import { Select } from "~src/shared/ui/select/select";
@@ -429,7 +430,11 @@ export const TimesheetPage = () => {
         const element = copyOfPrev[indexOfCurrentId].dates[i];
         const isWeekend = daysInMonth.find((day) => day.date === i)?.isWeekend;
 
-        if (typeof element === "object" && facilitySettings?.integers) {
+        if (
+          typeof element === "object" &&
+          facilitySettings?.integers?.allowOnlyTotal &&
+          !isWeekend
+        ) {
           hoursOfOnlyTotalHours += +element.total;
         }
 
@@ -579,7 +584,7 @@ export const TimesheetPage = () => {
               }}>
               Следующий месяц
             </Button>
-            {/* {userRole !== "master" && (
+            {userRole !== "master" && (
               <div className="mb-2 text-center flex items-center justify-between flex-row-reverse gap-5 ">
                 <Icon
                   onClick={async () => {
@@ -604,7 +609,7 @@ export const TimesheetPage = () => {
                   size={24}
                 />
               </div>
-            )} */}
+            )}
           </div>
           <div className="flex flex-row items-center gap-4">
             <Button onClick={() => setModalOpen(true)}>Создать нового сотрудника</Button>

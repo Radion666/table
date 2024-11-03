@@ -1008,6 +1008,9 @@ export class WorkLogsService {
           const dayCell = `C${employeeStart}:C${employeeStart + 1}`;
 
           worksheet.getCell(dayCell).value = 'д';
+
+          worksheet.mergeCells(dayCell);
+
           applyAlignment(worksheet, dayCell);
         } else if (
           !integers.allowDay &&
@@ -1017,6 +1020,9 @@ export class WorkLogsService {
           const nightCell = `C${employeeStart}:C${employeeStart + 1}`;
 
           worksheet.getCell(nightCell).value = 'н';
+
+          worksheet.mergeCells(nightCell);
+
           applyAlignment(worksheet, nightCell);
         } else if (
           !integers.allowDay &&
@@ -1026,6 +1032,9 @@ export class WorkLogsService {
           const overworkCell = `C${employeeStart}:C${employeeStart + 1}`;
 
           worksheet.getCell(overworkCell).value = 'п';
+
+          worksheet.mergeCells(overworkCell);
+
           applyAlignment(worksheet, overworkCell);
         }
       }
@@ -1133,7 +1142,7 @@ export class WorkLogsService {
           const isCoincidingWithBoth = isSameAsStartDate && isSameAsEndDate;
 
           if (newPeriod.status === 'working') {
-            if (dayjs(newPeriod?.startDate)?.isAfter(cellDate)) {
+            if (dayjs(newPeriod?.startDate)?.isAfter(cellDate, 'day')) {
               const cellId = `${startColumn}${employeeStart}:${startColumn}${employeeEnd}`;
 
               if (worksheet.getCell(cellId).value) continue;
@@ -1213,15 +1222,18 @@ export class WorkLogsService {
             undefined,
             isWeekend ? true : undefined,
           );
-        } else if (typeof cellData === 'object' && cellData !== null) {
+        } else {
           if (integers?.allowOnlyTotal) {
             const cellId = `${startColumn}${employeeStart}:${startColumn}${employeeEnd}`;
             const timeCell = worksheet.getCell(cellId);
 
-            timeCell.value = cellData?.total || 0;
+            timeCell.value = cellData?.total;
+
+            if (worksheet?.getCell(cellId).isMerged) {
+              worksheet.unMergeCells(cellId);
+            }
 
             worksheet.mergeCells(cellId);
-
             applyAlignment(
               worksheet,
               cellId,
@@ -1233,7 +1245,7 @@ export class WorkLogsService {
             if (
               integers.allowDay &&
               integers.allowNight &&
-              integers.allowOnlyTotal
+              integers.allowOverwork
             ) {
               const dayCellId = `${startColumn}${employeeStart}:${startColumn}${employeeStart}`;
               const nightCellId = `${startColumn}${employeeStart + 1}:${startColumn}${employeeStart + 1}`;
@@ -1418,6 +1430,8 @@ export class WorkLogsService {
 
               overworkTimeCell.value = overworkTime;
 
+              worksheet.mergeCells(overworkCellId);
+
               applyAlignment(
                 worksheet,
                 overworkCellId,
@@ -1438,6 +1452,14 @@ export class WorkLogsService {
       const totalHoursWeekends = incrementColumn(totalSmens);
       const totalSmensWeekends = incrementColumn(totalHoursWeekends);
 
+      const singleCell = `${startColumn}${employeeStart}:${nextColumn}${employeeEnd}`;
+
+      const singleOverworkFirstCell = `${startColumn}${employeeStart}:${startColumn}${employeeEnd}`;
+      const singleOverworkSecondCell = `${nextColumn}${employeeStart}:${nextColumn}${employeeEnd}`;
+
+      const firstDoubleCell = `${startColumn}${employeeStart}:${nextColumn}${employeeStart}`;
+      const secondDoubleCell = `${startColumn}${employeeEnd}:${nextColumn}${employeeEnd}`;
+
       const totalDayHoursCell = `${startColumn}${employeeStart}:${nextColumn}${employeeStart}`;
       const totalNightHoursCell = `${startColumn}${employeeStart + 1}:${nextColumn}${employeeStart + 1}`;
       const totalOverworkFirstHoursCell = `${startColumn}${employeeEnd}`;
@@ -1447,13 +1469,62 @@ export class WorkLogsService {
       const totalWeekendsHoursCell = `${totalHoursWeekends}${employeeStart}:${totalHoursWeekends}${employeeEnd}`;
       const totalWeekendsSmensCell = `${totalSmensWeekends}${employeeStart}:${totalSmensWeekends}${employeeEnd}`;
 
-      worksheet.mergeCells(totalDayHoursCell);
-      worksheet.mergeCells(totalNightHoursCell);
+      if (integers?.allowOnlyTotal) {
+        worksheet.mergeCells(singleCell);
+      } else {
+        if (
+          integers?.allowDay &&
+          integers?.allowNight &&
+          integers?.allowOverwork
+        ) {
+          worksheet.mergeCells(totalDayHoursCell);
+          worksheet.mergeCells(totalNightHoursCell);
+        } else if (
+          integers?.allowDay &&
+          integers?.allowNight &&
+          !integers?.allowOverwork
+        ) {
+          worksheet.mergeCells(firstDoubleCell);
+          worksheet.mergeCells(secondDoubleCell);
+        } else if (
+          integers?.allowDay &&
+          !integers?.allowNight &&
+          integers?.allowOverwork
+        ) {
+          worksheet.mergeCells(firstDoubleCell);
+        } else if (
+          !integers?.allowDay &&
+          integers?.allowNight &&
+          integers?.allowOverwork
+        ) {
+          worksheet.mergeCells(firstDoubleCell);
+        } else if (
+          integers?.allowDay &&
+          !integers?.allowNight &&
+          !integers?.allowOverwork
+        ) {
+          worksheet.mergeCells(singleCell);
+        } else if (
+          !integers?.allowDay &&
+          integers?.allowNight &&
+          !integers?.allowOverwork
+        ) {
+          worksheet.mergeCells(singleCell);
+        } else if (
+          !integers.allowDay &&
+          !integers.allowNight &&
+          integers.allowOverwork
+        ) {
+          worksheet.mergeCells(singleOverworkFirstCell);
+          worksheet.mergeCells(singleOverworkSecondCell);
+        }
+      }
 
       worksheet.mergeCells(totalSmensCell);
       worksheet.mergeCells(totalWeekendsHoursCell);
       worksheet.mergeCells(totalWeekendsSmensCell);
 
+      const totalHoursCells: string[] = [];
       const dayHoursCells: string[] = [];
       const nightHoursCells: string[] = [];
 
@@ -1486,16 +1557,42 @@ export class WorkLogsService {
         }
 
         if (typeof cellData === 'object' && !isWeekend) {
-          dayHoursCells.push(`${newStartColumn}${employeeStart}`);
-          nightHoursCells.push(`${newStartColumn}${employeeStart + 1}`);
-          if (+cellData?.day || +cellData?.night) {
+          if (integers?.allowOnlyTotal) {
+            console.log(`${newStartColumn}${employeeStart}`);
+            totalHoursCells.push(`${newStartColumn}${employeeStart}`);
+          } else {
+            if (integers?.allowDay && integers?.allowNight) {
+              dayHoursCells.push(`${newStartColumn}${employeeStart}`);
+              nightHoursCells.push(`${newStartColumn}${employeeStart + 1}`);
+            } else if (integers?.allowDay && !integers?.allowNight) {
+              dayHoursCells.push(`${newStartColumn}${employeeStart}`);
+            } else if (!integers?.allowDay && integers?.allowNight) {
+              nightHoursCells.push(`${newStartColumn}${employeeStart}`);
+            }
+          }
+
+          if (
+            (+cellData?.day || +cellData?.night || +cellData?.total) &&
+            !isWeekend
+          ) {
             countOfWorkDays += 1;
           }
-        } else if (typeof cellData === 'object' && isWeekend) {
-          totalWeekendCells.push(`${newStartColumn}${employeeStart}`);
-          totalWeekendCells.push(`${newStartColumn}${employeeStart + 1}`);
+        }
+        if (typeof cellData === 'object' && isWeekend) {
+          if (integers?.allowOnlyTotal) {
+            totalWeekendCells.push(`${newStartColumn}${employeeStart}`);
+          } else {
+            if (integers?.allowDay && integers?.allowNight) {
+              totalWeekendCells.push(`${newStartColumn}${employeeStart}`);
+              totalWeekendCells.push(`${newStartColumn}${employeeStart + 1}`);
+            } else if (integers?.allowDay && !integers?.allowNight) {
+              totalWeekendCells.push(`${newStartColumn}${employeeStart}`);
+            } else if (!integers?.allowDay && integers?.allowNight) {
+              totalWeekendCells.push(`${newStartColumn}${employeeStart}`);
+            }
+          }
 
-          if (+cellData?.day || +cellData?.night) {
+          if (+cellData?.day || +cellData?.night || +cellData?.total) {
             countOfWeekendWorkDays += 1;
           }
         }
@@ -1503,20 +1600,108 @@ export class WorkLogsService {
         newStartColumn = incrementColumn(newStartColumn);
       }
 
-      worksheet.getCell(totalDayHoursCell).value = dayHoursCells?.length
-        ? {
-            formula: `SUM(${dayHoursCells.join(', ')})`,
-          }
-        : 0;
-      worksheet.getCell(totalNightHoursCell).value = nightHoursCells?.length
-        ? {
-            formula: `SUM(${nightHoursCells.join(', ')})`,
-          }
-        : 0;
-      worksheet.getCell(totalOverworkFirstHoursCell).value =
-        hoursOfOverworkTwoHours;
-      worksheet.getCell(totalOverworkSecondHoursCell).value =
-        hoursOfOverworkMoreTwoHours;
+      if (integers?.allowOnlyTotal) {
+        console.log(totalHoursCells);
+        worksheet.getCell(singleCell).value = totalHoursCells?.length
+          ? {
+              formula: `SUM(${totalHoursCells.join(', ')})`,
+            }
+          : 0;
+      } else {
+        if (
+          integers?.allowDay &&
+          integers?.allowNight &&
+          integers?.allowOverwork
+        ) {
+          worksheet.getCell(totalDayHoursCell).value = dayHoursCells?.length
+            ? {
+                formula: `SUM(${dayHoursCells.join(', ')})`,
+              }
+            : 0;
+          worksheet.getCell(totalNightHoursCell).value = nightHoursCells?.length
+            ? {
+                formula: `SUM(${nightHoursCells.join(', ')})`,
+              }
+            : 0;
+          worksheet.getCell(totalOverworkFirstHoursCell).value =
+            hoursOfOverworkTwoHours;
+          worksheet.getCell(totalOverworkSecondHoursCell).value =
+            hoursOfOverworkMoreTwoHours;
+        } else if (
+          !integers?.allowDay &&
+          integers?.allowNight &&
+          integers?.allowOverwork
+        ) {
+          worksheet.getCell(firstDoubleCell).value = nightHoursCells?.length
+            ? {
+                formula: `SUM(${nightHoursCells.join(', ')})`,
+              }
+            : 0;
+          worksheet.getCell(totalOverworkFirstHoursCell).value =
+            hoursOfOverworkTwoHours;
+          worksheet.getCell(totalOverworkSecondHoursCell).value =
+            hoursOfOverworkMoreTwoHours;
+        } else if (
+          integers?.allowDay &&
+          !integers?.allowNight &&
+          integers?.allowOverwork
+        ) {
+          worksheet.getCell(firstDoubleCell).value = dayHoursCells?.length
+            ? {
+                formula: `SUM(${dayHoursCells.join(', ')})`,
+              }
+            : 0;
+          worksheet.getCell(totalOverworkFirstHoursCell).value =
+            hoursOfOverworkTwoHours;
+          worksheet.getCell(totalOverworkSecondHoursCell).value =
+            hoursOfOverworkMoreTwoHours;
+        } else if (
+          integers?.allowDay &&
+          integers?.allowNight &&
+          !integers?.allowOverwork
+        ) {
+          worksheet.getCell(firstDoubleCell).value = dayHoursCells?.length
+            ? {
+                formula: `SUM(${dayHoursCells.join(', ')})`,
+              }
+            : 0;
+
+          worksheet.getCell(secondDoubleCell).value = nightHoursCells?.length
+            ? {
+                formula: `SUM(${nightHoursCells.join(', ')})`,
+              }
+            : 0;
+        } else if (
+          !integers?.allowDay &&
+          !integers?.allowNight &&
+          integers?.allowOverwork
+        ) {
+          worksheet.getCell(singleOverworkFirstCell).value =
+            hoursOfOverworkTwoHours;
+          worksheet.getCell(singleOverworkSecondCell).value =
+            hoursOfOverworkMoreTwoHours;
+        } else if (
+          integers?.allowDay &&
+          !integers?.allowNight &&
+          !integers?.allowOverwork
+        ) {
+          worksheet.getCell(singleCell).value = dayHoursCells?.length
+            ? {
+                formula: `SUM(${dayHoursCells.join(', ')})`,
+              }
+            : 0;
+        } else if (
+          !integers?.allowDay &&
+          integers?.allowNight &&
+          !integers?.allowOverwork
+        ) {
+          worksheet.getCell(singleCell).value = nightHoursCells?.length
+            ? {
+                formula: `SUM(${nightHoursCells.join(', ')})`,
+              }
+            : 0;
+        }
+      }
 
       worksheet.getCell(totalSmensCell).value = countOfWorkDays;
       worksheet.getCell(totalWeekendsHoursCell).value =
@@ -1535,47 +1720,174 @@ export class WorkLogsService {
       applyAlignment(worksheet, totalWeekendsHoursCell);
       applyAlignment(worksheet, totalWeekendsSmensCell);
 
-      employeeStart = employeeStart + 3;
-      employeeEnd = employeeEnd + 3;
+      employeeStart =
+        employeeStart +
+        (integers?.allowOnlyTotal
+          ? 2
+          : integers?.allowDay &&
+              integers?.allowNight &&
+              integers?.allowOverwork
+            ? 3
+            : 2);
+      employeeEnd =
+        employeeEnd +
+        (integers?.allowOnlyTotal
+          ? 2
+          : integers?.allowDay &&
+              integers?.allowNight &&
+              integers?.allowOverwork
+            ? 3
+            : 2);
     }
 
-    const totalDayCell = `A${employeeStart}`;
-    const totalNightCell = `A${employeeStart + 1}`;
-    const totalOverworkCell = `A${employeeEnd}`;
+    const allowAllTypes =
+      integers?.allowDay && integers?.allowNight && integers?.allowOverwork;
 
-    worksheet.getCell(totalDayCell).value = 'Итого: дневных';
-    worksheet.getCell(totalNightCell).value = 'Итого: ночных';
-    worksheet.getCell(totalOverworkCell).value = 'Итого: переработка';
+    const allowDayNight =
+      integers?.allowDay && integers?.allowNight && !integers?.allowOverwork;
+    const allowDayOverwork =
+      integers?.allowDay && !integers?.allowNight && integers?.allowOverwork;
+    const allowNightOverwork =
+      !integers?.allowDay && integers?.allowNight && integers?.allowOverwork;
 
-    applyAlignment(worksheet, totalDayCell);
-    applyAlignment(worksheet, totalNightCell);
-    applyAlignment(worksheet, totalOverworkCell);
+    const allowOnlyDay =
+      integers?.allowDay && !integers?.allowNight && !integers?.allowOverwork;
+    const allowOnlyNight =
+      !integers?.allowDay && integers?.allowNight && !integers?.allowOverwork;
+    const allowOnlyOverwork =
+      !integers?.allowDay && !integers?.allowNight && integers?.allowOverwork;
+
+    const totalSingleCell = `A${employeeStart}`;
+
+    if (integers?.allowOnlyTotal) {
+      const totalCell = `A${employeeStart}:A${employeeEnd}}`;
+      worksheet.getCell(totalCell).value = 'Итого: часов';
+
+      worksheet.mergeCells(totalCell);
+
+      applyAlignment(worksheet, totalCell);
+    } else {
+      if (allowAllTypes) {
+        const totalDayCell = `A${employeeStart}`;
+        const totalNightCell = `A${employeeStart + 1}`;
+        const totalOverworkCell = `A${employeeEnd}`;
+
+        worksheet.getCell(totalDayCell).value = 'Итого: дневных';
+        worksheet.getCell(totalNightCell).value = 'Итого: ночных';
+        worksheet.getCell(totalOverworkCell).value = 'Итого: переработка';
+
+        applyAlignment(worksheet, totalDayCell);
+        applyAlignment(worksheet, totalNightCell);
+        applyAlignment(worksheet, totalOverworkCell);
+      } else if (allowDayNight) {
+        const totalDayCell = `A${employeeStart}`;
+        const totalNightCell = `A${employeeStart + 1}`;
+
+        worksheet.getCell(totalDayCell).value = 'Итого: дневных';
+        worksheet.getCell(totalNightCell).value = 'Итого: ночных';
+        applyAlignment(worksheet, totalDayCell);
+        applyAlignment(worksheet, totalNightCell);
+      } else if (allowNightOverwork) {
+        const totalNightCell = `A${employeeStart}`;
+        const totalOverworkCell = `A${employeeStart + 1}`;
+
+        worksheet.getCell(totalNightCell).value = 'Итого: ночных';
+        worksheet.getCell(totalOverworkCell).value = 'Итого: переработка';
+
+        applyAlignment(worksheet, totalNightCell);
+        applyAlignment(worksheet, totalOverworkCell);
+      } else if (allowDayOverwork) {
+        const totalDayCell = `A${employeeStart}`;
+        const totalOverworkCell = `A${employeeStart + 1}`;
+
+        worksheet.getCell(totalDayCell).value = 'Итого: дневных';
+        worksheet.getCell(totalOverworkCell).value = 'Итого: переработка';
+
+        applyAlignment(worksheet, totalDayCell);
+        applyAlignment(worksheet, totalOverworkCell);
+      } else if (allowOnlyOverwork) {
+        worksheet.getCell(totalSingleCell).value = 'Итого: переработка';
+        applyAlignment(worksheet, totalSingleCell);
+      } else if (allowOnlyDay) {
+        worksheet.getCell(totalSingleCell).value = 'Итого: дневных';
+        applyAlignment(worksheet, totalSingleCell);
+      } else if (allowOnlyNight) {
+        worksheet.getCell(totalSingleCell).value = 'Итого: ночных';
+        applyAlignment(worksheet, totalSingleCell);
+      }
+    }
 
     let totalStartColumn = 'D';
 
     for (let i = 0; i < dates?.length; i++) {
-      const dayTargetCellId = `${totalStartColumn}${employeeStart}`;
-      const nightTargetCellId = `${totalStartColumn}${employeeStart + 1}`;
-      const overworkTargetCellId = `${totalStartColumn}${employeeEnd}`;
-
       const day = dates[i];
       const isWeekend = day.isWeekend;
 
-      setSumWithStep(worksheet, dayTargetCellId, 5, employeeStart, isWeekend);
-      setSumWithStep(
-        worksheet,
-        nightTargetCellId,
-        6,
-        employeeStart + 1,
-        isWeekend,
-      );
-      setSumWithStep(
-        worksheet,
-        overworkTargetCellId,
-        7,
-        employeeEnd,
-        isWeekend,
-      );
+      if (integers?.allowOnlyTotal) {
+        const cellId = `${totalStartColumn}${employeeStart}:${totalStartColumn}${employeeStart + 1}`;
+
+        worksheet.mergeCells(cellId);
+
+        setSumWithStep(worksheet, cellId, 5, employeeStart, isWeekend, 2);
+      } else {
+        if (allowAllTypes) {
+          const dayTargetCellId = `${totalStartColumn}${employeeStart}`;
+          const nightTargetCellId = `${totalStartColumn}${employeeStart + 1}`;
+          const overworkTargetCellId = `${totalStartColumn}${employeeEnd}`;
+
+          setSumWithStep(
+            worksheet,
+            dayTargetCellId,
+            5,
+            employeeStart,
+            isWeekend,
+          );
+          setSumWithStep(
+            worksheet,
+            nightTargetCellId,
+            6,
+            employeeStart + 1,
+            isWeekend,
+          );
+          setSumWithStep(
+            worksheet,
+            overworkTargetCellId,
+            7,
+            employeeEnd,
+            isWeekend,
+          );
+        } else if (allowNightOverwork || allowDayNight || allowDayOverwork) {
+          const firstTargetCellId = `${totalStartColumn}${employeeStart}`;
+          const secondTargetCellId = `${totalStartColumn}${employeeStart + 1}`;
+
+          setSumWithStep(
+            worksheet,
+            firstTargetCellId,
+            5,
+            employeeStart,
+            isWeekend,
+            2,
+          );
+          setSumWithStep(
+            worksheet,
+            secondTargetCellId,
+            6,
+            employeeStart + 1,
+            isWeekend,
+            2,
+          );
+        } else if (allowOnlyDay || allowOnlyNight || allowOnlyOverwork) {
+          const firstTargetCellId = `${totalStartColumn}${employeeStart}`;
+          setSumWithStep(
+            worksheet,
+            firstTargetCellId,
+            5,
+            employeeStart,
+            isWeekend,
+            2,
+          );
+        }
+      }
 
       totalStartColumn = incrementColumn(totalStartColumn);
     }
@@ -1585,47 +1897,158 @@ export class WorkLogsService {
     const totalTotalHoursWeekends = incrementColumn(totalTotalSmens);
     const totalTotalSmensWeekends = incrementColumn(totalTotalHoursWeekends);
 
-    const totalDayHoursCell = `${totalStartColumn}${employeeStart}:${nextTotalColumn}${employeeStart}`;
-    const totalNightHoursCell = `${totalStartColumn}${employeeStart + 1}:${nextTotalColumn}${employeeStart + 1}`;
-    const totalOverworkFirstHoursCell = `${totalStartColumn}${employeeEnd}`;
-    const totalOverworkSecondHoursCell = `${nextTotalColumn}${employeeEnd}`;
+    if (integers?.allowOnlyTotal) {
+      const totalCellId = `${totalStartColumn}${employeeStart}:${nextTotalColumn}${employeeStart + 1}`;
+
+      worksheet.mergeCells(totalCellId);
+
+      setSumWithStep(
+        worksheet,
+        `${totalStartColumn}${employeeStart}`,
+        5,
+        employeeStart,
+        false,
+        2,
+      );
+    } else {
+      if (allowAllTypes) {
+        const totalDayHoursCell = `${totalStartColumn}${employeeStart}:${nextTotalColumn}${employeeStart}`;
+        const totalNightHoursCell = `${totalStartColumn}${employeeStart + 1}:${nextTotalColumn}${employeeStart + 1}`;
+        const totalOverworkFirstHoursCell = `${totalStartColumn}${employeeEnd}`;
+        const totalOverworkSecondHoursCell = `${nextTotalColumn}${employeeEnd}`;
+
+        worksheet.mergeCells(totalDayHoursCell);
+        worksheet.mergeCells(totalNightHoursCell);
+
+        setSumWithStep(
+          worksheet,
+          totalDayHoursCell,
+          5,
+          employeeStart,
+          false,
+          3,
+        );
+        setSumWithStep(
+          worksheet,
+          totalNightHoursCell,
+          6,
+          employeeStart,
+          false,
+          3,
+        );
+        setSumWithStep(
+          worksheet,
+          totalOverworkFirstHoursCell,
+          7,
+          employeeStart,
+          false,
+          3,
+        );
+        setSumWithStep(
+          worksheet,
+          totalOverworkSecondHoursCell,
+          7,
+          employeeStart,
+          false,
+          3,
+        );
+      } else if (allowDayNight) {
+        const totalDayHoursCell = `${totalStartColumn}${employeeStart}:${nextTotalColumn}${employeeStart}`;
+        const totalNightHoursCell = `${totalStartColumn}${employeeStart + 1}:${nextTotalColumn}${employeeStart + 1}`;
+
+        worksheet.mergeCells(totalDayHoursCell);
+        worksheet.mergeCells(totalNightHoursCell);
+
+        setSumWithStep(
+          worksheet,
+          totalDayHoursCell,
+          5,
+          employeeStart,
+          false,
+          2,
+        );
+        setSumWithStep(
+          worksheet,
+          totalNightHoursCell,
+          6,
+          employeeStart,
+          false,
+          2,
+        );
+      } else if (allowNightOverwork || allowDayOverwork) {
+        const firstHoursCell = `${totalStartColumn}${employeeStart}:${nextTotalColumn}${employeeStart}`;
+        worksheet.mergeCells(firstHoursCell);
+
+        setSumWithStep(worksheet, firstHoursCell, 5, employeeStart, false, 2);
+
+        const totalOverworkFirstHoursCell = `${totalStartColumn}${employeeStart + 1}`;
+        const totalOverworkSecondHoursCell = `${nextTotalColumn}${employeeStart + 1}`;
+        setSumWithStep(
+          worksheet,
+          totalOverworkFirstHoursCell,
+          6,
+          employeeStart,
+          false,
+          2,
+        );
+        setSumWithStep(
+          worksheet,
+          totalOverworkSecondHoursCell,
+          6,
+          employeeStart,
+          false,
+          2,
+        );
+      } else if (allowOnlyDay || allowOnlyNight) {
+        const firstHoursCell = `${totalStartColumn}${employeeStart}:${nextTotalColumn}${employeeStart}`;
+        worksheet.mergeCells(firstHoursCell);
+        setSumWithStep(worksheet, firstHoursCell, 5, employeeStart, false, 2);
+      } else if (allowOnlyOverwork) {
+        const totalOverworkFirstHoursCell = `${totalStartColumn}${employeeStart}`;
+        const totalOverworkSecondHoursCell = `${nextTotalColumn}${employeeStart}`;
+
+        setSumWithStep(
+          worksheet,
+          totalOverworkFirstHoursCell,
+          5,
+          employeeStart,
+          false,
+          1,
+        );
+        setSumWithStep(
+          worksheet,
+          totalOverworkSecondHoursCell,
+          5,
+          employeeStart,
+          false,
+          1,
+        );
+      }
+    }
 
     const totalSmensCell = `${totalTotalSmens}${employeeStart}:${totalTotalSmens}${employeeEnd}`;
     const totalWeekendsHoursCell = `${totalTotalHoursWeekends}${employeeStart}:${totalTotalHoursWeekends}${employeeEnd}`;
     const totalWeekendsSmensCell = `${totalTotalSmensWeekends}${employeeStart}:${totalTotalSmensWeekends}${employeeEnd}`;
 
-    worksheet.mergeCells(totalDayHoursCell);
-    worksheet.mergeCells(totalNightHoursCell);
     worksheet.mergeCells(totalSmensCell);
     worksheet.mergeCells(totalWeekendsHoursCell);
     worksheet.mergeCells(totalWeekendsSmensCell);
 
-    setSumWithStep(worksheet, totalDayHoursCell, 5, employeeStart, false, 3);
-    setSumWithStep(worksheet, totalNightHoursCell, 6, employeeStart, false, 3);
     setSumWithStep(
       worksheet,
-      totalOverworkFirstHoursCell,
-      7,
+      totalSmensCell,
+      5,
       employeeStart,
       false,
-      3,
+      allowAllTypes ? 3 : 2,
     );
-    setSumWithStep(
-      worksheet,
-      totalOverworkSecondHoursCell,
-      7,
-      employeeStart,
-      false,
-      3,
-    );
-    setSumWithStep(worksheet, totalSmensCell, 5, employeeStart, false, 3);
     setSumWithStep(
       worksheet,
       totalWeekendsHoursCell,
       5,
       employeeStart,
       false,
-      3,
+      allowAllTypes ? 3 : 2,
     );
     setSumWithStep(
       worksheet,
@@ -1633,7 +2056,7 @@ export class WorkLogsService {
       5,
       employeeStart,
       false,
-      3,
+      allowAllTypes ? 3 : 2,
     );
 
     const stream = new PassThrough();
