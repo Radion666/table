@@ -38,7 +38,7 @@ export const TotalHeaderRenderer: FC<TotalHeaderRendererProps> = memo(
 
     return (
       <div className="h-full w-full flex flex-row">
-        <div className="w-[200px] border-r-[1px] h-full">
+        <div className="w-[100px] border-r-[1px] h-full">
           {allowedFields?.map((field) => (
             <div
               className="border-b-[1px] flex items-center justify-center overflow-hidden "
@@ -74,9 +74,11 @@ export const TotalHeaderRenderer: FC<TotalHeaderRendererProps> = memo(
             <div className="w-1/2">более 2 ч</div>
           </div> */}
         </div>
-        <div className="w-[64px] border-r-[1px]">Итого смен</div>
-        <div className="w-[64px] border-r-[1px]">Итого часов (вых)</div>
-        <div className="w-[64px]">Итого смен (вых)</div>
+        <div className="w-[64px] border-r-[1px] flex items-center justify-center">Итого смен</div>
+        <div className="w-[64px] border-r-[1px] flex items-center justify-center">
+          Итого часов (вых)
+        </div>
+        <div className="w-[64px] flex items-center justify-center">Итого смен (вых)</div>
       </div>
     );
   }

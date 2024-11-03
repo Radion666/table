@@ -199,18 +199,19 @@ export const FacilitiesPage = () => {
 
   return (
     <>
-      <div className="flex flex-1 flex-col gap-5 justify-start p-5">
-        {userRole !== "master" && (
-          <div className="flex justify-end">
-            <Button onClick={() => setModalOpen(true)}>Создать новый объект</Button>
-          </div>
-        )}
-        {userRole === "master" && (
-          <div className="flex justify-end">
-            <Button onClick={() => setCreateModalOpen(true)}>Добавить сотрудника</Button>
-          </div>
-        )}
-
+      <div className="flex flex-1 flex-col gap-5 justify-center p-5">
+        <div>
+          {userRole !== "master" && (
+            <div className="flex justify-end">
+              <Button onClick={() => setModalOpen(true)}>Создать новый объект</Button>
+            </div>
+          )}
+          {userRole === "master" && (
+            <div className="flex justify-end">
+              <Button onClick={() => setCreateModalOpen(true)}>Добавить сотрудника</Button>
+            </div>
+          )}
+        </div>
         <>
           {(windowWidth ?? 1000) > 640 ? (
             <GridTable
@@ -221,7 +222,7 @@ export const FacilitiesPage = () => {
               }}
             />
           ) : (
-            <div className="flex flex-col gap-2 overflow-y-auto">
+            <div className="flex flex-col gap-2 overflow-y-auto h-[calc(100%-400px)]">
               {data?.data?.items?.map((item) => {
                 const settings = item?.settings?.integers;
 
@@ -243,8 +244,8 @@ export const FacilitiesPage = () => {
 
                 return (
                   <div className="border-[1px] p-4 rounded-md flex justify-between items-center ">
-                    <div>
-                      <div>{item.name}</div>
+                    <div className="max-w-[70%] ">
+                      <div className="overflow-hidden text-ellipsis">{item.name}</div>
                       {!!result?.length && <span className="text-sm">{result.join(", ")}</span>}
                     </div>
                     <Button

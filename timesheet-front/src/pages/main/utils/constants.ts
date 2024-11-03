@@ -34,7 +34,7 @@ export const defaultHeaders: headerType[] = [
     fieldType: "text",
     renderer: TotalHeaderRenderer,
     cellRenderer: TotalCellRenderer,
-    className: "!min-w-[395px]",
+    className: "!min-w-[295px]",
     type: "total"
   }
   // {

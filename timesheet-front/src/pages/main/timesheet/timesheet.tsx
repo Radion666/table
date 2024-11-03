@@ -72,11 +72,6 @@ export const TimesheetPage = () => {
     return [objected.month() + 1, objected.year()];
   }, [currentDate]);
 
-  const { data: logsData, isLoading: isLogsLoading } = useQuery({
-    queryKey: [facilityId, currentDate, "table data by date facility"],
-    queryFn: () => apiRequests.getWorkLogs(dayjs(currentDate)?.format("MM-YYYY"), +facilityId)
-  });
-
   const { data: facilityByIdData } = useQuery({
     queryKey: ["facility by id", facilityId],
     queryFn: () => apiRequests.getFacilityId(+facilityId),
@@ -142,7 +137,10 @@ export const TimesheetPage = () => {
     if (searchingEmployee) {
       const foundUsers = allWorkers?.data?.filter((el) => {
         const userFullName = getUserFio(el);
-        if (searchingEmployee?.length > 3 && userFullName?.includes(searchingEmployee)) {
+        if (
+          searchingEmployee?.length > 3 &&
+          userFullName?.toLowerCase()?.includes(searchingEmployee?.toLocaleLowerCase())
+        ) {
           return true;
         }
         return false;
@@ -184,6 +182,12 @@ export const TimesheetPage = () => {
         facilityId ? +facilityId : 0,
         dayjs(currentDate)?.format("MM-YYYY")
       )
+  });
+
+  const { data: logsData, isLoading: isLogsLoading } = useQuery({
+    queryKey: [facilityId, currentDate, "table data by date facility", allWorkers?.data],
+    queryFn: () => apiRequests.getWorkLogs(dayjs(currentDate)?.format("MM-YYYY"), +facilityId),
+    enabled: !!allWorkers?.data?.length
   });
 
   const handleCreate = async (data: createWorkerType) => {
@@ -257,6 +261,7 @@ export const TimesheetPage = () => {
     if (allWorkers?.data) {
       const newInnerData = [
         ...allWorkers.data.map((el, index) => {
+          const prevFromInnerData = innerData?.find((employ) => employ.employeeId === el.id);
           return {
             fullName: getShortUserFio(el),
             position: el?.position?.name,
@@ -269,9 +274,9 @@ export const TimesheetPage = () => {
             lastPosition: el.lastPosition,
             dates: {
               //@ts-ignore
-              ...(newDates as never)
+              ...(prevFromInnerData?.dates ?? (newDates as never))
             },
-            total: {
+            total: prevFromInnerData?.total ?? {
               countOfWeekendWorkDays: 0,
               countOfWorkDays: 0,
               hoursOfDay: 0,
@@ -311,6 +316,9 @@ export const TimesheetPage = () => {
           const isEmployeeExistsInLogs = logsData?.data?.find(
             (emp) => emp?.employee?.id === element?.employeeId
           );
+          const prevFromInnerData = innerData?.find(
+            (employ) => employ.employeeId === element.employeeId
+          );
 
           if (isEmployeeExistsInLogs) {
             const newDates: employeeDatesType = {};
@@ -319,14 +327,14 @@ export const TimesheetPage = () => {
               const newDate = isEmployeeExistsInLogs?.workDays[keyOfNew];
 
               if (!newDate) {
-                newDates[keyOfNew] = "";
+                newDates[keyOfNew] = prevFromInnerData?.dates?.[keyOfNew] ?? "";
               } else {
                 if (typeof newDate === "string") {
-                  newDates[keyOfNew] = newDate;
+                  newDates[keyOfNew] = prevFromInnerData?.dates?.[keyOfNew] ?? newDate;
                 } else if (newDate === null) {
-                  newDates[keyOfNew] = "";
+                  newDates[keyOfNew] = prevFromInnerData?.dates?.[keyOfNew] ?? "";
                 } else {
-                  newDates[keyOfNew] = {
+                  newDates[keyOfNew] = prevFromInnerData?.dates?.[keyOfNew] ?? {
                     ...(integers?.allowOnlyTotal
                       ? {
                           total: String(newDate.total)
@@ -354,6 +362,7 @@ export const TimesheetPage = () => {
         }
 
         setInnerData(copyOfPrev);
+
         for (let i = 0; i < copyOfPrev?.length; i++) {
           const id = copyOfPrev[i].employeeId;
 
@@ -363,14 +372,16 @@ export const TimesheetPage = () => {
       } else {
         setInnerData(newInnerData);
       }
+    } else {
+      setInnerData([]);
     }
-  }, [allWorkers?.data, daysInMonth, facilityId, facilitySettings?.integers, logsData?.data]);
+  }, [logsData?.data]);
 
   const rowVirtualizer = useVirtualizer({
     count: innerData.length,
     getScrollElement: () => contentRef.current,
     estimateSize: () => 100,
-    overscan: 5
+    overscan: 2
   });
   useEffect(() => {
     const handler = () => {

@@ -45,8 +45,8 @@ export const TotalCellRenderer: FC<TotalCellRenderProps> = memo(
     const heightPercentage = numberOfAllowedFields === 1 ? 100 : 100 / numberOfAllowedFields;
 
     return (
-      <div className="h-full min-w-[395px] flex-1 flex flex-row border-r-[1px]">
-        <div className="w-[200px] max-w-[200px] border-r-[1px] h-full">
+      <div className="h-full min-w-[295px] flex-1 flex flex-row border-r-[1px]">
+        <div className="w-[100px] border-r-[1px] h-full">
           {allowedFields?.map((field) => (
             <div
               className=" border-b-[1px] text-center flex   items-center justify-center"
