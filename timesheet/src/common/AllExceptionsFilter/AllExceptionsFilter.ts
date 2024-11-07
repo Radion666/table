@@ -45,6 +45,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
       statusCode: typedException?.status ?? httpStatus,
       timestamp: new Date().toISOString(),
       path: httpAdapter.getRequestUrl(ctx.getRequest()),
+      method: ctx.getRequest()?.method, // HTTP метод (GET, POST, и т.д.)
+      userAgent: ctx.getRequest()?.headers['user-agent'], // Информация о клиенте
+      ip: ctx.getRequest()?.ip, // IP-адрес клиента
       ...(typeof exceptionResponse === 'object' && exceptionResponse),
       ...(typedException?.response && {
         message: typedException.response,
@@ -55,11 +58,18 @@ export class AllExceptionsFilter implements ExceptionFilter {
       ...(exceptionRequest?.params && {
         requestParams: JSON.stringify(exceptionRequest?.params),
       }),
+      ...(exceptionRequest?.query && {
+        requestQuery: JSON.stringify(exceptionRequest.query),
+      }),
+      environment: process.env.NODE_ENV || 'development',
+      service: 'auth-service',
+      hostname: require('os').hostname(),
+      stack: exception instanceof Error ? exception.stack : '',
     };
 
     this.logger.error(
-      `${JSON.stringify(responseBody)}`,
-      exception instanceof Error ? exception.stack : '',
+      `\`\`\`\n${JSON.stringify(responseBody, null, 2)}\n\`\`\``,
+      exception instanceof Error ? `\`\`\`\n${exception.stack}\n\`\`\`` : '',
     );
 
     httpAdapter.reply(

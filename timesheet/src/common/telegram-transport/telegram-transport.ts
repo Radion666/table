@@ -22,7 +22,7 @@ export class TelegramTransport extends TransportStream {
       return callback();
     }
 
-    const message = `[${info.level.toUpperCase()}] ${info.message}`;
+    const message = `${info.message}`;
 
     try {
       await axios.post(
@@ -30,6 +30,7 @@ export class TelegramTransport extends TransportStream {
         {
           chat_id: this.chatId,
           text: message,
+          parse_mode: 'MarkdownV2',
         },
       );
     } catch (error) {
