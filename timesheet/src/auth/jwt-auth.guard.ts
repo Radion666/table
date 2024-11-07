@@ -5,14 +5,16 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { Observable } from 'rxjs';
+import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  constructor(private jwtService: JwtService) {}
-  canActivate(
-    context: ExecutionContext,
-  ): boolean | Promise<boolean> | Observable<boolean> {
+  constructor(
+    private jwtService: JwtService,
+    private readonly userService: UsersService,
+  ) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest();
 
     try {
@@ -28,12 +30,30 @@ export class JwtAuthGuard implements CanActivate {
 
       const user = this.jwtService.verify(token);
       req.user = user;
+
+      const userId = user.id;
+
+      await this.validateUserPasswordByTime(userId, user.iat);
+
       return true;
     } catch (e) {
-      console.log(e);
+      console.error(e);
       throw new UnauthorizedException({
-        message: 'Пользователь не авторизован',
+        message: e.message || 'Пользователь не авторизован',
       });
+    }
+  }
+
+  private async validateUserPasswordByTime(userId: number, iat: number) {
+    const foundUser = await this.userService.getUserByPk(userId);
+
+    if (
+      foundUser.passwordChangedAt &&
+      iat * 1000 < new Date(foundUser.passwordChangedAt).getTime()
+    ) {
+      throw new UnauthorizedException(
+        'Пароль был изменён. Пожалуйста, войдите снова.',
+      );
     }
   }
 }

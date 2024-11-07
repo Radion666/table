@@ -18,12 +18,12 @@ export const employeesColumns: GridColumnsType<usersEmployeeType> = [
     valueGetter: (role) => `${role.data?.role?.alt_name ?? ""}`,
     minWidth: 300
   },
-  {
-    headerName: "Должность",
-    valueGetter: (props) => `${props?.data?.position?.name ?? ""}`,
-    minWidth: 300,
-    flex: 1
-  },
+  // {
+  //   headerName: "Должность",
+  //   valueGetter: (props) => `${props?.data?.position?.name ?? ""}`,
+  //   minWidth: 300,
+  //   flex: 1
+  // },
   {
     headerName: "Номер телефона",
     valueGetter: (props) => `${props?.data?.phoneNumber ?? ""}`,

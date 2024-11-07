@@ -1,8 +1,8 @@
 import {
+  BadRequestException,
   HttpException,
   HttpStatus,
   Injectable,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
@@ -38,7 +38,7 @@ export class RolesService {
 
   async findById(id: number): Promise<string> {
     if (!id) {
-      throw new UnauthorizedException('Некорректные авторизационные данные');
+      throw new BadRequestException('Некорректные данные');
     }
     const role = await this.rolesRepository.findByPk(id);
     return role?.name;

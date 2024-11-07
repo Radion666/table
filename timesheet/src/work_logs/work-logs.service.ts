@@ -1558,7 +1558,6 @@ export class WorkLogsService {
 
         if (typeof cellData === 'object' && !isWeekend) {
           if (integers?.allowOnlyTotal) {
-            console.log(`${newStartColumn}${employeeStart}`);
             totalHoursCells.push(`${newStartColumn}${employeeStart}`);
           } else {
             if (integers?.allowDay && integers?.allowNight) {
@@ -1601,7 +1600,6 @@ export class WorkLogsService {
       }
 
       if (integers?.allowOnlyTotal) {
-        console.log(totalHoursCells);
         worksheet.getCell(singleCell).value = totalHoursCells?.length
           ? {
               formula: `SUM(${totalHoursCells.join(', ')})`,

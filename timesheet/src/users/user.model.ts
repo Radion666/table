@@ -129,6 +129,9 @@ export class User extends Model<User, UserCreationAttrs> {
   })
   lastLoginAt?: Date;
 
+  @Column({ type: DataType.DATE, allowNull: true })
+  passwordChangedAt: Date;
+
   @HasMany(() => MasterFacilities)
   masterFacilities: MasterFacilities[];
 

@@ -43,7 +43,11 @@ export const apiRequests = {
     return apiConfigRequests({
       method: "patch",
       url: `/users/${id}`,
-      data: { ...updateEmployee }
+      data: {
+        ...Object.fromEntries(
+          Object.entries(updateEmployee).filter(([key, value]) => Boolean(value))
+        )
+      }
     });
   },
 

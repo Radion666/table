@@ -99,7 +99,6 @@ export const TableCell: FC<TableCellProps> = memo(
 
           const startDate = dayjs(newFacilityPeriod?.startDate);
           const endDate = dayjs(newFacilityPeriod?.endDate);
-          console.log(cellDate.format(), startDate.format());
 
           if (
             newFacilityPeriod?.endDate === null &&

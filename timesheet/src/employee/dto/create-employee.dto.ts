@@ -54,7 +54,9 @@ export class CreateEmployeeDto {
     description: 'Фамилия пользователя',
   })
   @IsString()
-  @MinLength(4)
+  @MinLength(1, {
+    message: 'Минимальная длина фамилии - 1 символ',
+  })
   readonly lastName: string;
 
   @ApiProperty({
@@ -62,7 +64,9 @@ export class CreateEmployeeDto {
     description: 'Имя пользователя',
   })
   @IsString()
-  @MinLength(4)
+  @MinLength(1, {
+    message: 'Минимальная длина имяни - 1 символ',
+  })
   readonly firstName: string;
 
   @ApiProperty({
@@ -70,7 +74,9 @@ export class CreateEmployeeDto {
     description: 'Отчество пользователя',
   })
   @IsString()
-  @MinLength(4)
+  @MinLength(1, {
+    message: 'Минимальная длина отчества - 1 символ',
+  })
   readonly middleName: string;
 
   @ApiProperty({

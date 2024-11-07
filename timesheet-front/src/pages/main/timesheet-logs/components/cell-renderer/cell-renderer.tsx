@@ -103,14 +103,13 @@ export const CellRenderer = (params: CustomCellRendererProps<workLogsChangesType
               <div className="flex flex-col">
                 {Object.entries(data?.changes).map(([key, value]) => {
                   let wasValue = "Пусто";
-                  let becameValue = "";
+                  let becameValue = "Пусто";
                   let isImportantChanges = false;
                   let isHasLessImportantMessage = false;
 
                   const actualDay = dayjs(parseDate(key));
 
-                  if (value?.was === null || value?.became === null) {
-                  } else if (
+                  if (
                     ((typeof value?.was === "string" && typeof value?.became === "object") ||
                       (typeof value?.became === "string" && typeof value?.was === "object") ||
                       (typeof value?.became === "string" && typeof value?.was === "string")) &&
@@ -125,39 +124,40 @@ export const CellRenderer = (params: CustomCellRendererProps<workLogsChangesType
                     isHasLessImportantMessage = true;
                   }
 
-                  if (value?.was === null) {
-                    wasValue = "Пусто";
-                  } else if (typeof value?.was === "string") {
-                    wasValue =
-                      cellLettersKeyString[value.was as keyof typeof cellLettersKeyString] ??
-                      "Пусто";
-                  } else if (typeof value?.was === "object") {
-                    wasValue = `День: ${String(value?.was?.day ?? 0)}\nНочь: ${String(
-                      value?.was?.night ?? 0
-                    )}\nПереработки: ${String(value?.was?.overwork ?? 0)}`;
-                  }
+                  const getValueDisplay = (entry: any) => {
+                    if (entry === null) return "Пусто";
+                    if (typeof entry === "string") {
+                      return (
+                        cellLettersKeyString[entry as keyof typeof cellLettersKeyString] ?? "Пусто"
+                      );
+                    }
+                    if (typeof entry === "object") {
+                      if (entry.total) {
+                        return `Часы: ${String(entry.total)}`;
+                      }
+                      const parts = [];
+                      if (typeof entry.day === "number") parts.push(`День: ${String(entry.day)}`);
+                      if (typeof entry.night === "number")
+                        parts.push(`Ночь: ${String(entry.night)}`);
+                      if (typeof entry.overwork === "number")
+                        parts.push(`Переработки: ${String(entry.overwork)}`);
+                      return parts.join("\n") || "Пусто";
+                    }
+                    return "Пусто";
+                  };
 
-                  if (value?.became === null) {
-                    becameValue = "Пусто";
-                  } else if (typeof value?.became === "string") {
-                    becameValue =
-                      cellLettersKeyString[value.became as keyof typeof cellLettersKeyString] ??
-                      "Пусто";
-                  } else if (typeof value?.became === "object") {
-                    becameValue = `День: ${String(value?.became?.day ?? 0)}\nНочь: ${String(
-                      value?.became?.night ?? 0
-                    )}\nПереработки: ${String(value?.became?.overwork ?? 0)}`;
-                  }
+                  wasValue = getValueDisplay(value.was);
+                  becameValue = getValueDisplay(value.became);
 
                   return (
-                    <div className=" border-b-[1px]">
+                    <div className="border-b-[1px]">
                       <div className="text-center">
                         <span className="font-medium">Дата измененной ячейки</span>: {key}
                       </div>
                       <div
                         className={clsx(
                           "flex flex-row justify-between w-full border-t-[1px]",
-                          isImportantChanges && "text-red-500",
+                          wasValue !== "Пусто" && isImportantChanges && "text-red-500",
                           isHasLessImportantMessage && "text-yellow-300"
                         )}>
                         <div className="w-1/2 flex items-center justify-center h-full whitespace-pre text-center">

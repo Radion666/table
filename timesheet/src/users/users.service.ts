@@ -80,6 +80,7 @@ export class UsersService {
           ...dto,
           password: hashPassword,
           lastLoginAt: '2024-10-08 14:30:00' as any,
+          passwordChangedAt: new Date(),
         },
         {
           where: {
@@ -95,7 +96,9 @@ export class UsersService {
 
     const result = await this.userRepository.update(
       {
-        ...dto,
+        ...Object.fromEntries(
+          Object.entries(dto).filter(([key, value]) => key !== 'password'),
+        ),
         lastLoginAt: '2024-10-08 14:30:00' as any,
       },
       {
@@ -142,6 +145,10 @@ export class UsersService {
 
   async getUserByPk(pk: number) {
     const user = await this.userRepository.findByPk(pk);
+
+    if (!user) {
+      throw new BadRequestException(`Пользователь с id = ${pk} не был найден `);
+    }
     return user;
   }
 
