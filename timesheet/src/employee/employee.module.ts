@@ -1,3 +1,4 @@
+import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { AuthModule } from 'src/auth/auth.module';
@@ -22,6 +23,7 @@ import { EmployeeService } from './employee.service';
   controllers: [EmployeeController],
   providers: [EmployeeService, RolesGuards],
   imports: [
+    CacheModule.register(),
     SequelizeModule.forFeature([
       Employee,
       User,

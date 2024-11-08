@@ -1,12 +1,16 @@
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import {
   BadRequestException,
   HttpException,
   HttpStatus,
+  Inject,
   Injectable,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { Cache } from 'cache-manager';
 import dayjs from 'dayjs';
 import { Op } from 'sequelize';
+import { EMPLOYEES_CACHE_KEY } from 'src/common/utils/common';
 import {
   EmploymentPeriod,
   EmploymentStatus,
@@ -27,6 +31,7 @@ import { Employee } from './employee.model';
 @Injectable()
 export class EmployeeService {
   constructor(
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
     @InjectModel(Employee) private employeeModel: typeof Employee,
     @InjectModel(User) private userModel: typeof User,
     @InjectModel(Facilities) private facilityModel: typeof Facilities,
@@ -159,6 +164,8 @@ export class EmployeeService {
 
     await this.validateDto(createEmployeeDto);
 
+    await this.cacheManager.del(EMPLOYEES_CACHE_KEY);
+
     const newEmployee = await this.employeeModel.create({
       ...createEmployeeDto,
       lastFacilityId: createEmployeeDto?.facilityId ?? null,
@@ -184,6 +191,8 @@ export class EmployeeService {
 
   async update(id: number, updateEmployeeDto: UpdateEmployeeDto) {
     await this.validateDto(updateEmployeeDto, id);
+
+    await this.cacheManager.del(EMPLOYEES_CACHE_KEY);
 
     const [_, [data]] = await this.employeeModel.update(
       {
@@ -331,130 +340,149 @@ export class EmployeeService {
 
     const whereConditions = {} as any;
 
-    if (searchName) {
-      const searchTerms = searchName
-        .split(' ')
-        .map((term) => term.trim())
-        .filter(Boolean);
-      whereConditions[Op.or] = searchTerms.map((term) => ({
-        [Op.or]: [
-          { lastName: { [Op.iLike]: `%${term}%` } },
-          { firstName: { [Op.iLike]: `%${term}%` } },
-          { middleName: { [Op.iLike]: `%${term}%` } },
-        ],
-      }));
-    }
+    let employees: Employee[] = [];
 
-    if (status) {
-      if (
-        !Object.values(EmploymentStatus).includes(status as EmploymentStatus)
-      ) {
-        throw new BadRequestException('Был передан не существуюющий статус');
+    const isExistsOnCache: any =
+      await this.cacheManager.get(EMPLOYEES_CACHE_KEY);
+
+    if (isExistsOnCache?.[status] && !searchName) {
+      employees = isExistsOnCache?.[status];
+    } else {
+      if (searchName) {
+        const searchTerms = searchName
+          .split(' ')
+          .map((term) => term.trim())
+          .filter(Boolean);
+        whereConditions[Op.or] = searchTerms.map((term) => ({
+          [Op.or]: [
+            { lastName: { [Op.iLike]: `%${term}%` } },
+            { firstName: { [Op.iLike]: `%${term}%` } },
+            { middleName: { [Op.iLike]: `%${term}%` } },
+          ],
+        }));
       }
-      whereConditions.lastStatus = status; // Добавляем условие для статуса
-    }
 
-    const employees = await this.employeeModel.findAll({
-      ...((searchName || status) && {
-        where: whereConditions,
-      }),
-      order: [['createdAt', 'ASC']],
-      attributes: {
-        exclude: [
-          'lastFacilityId',
-          'lastMasterId',
-          'lastPositionId',
-          'createdById',
-        ],
-      },
-      include: [
-        {
-          model: Facilities,
-          attributes: ['id', 'name'],
+      if (status) {
+        if (
+          !Object.values(EmploymentStatus).includes(status as EmploymentStatus)
+        ) {
+          throw new BadRequestException('Был передан не существуюющий статус');
+        }
+        whereConditions.lastStatus = status;
+      }
+
+      const newEmployees = await this.employeeModel.findAll({
+        ...((searchName || status) && {
+          where: whereConditions,
+        }),
+        order: [['createdAt', 'ASC']],
+        attributes: {
+          exclude: [
+            'lastFacilityId',
+            'lastMasterId',
+            'lastPositionId',
+            'createdById',
+          ],
         },
-        {
-          model: Positions,
-          attributes: ['id', 'name'],
-        },
-        {
-          model: EmploymentPeriod,
-          attributes: ['status', 'startDate', 'endDate', 'createdAt', 'id'],
-        },
-        {
-          model: MasterPeriod,
-          attributes: {
-            exclude: ['masterId', 'employeeId'],
+        include: [
+          {
+            model: Facilities,
+            attributes: ['id', 'name'],
           },
-          include: [
-            {
-              model: User,
-              attributes: {
-                exclude: [
-                  'positionId',
-                  'role_id',
-                  'password',
-                  'login',
-                  'lastLoginAt',
-                  'createdAt',
-                  'updatedAt',
+          {
+            model: Positions,
+            attributes: ['id', 'name'],
+          },
+          {
+            model: EmploymentPeriod,
+            attributes: ['status', 'startDate', 'endDate', 'createdAt', 'id'],
+          },
+          {
+            model: MasterPeriod,
+            attributes: {
+              exclude: ['masterId', 'employeeId'],
+            },
+            include: [
+              {
+                model: User,
+                attributes: {
+                  exclude: [
+                    'positionId',
+                    'role_id',
+                    'password',
+                    'login',
+                    'lastLoginAt',
+                    'createdAt',
+                    'updatedAt',
+                  ],
+                },
+                include: [
+                  {
+                    model: Roles,
+                    attributes: {
+                      exclude: ['id'],
+                      include: ['name', 'alt_name', 'createdAt', 'updatedAt'],
+                    },
+                  },
+                  {
+                    model: Positions,
+                    attributes: ['name'],
+                  },
                 ],
               },
-              include: [
-                {
-                  model: Roles,
-                  attributes: {
-                    exclude: ['id'],
-                    include: ['name', 'alt_name', 'createdAt', 'updatedAt'],
-                  },
-                },
-                {
-                  model: Positions,
-                  attributes: ['name'],
-                },
-              ],
-            },
-          ],
-        },
-        {
-          model: FacilityPeriod,
-          attributes: {
-            exclude: ['facilityId', 'employeeId'],
+            ],
           },
-          include: [
-            {
-              model: Facilities,
-              attributes: ['name', 'id'],
+          {
+            model: FacilityPeriod,
+            attributes: {
+              exclude: ['facilityId', 'employeeId'],
             },
-          ],
-        },
-        {
-          model: PositionPeriod,
-          attributes: {
-            exclude: ['positionId', 'employeeId'],
+            include: [
+              {
+                model: Facilities,
+                attributes: ['name', 'id'],
+              },
+            ],
           },
-          include: [
-            {
-              model: Positions,
-              attributes: ['name', 'id'],
+          {
+            model: PositionPeriod,
+            attributes: {
+              exclude: ['positionId', 'employeeId'],
             },
-          ],
-        },
+            include: [
+              {
+                model: Positions,
+                attributes: ['name', 'id'],
+              },
+            ],
+          },
+          {
+            model: OutOfTownPeriod,
+            attributes: ['isOutOfTown', 'startDate', 'endDate', 'createdAt'],
+          },
+          {
+            model: User,
+            as: 'creator',
+            attributes: ['id', 'firstName', 'lastName', 'middleName'],
+          },
+          {
+            model: User,
+            as: 'lastMaster',
+            attributes: ['id', 'firstName', 'lastName', 'middleName'],
+          },
+        ],
+      });
+
+      await this.cacheManager.set(
+        EMPLOYEES_CACHE_KEY,
         {
-          model: OutOfTownPeriod,
-          attributes: ['isOutOfTown', 'startDate', 'endDate', 'createdAt'],
+          [status]: newEmployees,
         },
-        {
-          model: User,
-          as: 'creator',
-          attributes: ['id', 'firstName', 'lastName', 'middleName'],
-        },
-        {
-          model: User,
-          as: 'lastMaster',
-          attributes: ['id', 'firstName', 'lastName', 'middleName'],
-        },
-      ],
-    });
+        0,
+      );
+
+      employees = newEmployees;
+    }
 
     const userRole = await this.roleModel.findByPk(user?.role as any);
 
@@ -508,6 +536,7 @@ export class EmployeeService {
             ],
           });
       }
+
       return mastersEmployees;
     } else {
       return sortedEmployees;

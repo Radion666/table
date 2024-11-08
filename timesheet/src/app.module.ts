@@ -9,16 +9,16 @@ import { AllExceptionsFilter } from './common/AllExceptionsFilter/AllExceptionsF
 import { EmployeeModule } from './employee/employee.module';
 import { EmploymentPeriodsModule } from './employment-periods/employment-periods.module';
 import { FacilitiesModule } from './facilities/facilities.module';
+import { FacilityPeriodsModule } from './facility-periods/facility-periods.module';
+import { MasterPeriodsModule } from './master-periods/master-periods.module';
 import { MasterFacilitiesModule } from './master_facilities/master-facilities.module';
+import { OutOfTownPeriodsModule } from './out-of-town-periods/out-of-town-periods.module';
+import { PositionPeriodsModule } from './position-periods/position-periods.module';
+import { PositionsFacilityModule } from './positions-facility/positions-facility.module';
 import { PositionsModule } from './positions/positions.module';
 import { RolesModule } from './roles/roles.module';
 import { UsersModule } from './users/users.module';
 import { WorkLogsModule } from './work_logs/work-logs.module';
-import { FacilityPeriodsModule } from './facility-periods/facility-periods.module';
-import { MasterPeriodsModule } from './master-periods/master-periods.module';
-import { PositionPeriodsModule } from './position-periods/position-periods.module';
-import { OutOfTownPeriodsModule } from './out-of-town-periods/out-of-town-periods.module';
-import { PositionsFacilityModule } from './positions-facility/positions-facility.module';
 
 @Module({
   imports: [

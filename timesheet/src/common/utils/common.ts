@@ -33,3 +33,5 @@ export const checkDateForSheetValidation = (dateToCheck: string) => {
     return date.isBefore(today.subtract(1, 'month').startOf('month'));
   }
 };
+
+export const EMPLOYEES_CACHE_KEY = 'EMPLOYEES_CACHE_KEY';
