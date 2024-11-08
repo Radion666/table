@@ -678,7 +678,12 @@ export class WorkLogsService {
     const dates = getDaysInMonth(monthDifference);
 
     const workbook = new Workbook();
-    const worksheet = workbook.addWorksheet('Пример');
+    const worksheet = workbook.addWorksheet('Таблица');
+
+    workbook.creator = 'admin';
+    workbook.lastModifiedBy = 'admin';
+    workbook.created = new Date();
+    workbook.modified = new Date();
 
     worksheet.mergeCells('A1:A4');
     worksheet.mergeCells('B1:B4');
