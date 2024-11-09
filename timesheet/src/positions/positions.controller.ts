@@ -18,7 +18,7 @@ import { PositionsService } from './positions.service';
 @Controller('positions')
 @ApiTags('Должности')
 @UseGuards(JwtAuthGuard)
-@Roles('admin', 'master')
+@Roles('admin', 'master', 'personnel_officer')
 @UseGuards(RolesGuards)
 @ApiBearerAuth()
 export class PositionsController {

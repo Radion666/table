@@ -28,10 +28,11 @@ export const useGetAllFacilities = (params: defaultPaginatedType) => {
   };
 };
 
-export const useGetAllPositions = () => {
+export const useGetAllPositions = (enabled: boolean = true) => {
   const { ...data } = useQuery({
     queryKey: ["all positions"],
-    queryFn: () => apiRequests.getAllPositions()
+    queryFn: () => apiRequests.getAllPositions(),
+    enabled: enabled
   });
 
   return {
@@ -57,12 +58,12 @@ export const useGetAllWorkers = (params: { searchName?: string; status: workerSt
 };
 
 export const useGetAllMasters = () => {
-  const { user } = useGetUser();
+  const { userRole } = useGetUser();
 
   const { ...data } = useQuery({
     queryKey: ["all masters"],
     queryFn: () => apiRequests.getEmployees("master"),
-    enabled: user?.role?.name !== "master"
+    enabled: userRole !== "master" && userRole !== "financier"
   });
 
   return {

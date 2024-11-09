@@ -10,7 +10,7 @@ export interface UserType {
   role: {
     id: number;
     alt_name: string;
-    name: "admin" | "master";
+    name: "admin" | "master" | "financier" | "personnel_officer";
   };
   phoneNumber?: string;
   id: number;

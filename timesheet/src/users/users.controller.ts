@@ -20,7 +20,7 @@ import { UpdateUserDto } from './dto/updateUserDto';
 import { UsersService } from './users.service';
 
 @ApiTags('Пользователи')
-@Roles('admin')
+@Roles('admin', 'personnel_officer')
 @UseGuards(RolesGuards)
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -39,6 +39,7 @@ export class UsersController {
   @ApiOperation({
     summary: 'Получение сотрудников',
   })
+  @Roles('admin', 'personnel_officer')
   @Get('/employees')
   @ApiQuery({
     name: 'type',
@@ -52,6 +53,7 @@ export class UsersController {
     description: 'ID объекта',
     required: false,
   })
+  @Roles('admin', 'personnel_officer')
   getEmployees(
     @Query('type') type?: string,
     @Query('facilityId') facilityId?: number,

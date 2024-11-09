@@ -20,3 +20,10 @@ export interface EmployeesReturnType extends Omit<User, 'role'> {
     name: string;
   };
 }
+
+export interface cellValueType {
+  day?: number;
+  night?: number;
+  overwork?: number;
+  total?: number;
+}

@@ -73,7 +73,7 @@ export const ActionsRenderer = memo((params: CustomCellRendererProps<facilitiyTy
   return (
     <>
       <div className="flex flex-row items-center gap-5 justify-start h-[44px]">
-        {userRole !== "master" && (
+        {userRole !== "master" && userRole !== "financier" && (
           <Button className="max-h-8 w-36" color="primary" onClick={() => setModalOpen(true)}>
             Изменить объект
           </Button>

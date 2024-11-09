@@ -20,7 +20,7 @@ import { FacilitiesService } from './facilities.service';
 
 @ApiTags('Объекты')
 @UseGuards(JwtAuthGuard)
-@Roles('admin', 'master')
+@Roles('admin', 'master', 'personnel_officer')
 @UseGuards(RolesGuards)
 @ApiBearerAuth()
 @Controller('facilities')
@@ -32,6 +32,7 @@ export class FacilitiesController {
     return this.facilitiesService.create(createFacilityDto);
   }
 
+  @Roles('admin', 'master', 'personnel_officer', 'financier')
   @Get()
   findAll(
     @UserDecorator() user: User,
@@ -41,6 +42,7 @@ export class FacilitiesController {
     return this.facilitiesService.findAll(user, page, pageSize);
   }
 
+  @Roles('admin', 'master', 'personnel_officer', 'financier')
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.facilitiesService.findOne(+id);

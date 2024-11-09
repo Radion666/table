@@ -16,7 +16,7 @@ import { MasterFacilitiesService } from './master_facilities.service';
 
 @ApiTags('Мастеры - объекты')
 @UseGuards(JwtAuthGuard)
-@Roles('admin')
+@Roles('admin', 'personnel_officer')
 @UseGuards(RolesGuards)
 @ApiBearerAuth()
 @Controller('master-facilities')

@@ -107,14 +107,18 @@ export const setSumWithStep = (
 export const applyAlignment = (
   worksheet: Worksheet,
   cellRef: string,
-  value?: string,
+  value?: string | number,
   width?: number,
   fill?: boolean,
 ) => {
   const cell = worksheet.getCell(cellRef);
 
-  if (value) {
+  if (typeof +value === 'number' && !isNaN(+value)) {
     cell.value = value;
+  } else {
+    if (value) {
+      cell.value = value;
+    }
   }
 
   cell.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -156,3 +160,13 @@ export const applyAlignment = (
     }
   }
 };
+
+export function getExcelColumnName(columnIndex) {
+  let columnName = '';
+  while (columnIndex > 0) {
+    const remainder = (columnIndex - 1) % 26;
+    columnName = String.fromCharCode(65 + remainder) + columnName;
+    columnIndex = Math.floor((columnIndex - 1) / 26);
+  }
+  return columnName;
+}

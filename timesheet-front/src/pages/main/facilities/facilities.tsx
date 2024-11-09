@@ -156,7 +156,9 @@ export const FacilitiesPage = () => {
     }
   });
 
-  const { data: positionsData, isFetching: isPositionsFetching } = useGetAllPositions();
+  const { data: positionsData, isFetching: isPositionsFetching } = useGetAllPositions(
+    userRole !== "financier"
+  );
   const { data: allFacilities, isFetching: isAllFacilitiesFetching } = useGetAllFacilities({
     page: 1,
     pageSize: 1000
@@ -201,7 +203,7 @@ export const FacilitiesPage = () => {
     <>
       <div className="flex flex-1 flex-col gap-5 justify-center p-5">
         <div>
-          {userRole !== "master" && (
+          {userRole !== "master" && userRole !== "financier" && (
             <div className="flex justify-end">
               <Button onClick={() => setModalOpen(true)}>Создать новый объект</Button>
             </div>

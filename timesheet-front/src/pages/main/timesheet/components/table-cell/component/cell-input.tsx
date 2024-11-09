@@ -5,6 +5,7 @@ import dayjs, { Dayjs } from "dayjs";
 
 import { dateValueType } from "../../../data";
 
+import { useGetUser } from "~src/shared/hooks/useGetUser";
 import { facilityTimesheetSettingType } from "~src/shared/types/facilities";
 import { Button } from "~src/shared/ui/button/button";
 import { Icon } from "~src/shared/ui/icon/icon";
@@ -51,6 +52,8 @@ export const CellInput: FC<CellInputProps> = ({
   isDisabled,
   facilitySettings
 }) => {
+  const { userRole } = useGetUser();
+
   const [isModalOpen, setModalOpen] = useState<boolean>(false);
 
   const isFirstRender = useRef<boolean>(true);
@@ -115,7 +118,7 @@ export const CellInput: FC<CellInputProps> = ({
             borderColor ? `border-[2px] border-solid ${borderColor}` : "border-none"
           )}
           tabIndex={-1}>
-          {value && (
+          {value && userRole !== "financier" && (
             <Icon
               name="Cross"
               size={20}
@@ -145,7 +148,7 @@ export const CellInput: FC<CellInputProps> = ({
             borderColor ? `border-[2px] border-solid ${borderColor}` : "border-none",
             isDisabled && "cursor-not-allowed opacity-75"
           )}>
-          {value && (
+          {value && userRole !== "financier" && (
             <Icon
               name="Cross"
               size={20}

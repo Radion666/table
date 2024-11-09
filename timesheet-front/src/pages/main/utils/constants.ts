@@ -10,7 +10,8 @@ export const defaultHeaders: headerType[] = [
     value: (obj) => `${obj.fullName} + ${obj.lastPosition?.name}`,
     // value: () => <TableEmployeeRenderer />,
 
-    className: "md:!min-w-48 !min-w-20 flex-1 sticky left-0 bg-white z-40 ",
+    className:
+      "md:!min-w-48 !min-w-20 flex-1 sticky left-0 bg-white z-40 overflow-hidden text-ellipsis ",
     fieldType: "employee",
     type: "worker"
   },
@@ -18,7 +19,7 @@ export const defaultHeaders: headerType[] = [
     label: TableLocationHeader,
     className:
       "min-w-12 flex-1 sticky md:left-48 left-20 bg-white z-40 border-r-1 border-gray-500 max-w-12",
-    fieldType: "text",
+    fieldType: "location",
     type: "location",
     value: (obj) => String(obj.lastIsOutOfTown ? 1 : 0)
   },
@@ -34,7 +35,7 @@ export const defaultHeaders: headerType[] = [
     fieldType: "text",
     renderer: TotalHeaderRenderer,
     cellRenderer: TotalCellRenderer,
-    className: "!min-w-[295px]",
+    className: "!min-w-[295px] sticky right-0 bg-white z-40",
     type: "total"
   }
   // {

@@ -28,14 +28,14 @@ import { EmployeeService } from './employee.service';
 export class EmployeeController {
   constructor(private readonly employeeService: EmployeeService) {}
 
-  @Roles('admin', 'master')
+  @Roles('admin', 'master', 'personnel_officer')
   @UseGuards(RolesGuards)
   @Post()
   create(@Body() createEmployeeDto: CreateEmployeeDto) {
     return this.employeeService.create(createEmployeeDto);
   }
 
-  @Roles('admin', 'master')
+  @Roles('admin', 'master', 'personnel_officer')
   @Get()
   @ApiQuery({
     name: 'searchName',
@@ -57,7 +57,7 @@ export class EmployeeController {
     return this.employeeService.findAll(user, searchName, status);
   }
 
-  @Roles('admin', 'master')
+  @Roles('master', 'admin', 'personnel_officer', 'financier')
   @UseGuards(RolesGuards)
   @Get('/byFacilities')
   findByFacility(
@@ -72,7 +72,7 @@ export class EmployeeController {
     return this.employeeService.findOne(+id);
   }
 
-  @Roles('admin', 'master')
+  @Roles('admin', 'master', 'personnel_officer')
   @UseGuards(RolesGuards)
   @Patch(':id')
   update(

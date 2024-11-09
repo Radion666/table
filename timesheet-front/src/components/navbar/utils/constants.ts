@@ -32,7 +32,7 @@ export const navbarItems: navBarItemType[] = [
     label: "Объекты",
     icon: "Facilities",
     url: [ROUTE_CONSTANTS.FACILITIES, ROUTE_CONSTANTS.TIMESHEET],
-    allowedRoles: ["admin", "master"]
+    allowedRoles: ["admin", "master", "personnel_officer", "financier"]
   },
   {
     label: "Должности",

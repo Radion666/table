@@ -23,7 +23,7 @@ import { WorkLogsService } from './work-logs.service';
 
 @ApiTags('Таблица учета времени')
 @UseGuards(JwtAuthGuard)
-@Roles('admin', 'master')
+@Roles('admin', 'master', 'personnel_officer')
 @UseGuards(RolesGuards)
 @ApiBearerAuth()
 @Controller('work-logs')
@@ -42,7 +42,7 @@ export class WorkLogsController {
     );
   }
 
-  @Roles('master', 'admin')
+  @Roles('master', 'admin', 'personnel_officer', 'financier')
   @UseGuards(RolesGuards)
   @Get(':date/:id')
   async getWorkLogsByDate(
@@ -61,6 +61,7 @@ export class WorkLogsController {
     return this.workLogsService.findAll();
   }
 
+  @Roles('master', 'admin', 'personnel_officer', 'financier')
   @Get('download')
   @Header('Content-Disposition', 'attachment; filename="SheetJSNest.xlsx"')
   async downloadXlsxFile(
@@ -68,6 +69,15 @@ export class WorkLogsController {
     @Query('id') id: string,
   ): Promise<StreamableFile> {
     return this.workLogsService.download(date, +id);
+  }
+
+  @Roles('master', 'admin', 'personnel_officer', 'financier')
+  @Get('download-all')
+  @Header('Content-Disposition', 'attachment; filename="SheetJSNest.xlsx"')
+  async downloadXlsxFileAllFacilities(
+    @Query('date') date: string,
+  ): Promise<StreamableFile> {
+    return this.workLogsService.downloadAllFacilities(date);
   }
 
   // @Get(':id')

@@ -32,7 +32,7 @@ import { getShortUserFio, getUserFio, removeLeadingZeroFromDate } from "~src/sha
 
 type tableValueType = (object: employeeType) => string;
 
-export type fieldType = "input" | "text" | "info" | "employee";
+export type fieldType = "input" | "text" | "info" | "employee" | "location";
 export type headerCellType = "worker" | "location" | "field" | "total" | "info";
 export interface headerType {
   label: string | (() => React.JSX.Element);
@@ -118,13 +118,13 @@ export const TimesheetPage = () => {
   const { data: positionsData, isFetching: isPositionsFetching } = useQuery({
     queryKey: ["facility by id", watch("facilityId")],
     queryFn: () => apiRequests.getPositionsByFacilityId(getValues("facilityId") ?? undefined),
-    enabled: typeof getValues("facilityId") === "number"
+    enabled: typeof getValues("facilityId") === "number" && userRole !== "financier"
   });
 
   const { data: allMastersData, isLoading: isAllMastersLoading } = useQuery({
     queryKey: ["all masters", getValues("facilityId")],
     queryFn: () => apiRequests.getEmployees("master", getValues("facilityId") ?? undefined),
-    enabled: userRole !== "master" && !!watch("facilityId")
+    enabled: userRole !== "master" && !!watch("facilityId") && userRole !== "financier"
   });
 
   const [facilitySettings, setFacilitySettings] = useState<
@@ -612,7 +612,9 @@ export const TimesheetPage = () => {
             )}
           </div>
           <div className="flex flex-row items-center gap-4">
-            <Button onClick={() => setModalOpen(true)}>Создать нового сотрудника</Button>
+            {userRole !== "financier" && (
+              <Button onClick={() => setModalOpen(true)}>Создать нового сотрудника</Button>
+            )}
 
             <Input
               placeholder="Поиск работника"
@@ -622,20 +624,22 @@ export const TimesheetPage = () => {
               }}
               className="relative top-1"
             />
-            <Button
-              className="mr-5"
-              onClick={() => {
-                apiRequests
-                  .saveWorkLogs(innerData, facilityId ? +facilityId : undefined)
-                  .then(() => {
-                    toast.success("Успешно обновлено");
-                    setTimeout(() => {
-                      // window.location.reload();
-                    }, 500);
-                  });
-              }}>
-              Сохранить
-            </Button>
+            {userRole !== "financier" && (
+              <Button
+                className="mr-5"
+                onClick={() => {
+                  apiRequests
+                    .saveWorkLogs(innerData, facilityId ? +facilityId : undefined)
+                    .then(() => {
+                      toast.success("Успешно обновлено");
+                      setTimeout(() => {
+                        // window.location.reload();
+                      }, 500);
+                    });
+                }}>
+                Сохранить
+              </Button>
+            )}
           </div>
         </div>
 
@@ -708,7 +712,8 @@ export const TimesheetPage = () => {
                       left: 0,
                       width: "100%",
                       height: `${virtualRow.size}px`,
-                      transform: `translateY(${virtualRow.start}px)`
+                      transform: `translateY(${virtualRow.start}px)`,
+                      pointerEvents: userRole === "financier" ? "none" : "all"
                     }}
                     className={clsx(
                       "transition-all",

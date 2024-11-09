@@ -14,6 +14,7 @@ import { workerStatuses } from "~src/pages/main/workers/utils/constants";
 import { useGetUser } from "~src/shared/hooks/useGetUser";
 import { employmentPeriodsType, facilityPeriodsType } from "~src/shared/types/employees";
 import { facilityTimesheetSettingType } from "~src/shared/types/facilities";
+import { Icon } from "~src/shared/ui/icon/icon";
 
 interface TableCellProps {
   label: string;
@@ -333,6 +334,16 @@ export const TableCell: FC<TableCellProps> = memo(
                     <div>{userShortName ?? ""}</div>
                     <div className="text-gray-300">{userPosition ?? ""}</div>
                   </div>
+                ) : fieldType === "location" ? (
+                  <>
+                    <div
+                      className={clsx(
+                        "flex flex-row items-center gap-1",
+                        lastIsOutOfTown ? "text-red-800" : "text-green-500"
+                      )}>
+                      <Icon name="House" size={20} />
+                    </div>
+                  </>
                 ) : (
                   <CellInput
                     value={value}
