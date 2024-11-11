@@ -101,11 +101,15 @@ export const apiRequests = {
   createFacility: ({
     name,
     mastersIds,
-    settings
+    settings,
+    notWorkingDays,
+    workDays
   }: {
     name: string;
     mastersIds: number[];
     settings: facilityTimesheetSettingType;
+    workDays: string[];
+    notWorkingDays: string[];
   }) => {
     return apiConfigRequests<facilitiyType>({
       method: "post",
@@ -113,18 +117,24 @@ export const apiRequests = {
       data: {
         name,
         mastersIds,
-        settings
+        settings,
+        workDays,
+        notWorkingDays
       }
     });
   },
   updateFacilityName: ({
     id,
     newName,
-    mastersIds
+    mastersIds,
+    workDays,
+    notWorkingDays
   }: {
     id: number;
     newName: string;
     mastersIds: number[];
+    workDays: string[];
+    notWorkingDays: string[];
   }) => {
     return apiConfigRequests({
       method: "patch",
@@ -133,7 +143,9 @@ export const apiRequests = {
         name: newName,
         ...(mastersIds?.length && {
           mastersIds
-        })
+        }),
+        workDays,
+        notWorkingDays
       }
     });
   },
@@ -243,11 +255,11 @@ export const apiRequests = {
    * Формат MM-YYYY
    */
 
-  getFacilityId: async (id?: number) => {
+  getFacilityId: async (id: number, year: number, month: number) => {
     if (!id) return Promise.reject([]);
     const { data } = await apiConfigRequests<facilitiyType>({
       method: "get",
-      url: `/facilities/${id}`
+      url: `/facilities/${id}/${year}/${month}`
     });
     return data;
   },
@@ -314,6 +326,13 @@ export const apiRequests = {
         page,
         pageSize
       }
+    });
+  },
+
+  getProductionCalendar: () => {
+    return apiConfigRequests<{ holidays: string[] }>({
+      method: "get",
+      url: "/production-calendar"
     });
   }
 };

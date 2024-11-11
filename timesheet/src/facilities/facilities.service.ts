@@ -6,7 +6,12 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
+import {
+  transformDatesToMonthsArray,
+  validateWorkDays,
+} from 'src/common/utils/date-utils';
 import { MasterFacilities } from 'src/master_facilities/master-facilities.model';
+import { ProductionCalendar } from 'src/production-calendar/production-calendar.model';
 import { Roles } from 'src/roles/role.model';
 import { User } from 'src/users/user.model';
 import { CreateFacilityDto } from './dto/create-facility.dto';
@@ -21,6 +26,8 @@ export class FacilitiesService {
     private masterFacilitiesRepository: typeof MasterFacilities,
     @InjectModel(Roles) private rolesRepositoryy: typeof Roles,
     @InjectModel(User) private userReposity: typeof User,
+    @InjectModel(ProductionCalendar)
+    private productionCalendar: typeof ProductionCalendar,
     // private masterFacilitiesService: MasterFacilitiesService,
   ) {}
 
@@ -38,8 +45,23 @@ export class FacilitiesService {
         HttpStatus.BAD_REQUEST,
       );
     }
+
+    validateWorkDays(createFacilityDto?.workDays);
+
+    const formattedData = transformDatesToMonthsArray(
+      createFacilityDto?.notWorkingDays ?? [],
+    );
+
     const createdFacility =
       await this.facilitiesRepository.create(createFacilityDto);
+
+    await this.productionCalendar.create({
+      facilityId: createdFacility.id,
+      startDate: new Date(),
+      endDate: null,
+      workingDays: createFacilityDto.workDays ?? [],
+      months: formattedData,
+    });
 
     await this.setMasterFacilities(
       createdFacility?.id,
@@ -233,27 +255,45 @@ export class FacilitiesService {
           offset,
           limit: pageSize,
           order: [['id', 'asc']],
-          include: {
-            model: MasterFacilities,
-            attributes: ['master_id'],
-            include: [
-              {
-                model: User,
-                attributes: [
-                  'lastName',
-                  'firstName',
-                  'middleName',
-                  'phoneNumber',
-                ],
-              },
-            ],
-          },
+          include: [
+            {
+              model: MasterFacilities,
+              attributes: ['master_id'],
+              include: [
+                {
+                  model: User,
+                  attributes: [
+                    'lastName',
+                    'firstName',
+                    'middleName',
+                    'phoneNumber',
+                  ],
+                },
+              ],
+            },
+            {
+              model: ProductionCalendar,
+              order: ['createdAt', 'DESC'],
+            },
+          ],
         });
 
       const totalPage = Math.ceil(totalItems / pageSize);
 
+      const sortedItems = items?.map((item) => {
+        const sortedProductionCalendar =
+          item.productionCalendar?.sort((a, b) => {
+            return b.createdAt.getTime() - a.createdAt.getTime();
+          }) || [];
+
+        return {
+          ...item?.toJSON(),
+          productionCalendar: sortedProductionCalendar,
+        };
+      });
+
       return {
-        items,
+        items: sortedItems as any,
         currentPage: +page,
         totalPage: +totalPage,
         pageSize: +pageSize,
@@ -262,7 +302,7 @@ export class FacilitiesService {
     }
   }
 
-  async findOne(id: number) {
+  async findOne(id: number, year?: number, month?: number) {
     if (!id) {
       throw new HttpException(
         'Объект с таким id не был передан',
@@ -273,13 +313,73 @@ export class FacilitiesService {
       where: {
         id,
       },
+      include: {
+        model: ProductionCalendar,
+        where: year
+          ? {
+              months: {
+                [Op.contains]: { year: year },
+              },
+            }
+          : undefined,
+      },
     });
+
     if (!foundFacility) {
-      throw new HttpException(
-        'Объект с таким id не был найден',
-        HttpStatus.NOT_FOUND,
-      );
+      return await this.facilitiesRepository.findOne({
+        where: {
+          id,
+        },
+      });
     }
+
+    if (year && month) {
+      if (foundFacility && foundFacility.productionCalendar) {
+        foundFacility.productionCalendar =
+          foundFacility.productionCalendar.sort(
+            (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+          );
+      }
+
+      const jsonedFacility = foundFacility.toJSON();
+
+      let newFoundFacility = {};
+
+      const newProductionCalendar: [] = [];
+
+      for (let i = 0; i < jsonedFacility.productionCalendar?.length; i++) {
+        const element = jsonedFacility?.productionCalendar?.[i];
+
+        let newMonths = {};
+
+        for (let j = 0; j < element?.months?.dates?.length; j++) {
+          const date = element?.months?.dates?.[j];
+
+          if (date.month === month) {
+            newMonths = {
+              ...date,
+            };
+          }
+        }
+        //@ts-ignore
+        newProductionCalendar.push({
+          ...element,
+          months: newMonths,
+        });
+
+        // newProductionCalendar.push({
+        //   ...element,
+        // });
+      }
+
+      newFoundFacility = {
+        ...jsonedFacility,
+        productionCalendar: newProductionCalendar,
+      };
+
+      return newFoundFacility;
+    }
+
     return foundFacility;
   }
 
@@ -308,6 +408,50 @@ export class FacilitiesService {
         returning: true,
       },
     );
+
+    const currentProductionCalendar = await this.productionCalendar.findOne({
+      where: {
+        facilityId: id,
+        endDate: null,
+      },
+    });
+
+    validateWorkDays(updateFacilityDto?.workDays);
+
+    const formattedData = transformDatesToMonthsArray(
+      updateFacilityDto?.notWorkingDays?.length
+        ? updateFacilityDto?.notWorkingDays
+        : [],
+    );
+
+    if (
+      currentProductionCalendar &&
+      (JSON.stringify(currentProductionCalendar?.workingDays) !==
+        JSON.stringify(updateFacilityDto?.workDays) ||
+        JSON.stringify(formattedData) !==
+          JSON.stringify(currentProductionCalendar?.months))
+    ) {
+      if (currentProductionCalendar) {
+        currentProductionCalendar.endDate = new Date();
+        await currentProductionCalendar.save();
+      }
+
+      await this.productionCalendar.create({
+        facilityId: id,
+        startDate: new Date(),
+        endDate: null,
+        workingDays: updateFacilityDto.workDays ?? [],
+        months: formattedData,
+      });
+    } else if (!currentProductionCalendar) {
+      await this.productionCalendar.create({
+        facilityId: id,
+        startDate: new Date(),
+        endDate: null,
+        workingDays: updateFacilityDto.workDays ?? [],
+        months: formattedData,
+      });
+    }
 
     await this.updateMasterFacility(
       updatedFacilitiy.id,

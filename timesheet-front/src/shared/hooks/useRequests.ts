@@ -28,6 +28,17 @@ export const useGetAllFacilities = (params: defaultPaginatedType) => {
   };
 };
 
+export const useGetProductionCalendar = () => {
+  const { ...data } = useQuery({
+    queryKey: ["production calendar"],
+    queryFn: () => apiRequests.getProductionCalendar()
+  });
+
+  return {
+    ...data
+  };
+};
+
 export const useGetAllPositions = (enabled: boolean = true) => {
   const { ...data } = useQuery({
     queryKey: ["all positions"],

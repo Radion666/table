@@ -9,7 +9,18 @@ export interface employeeTotalType {
   hoursOfOverworkTwoHours: number;
   hoursOfOverworkMoreTwoHours: number;
   hoursOfOnlyTotalHours: number;
+  lettersSum: lettersSumType;
 }
+
+export type lettersSumType = {
+  Я: number;
+  П: number;
+  Б: number;
+  В: number;
+  О: number;
+  МО: number;
+  А: number;
+};
 
 export type employeeDatesType = Record<
   string,
@@ -19,6 +30,7 @@ export type employeeDatesType = Record<
       night: string;
       overwork: string;
       total: string;
+      lettersSum?: lettersSumType;
     }
 >;
 
@@ -85,6 +97,7 @@ export type dateValueType =
       night: string;
       overwork: string;
       total: string;
+      lettersSum?: lettersSumType;
     };
 
 export interface filledDateValueTye {

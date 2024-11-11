@@ -18,7 +18,7 @@ export const defaultHeaders: headerType[] = [
   {
     label: TableLocationHeader,
     className:
-      "min-w-12 flex-1 sticky md:left-48 left-20 bg-white z-40 border-r-1 border-gray-500 max-w-12",
+      "min-w-12 flex-1 sticky md:left-48 left-20 bg-white z-40 border-r-1 border-gray-500 max-w-12 shadow-md",
     fieldType: "location",
     type: "location",
     value: (obj) => String(obj.lastIsOutOfTown ? 1 : 0)

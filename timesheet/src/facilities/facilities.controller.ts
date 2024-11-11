@@ -43,9 +43,13 @@ export class FacilitiesController {
   }
 
   @Roles('admin', 'master', 'personnel_officer', 'financier')
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.facilitiesService.findOne(+id);
+  @Get(':id/:year/:month')
+  findOne(
+    @Param('id') id: string,
+    @Param('year') year?: number,
+    @Param('month') month?: number,
+  ) {
+    return this.facilitiesService.findOne(+id, +year, +month);
   }
 
   @Patch(':id')

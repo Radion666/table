@@ -11,6 +11,7 @@ import { FacilityPeriod } from 'src/facility-periods/facility-periods.model';
 import { MasterFacilities } from 'src/master_facilities/master-facilities.model';
 import { PositionFacility } from 'src/positions-facility/positions-facility.model';
 import { Positions } from 'src/positions/positions.model';
+import { ProductionCalendar } from 'src/production-calendar/production-calendar.model';
 import { facilityTimeSheetSettingType } from './dto/create-facility.dto';
 
 interface FacilitiyCreationAttrs {
@@ -79,4 +80,7 @@ export class Facilities extends Model<Facilities, FacilitiyCreationAttrs> {
 
   @BelongsToMany(() => Positions, () => PositionFacility)
   positions: Positions[];
+
+  @HasMany(() => ProductionCalendar)
+  productionCalendar: ProductionCalendar[];
 }

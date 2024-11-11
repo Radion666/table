@@ -113,29 +113,40 @@ export const cleanData = (data, integers) => {
 
     if (integers.allowOnlyTotal) {
       // Если allowOnlyTotal, удаляем day, night и overwork
-      cleanedData[date] = {
-        total: entry.total || null, // Оставляем только total
-      };
+
+      if (entry.total) {
+        cleanedData[date] = {
+          total: entry.total || null, // Оставляем только total
+        };
+      } else {
+        continue;
+      }
     } else {
       // Если allowDay, оставляем day
       if (integers.allowDay) {
-        cleanedData[date] = { day: day || null };
+        if (day) {
+          cleanedData[date] = { day: day };
+        }
       }
 
       // Если allowNight, оставляем night
       if (integers.allowNight) {
-        cleanedData[date] = {
-          ...cleanedData[date],
-          night: night || null,
-        };
+        if (night) {
+          cleanedData[date] = {
+            ...cleanedData[date],
+            night: night || null,
+          };
+        }
       }
 
       // Если allowOverwork, оставляем overwork
       if (integers.allowOverwork) {
-        cleanedData[date] = {
-          ...cleanedData[date],
-          overwork: overwork || null,
-        };
+        if (overwork) {
+          cleanedData[date] = {
+            ...cleanedData[date],
+            overwork: overwork || null,
+          };
+        }
       }
 
       // Если в cleanedData нет никаких полей, возвращаем null
@@ -150,4 +161,98 @@ export const cleanData = (data, integers) => {
   }
 
   return cleanedData;
+};
+export const transformDatesToMonthsArray = (
+  dates: string[],
+): productionDaysType => {
+  if (dates?.length) {
+    // Проверка, что все даты соответствуют формату 'YYYY-MM-DD' и имеют один и тот же год
+
+    // Проверка, что все даты соответствуют формату 'YYYY-MM-DD' и имеют один и тот же год
+    const yearSet = new Set<number>();
+    const formattedDates = dates.map((dateStr) => {
+      const date = new Date(dateStr);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr) || isNaN(date.getTime())) {
+        throw new Error(
+          `Некорректная дата: ${dateStr}. Должен быть формат 'YYYY-MM-DD'.`,
+        );
+      }
+      yearSet.add(date.getFullYear());
+      return date;
+    });
+
+    if (yearSet.size > 1) {
+      throw new Error('Все даты должны быть одного года.');
+    }
+
+    // Получаем год
+    const year = formattedDates[0].getFullYear();
+
+    // Группируем даты по месяцам
+    const groupedByMonth = formattedDates.reduce(
+      (acc, date) => {
+        const month = date.getMonth() + 1; // Месяцы считаются с 0, добавляем 1
+        const day = date.getDate();
+
+        if (!acc[month]) {
+          acc[month] = [];
+        }
+        acc[month].push(day);
+
+        return acc;
+      },
+      {} as Record<number, number[]>,
+    );
+
+    // Преобразуем результат в нужный формат
+    const result = {
+      year,
+      dates: Object.keys(groupedByMonth)
+        .map((month) => ({
+          month: parseInt(month),
+          days: groupedByMonth[parseInt(month)].sort((a, b) => a - b),
+        }))
+        .sort((a, b) => a.month - b.month), // Сортируем по месяцам
+    };
+
+    return result;
+  }
+  return [] as any;
+};
+
+export interface productionDaysType {
+  year: number;
+  dates: { month: number; days: number[] }[];
+}
+
+export const validateWorkDays = (workDays: string[]) => {
+  const validDays = [
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
+    'sunday',
+  ];
+
+  // Проверяем, что все дни в массиве на английском и не дублируются
+  const seenDays = new Set<string>();
+
+  for (const day of workDays) {
+    if (!validDays.includes(day.toLowerCase())) {
+      throw new BadRequestException(
+        `Неверный день: ${day}. Рабочие дни должны быть одним из следующих: ${validDays.join(', ')}.`,
+      );
+    }
+
+    // Проверяем на дублирование
+    if (seenDays.has(day.toLowerCase())) {
+      throw new BadRequestException(
+        `Дублирующийся день: ${day}. Рабочие дни не могут содержать дубликаты.`,
+      );
+    }
+
+    seenDays.add(day.toLowerCase());
+  }
 };

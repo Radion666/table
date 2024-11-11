@@ -38,5 +38,17 @@ export const cellLettersKeyString = {
   Б: "Больничный",
   В: "Выходной",
   О: "Отпуск",
-  А: "Административный"
+  А: "Административный",
+  П: "Прогул",
+  МО: "Межвахтовый отпуск"
 };
+
+export const daysOfWeek = [
+  { label: "Понедельник", value: "Monday" },
+  { label: "Вторник", value: "Tuesday" },
+  { label: "Среда", value: "Wednesday" },
+  { label: "Четверг", value: "Thursday" },
+  { label: "Пятница", value: "Friday" },
+  { label: "Суббота", value: "Saturday" },
+  { label: "Воскресенье", value: "Sunday" }
+];

@@ -16,6 +16,7 @@ import { OutOfTownPeriodsModule } from './out-of-town-periods/out-of-town-period
 import { PositionPeriodsModule } from './position-periods/position-periods.module';
 import { PositionsFacilityModule } from './positions-facility/positions-facility.module';
 import { PositionsModule } from './positions/positions.module';
+import { ProductionCalendarModule } from './production-calendar/production-calendar.module';
 import { RolesModule } from './roles/roles.module';
 import { UsersModule } from './users/users.module';
 import { WorkLogsModule } from './work_logs/work-logs.module';
@@ -33,7 +34,7 @@ import { WorkLogsModule } from './work_logs/work-logs.module';
       password: process.env.PG_PASSWORD,
       database: process.env.PG_DATABASE,
       autoLoadModels: true,
-      logging: console.log,
+      // logging: console.log,
     }),
     TelegrafModule.forRoot({
       token: process.env.TG_API_TOKEN,
@@ -53,6 +54,7 @@ import { WorkLogsModule } from './work_logs/work-logs.module';
     PositionPeriodsModule,
     OutOfTownPeriodsModule,
     PositionsFacilityModule,
+    ProductionCalendarModule,
   ],
   controllers: [],
   providers: [

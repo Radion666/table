@@ -26,6 +26,7 @@ import { UpdateWorkLogDto } from './dto/update-work_log.dto';
 import { WorkLog } from './work-logs.model';
 
 import { Workbook } from 'exceljs';
+import { Op } from 'sequelize';
 import { cellValueType } from 'src/common/types/types';
 import {
   checkDateForSheetValidation,
@@ -42,6 +43,7 @@ import {
 import { EmployeeService } from 'src/employee/employee.service';
 import { worksheetTableFacilitySettingIntegersType } from 'src/facilities/dto/create-facility.dto';
 import { MasterFacilities } from 'src/master_facilities/master-facilities.model';
+import { ProductionCalendar } from 'src/production-calendar/production-calendar.model';
 import { PassThrough } from 'stream';
 
 @Injectable()
@@ -209,7 +211,7 @@ export class WorkLogsService {
         }
       }
 
-      const newDates = cleanData(newDatesCopy, integers);
+      const newDates = cleanData(dates, integers);
 
       const existingLog = await this.workLogModel.findOne({
         where: { employeeId, date: date, facilityId },
@@ -313,10 +315,13 @@ export class WorkLogsService {
     // const firedAt = employee.firedAt;
 
     const regex = /^\d{2}\.\d{2}\.\d{4}$/;
-    const allowdStringValues = ['Б', 'В', 'О', 'А'];
+    const allowdStringValues = ['Б', 'В', 'О', 'А', 'П', 'МО'];
 
     for (const dateKey in dates) {
       const dateValue = dates[dateKey];
+
+      const currentDay = dayjs(dateKey, 'DD.MM.YYYY').day();
+      const isWeekend = currentDay === 6 || currentDay === 0;
 
       if (!regex.test(dateKey)) {
         throw new Error(`Передан некорректный ключ даты ${dateKey}`);
@@ -378,9 +383,13 @@ export class WorkLogsService {
             if (night > 8) {
               throw new Error(`Значение ночи не может превышать 8 часов`);
             }
-            if (overwork > 8) {
+            if (overwork > 8 && !isWeekend) {
               throw new Error(
                 `Значение переработки не может превышать 8 часов`,
+              );
+            } else if (overwork > 24 && isWeekend) {
+              throw new Error(
+                `Значение переработки не может превышать 24 часа`,
               );
             }
             if (localTotal > 24) {
@@ -389,28 +398,28 @@ export class WorkLogsService {
               );
             }
           } else if (selectedCount === 2) {
-            if (day > 8 && integers?.allowDay) {
-              throw new Error(`Значение дня не может превышать 8 часов`);
+            if (day > 12 && integers?.allowDay) {
+              throw new Error(`Значение дня не может превышать 12 часов`);
             }
-            if (night > 8 && integers?.allowNight) {
-              throw new Error(`Значение ночи не может превышать 8 часов`);
+            if (night > 12 && integers?.allowNight) {
+              throw new Error(`Значение ночи не может превышать 12 часов`);
             }
-            if (overwork > 8 && integers?.allowOverwork) {
+            if (overwork > 12 && integers?.allowOverwork) {
               throw new Error(
-                `Значение переработки не может превышать 8 часов`,
+                `Значение переработки не может превышать 12 часов`,
               );
             }
-            if (localTotal > 16) {
+            if (localTotal > 24) {
               throw new Error(
                 `Суммарное значение ячеек за дату превышать 24 часа`,
               );
             }
           } else if (selectedCount === 1) {
-            if (day > 8 && integers?.allowDay) {
-              throw new Error(`Значение дня не может превышать 8 часа`);
+            if (day > 24 && integers?.allowDay) {
+              throw new Error(`Значение дня не может превышать 24 часа`);
             }
-            if (night > 8 && integers?.allowNight) {
-              throw new Error(`Значение ночи не может превышать 8 часа`);
+            if (night > 24 && integers?.allowNight) {
+              throw new Error(`Значение ночи не может превышать 24 часа`);
             }
             if (overwork > 24 && integers?.allowOverwork) {
               throw new Error(
@@ -512,11 +521,65 @@ export class WorkLogsService {
       (employee) => employee.id === employeeId,
     );
 
+    const foundFacilityById = await this.findFacilityById(
+      facilityId,
+      +year,
+      +month,
+    );
+
+    const productionCalendar = (foundFacilityById as any)?.productionCalendar;
+    // const foundFacilityById = await facility
+
     for (let i = 0; i < allDaysInMonth?.length; i++) {
       const fullDate = allDaysInMonth[i].fullDate;
       const parsedDate = dayjs(parseDate(fullDate));
 
+      const cellDate = dayjs(parseDate(fullDate));
+      const cellDay = cellDate.date();
+
       if (dates[fullDate]) {
+        if (productionCalendar?.length) {
+          for (let i = 0; i < productionCalendar?.length; i++) {
+            const calendarDay = productionCalendar?.[i];
+
+            const startDate = calendarDay?.startDate;
+            const endDate = calendarDay?.endDate;
+
+            if (startDate && (endDate || endDate === null)) {
+              const start = dayjs(startDate);
+              const end = endDate === null ? null : dayjs(endDate);
+
+              if (
+                (cellDate.isSame(start, 'day') ||
+                  cellDate.isAfter(start, 'date')) &&
+                end === null
+              ) {
+                if (calendarDay.months.month === cellDate.month() + 1) {
+                  if (calendarDay.months.days.includes(cellDay)) {
+                    throw new BadRequestException(
+                      `Нельзя сохранить значение сотрудника - ${employeeShortName} на число на число - ${fullDate}, так как день является выходным`,
+                    );
+                  }
+                }
+              } else if (start && end) {
+                if (
+                  (start?.isBefore(cellDate, 'day') ||
+                    (start?.isSame(cellDate, 'day') &&
+                      start.diff(end, 'hour') > 1)) &&
+                  (end?.isAfter(cellDate, 'day') ||
+                    end?.isSame(cellDate, 'day'))
+                ) {
+                  if (calendarDay?.months?.days?.includes(cellDay)) {
+                    throw new BadRequestException(
+                      `Нельзя сохранить значение сотрудника - ${employeeShortName} на число на число - ${fullDate}, так как день является выходным`,
+                    );
+                  }
+                }
+              }
+            }
+          }
+        }
+
         for (let j = 0; j < foundEmployeeById?.facilityPeriods?.length; j++) {
           const facilityPeriod = foundEmployeeById?.facilityPeriods?.[j];
 
@@ -3121,5 +3184,86 @@ export class WorkLogsService {
 
   remove(id: number) {
     return `This action removes a #${id} workLog`;
+  }
+
+  async findFacilityById(id: number, year?: number, month?: number) {
+    if (!id) {
+      throw new HttpException(
+        'Объект с таким id не был передан',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    const foundFacility = await this.facilitiesModel.findOne({
+      where: {
+        id,
+      },
+      include: {
+        model: ProductionCalendar,
+        where: year
+          ? {
+              months: {
+                [Op.contains]: { year: year },
+              },
+            }
+          : undefined,
+      },
+    });
+
+    if (!foundFacility) {
+      return await this.facilitiesModel.findOne({
+        where: {
+          id,
+        },
+      });
+    }
+
+    if (year && month) {
+      if (foundFacility && foundFacility.productionCalendar) {
+        foundFacility.productionCalendar =
+          foundFacility.productionCalendar.sort(
+            (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+          );
+      }
+
+      const jsonedFacility = foundFacility.toJSON();
+
+      let newFoundFacility = {};
+
+      const newProductionCalendar: [] = [];
+
+      for (let i = 0; i < jsonedFacility.productionCalendar?.length; i++) {
+        const element = jsonedFacility?.productionCalendar?.[i];
+
+        let newMonths = {};
+
+        for (let j = 0; j < element?.months?.dates?.length; j++) {
+          const date = element?.months?.dates?.[j];
+
+          if (date.month === month) {
+            newMonths = {
+              ...date,
+            };
+          }
+        }
+        //@ts-ignore
+        newProductionCalendar.push({
+          ...element,
+          months: newMonths,
+        });
+
+        // newProductionCalendar.push({
+        //   ...element,
+        // });
+      }
+
+      newFoundFacility = {
+        ...jsonedFacility,
+        productionCalendar: newProductionCalendar,
+      };
+
+      return newFoundFacility;
+    }
+
+    return foundFacility;
   }
 }

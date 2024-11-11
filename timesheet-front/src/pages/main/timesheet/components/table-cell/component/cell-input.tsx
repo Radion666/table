@@ -6,7 +6,10 @@ import dayjs, { Dayjs } from "dayjs";
 import { dateValueType } from "../../../data";
 
 import { useGetUser } from "~src/shared/hooks/useGetUser";
-import { facilityTimesheetSettingType } from "~src/shared/types/facilities";
+import {
+  facilityTimesheetSettingType,
+  worksheetTableFacilitySettingIntegersType
+} from "~src/shared/types/facilities";
 import { Button } from "~src/shared/ui/button/button";
 import { Icon } from "~src/shared/ui/icon/icon";
 import { Modal } from "~src/shared/ui/modal/modal";
@@ -19,12 +22,18 @@ interface CellInputProps {
   date?: Dayjs;
   isDisabled?: boolean;
   facilitySettings?: facilityTimesheetSettingType;
+  isWeekend: boolean;
+  integers?: worksheetTableFacilitySettingIntegersType;
 }
 
-const cellLetters = [
+export const cellLetters = [
   {
     label: "Я - Явка",
     value: "Я"
+  },
+  {
+    label: "П - Прогул",
+    value: "П"
   },
   {
     label: "Б - Больничный",
@@ -39,6 +48,10 @@ const cellLetters = [
     value: "О"
   },
   {
+    label: "МО - Межвахтовый отпуск",
+    value: "МО"
+  },
+  {
     label: "А - Административный",
     value: "А"
   }
@@ -50,7 +63,8 @@ export const CellInput: FC<CellInputProps> = ({
   field,
   date,
   isDisabled,
-  facilitySettings
+  facilitySettings,
+  isWeekend
 }) => {
   const { userRole } = useGetUser();
 
@@ -158,7 +172,30 @@ export const CellInput: FC<CellInputProps> = ({
               }}
             />
           )}
-          {typeof value === "object" &&
+          {typeof value === "object" && isWeekend && integers?.allowOverwork ? (
+            <input
+              className="w-[95%] rounded-md ml-auto mr-auto  border-[1px] text-center hover:border-blue-200"
+              value={value?.overwork}
+              onChange={(e) => {
+                const value = e.target.value;
+
+                if (value === "") {
+                  return handleChange(field, "", "overwork");
+                }
+
+                const regex = /^(0|[1-9]|1[0-9]|2[0-4])$/;
+
+                const isValid = regex.test(value);
+
+                if (isValid) {
+                  handleChange(field, value, "overwork");
+                }
+              }}
+              style={{
+                height: `100%`
+              }}
+            />
+          ) : (
             Object?.keys?.(value)?.map((key) => {
               return (
                 <input
@@ -204,7 +241,8 @@ export const CellInput: FC<CellInputProps> = ({
                   }}
                 />
               );
-            })}
+            })
+          )}
         </div>
       )}
       {isModalOpen && (

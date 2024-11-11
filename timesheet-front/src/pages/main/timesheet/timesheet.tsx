@@ -2,6 +2,8 @@ import React, { HTMLProps, MemoExoticComponent, useEffect, useMemo, useRef, useS
 
 import { useQuery } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { Dropdown, Switch } from "antd";
+import { MenuProps } from "antd/lib";
 import { clsx } from "clsx";
 import dayjs from "dayjs";
 import { Controller, useForm } from "react-hook-form";
@@ -12,19 +14,24 @@ import { defaultHeaders } from "../utils/constants";
 import { daysInMonth, getDaysInMonth } from "../utils/utils";
 import { workersStatuses } from "../workers/utils/constants";
 
+import { cellLetters } from "./components/table-cell/component/cell-input";
 import { TableCell } from "./components/table-cell/table-cell";
-import { employeeDatesType, employeeTotalType, employeeType, filledDateValueTye } from "./data";
+import {
+  employeeDatesType,
+  employeeTotalType,
+  employeeType,
+  filledDateValueTye,
+  lettersSumType
+} from "./data";
 
 import { Scrollbar } from "~src/components/scrollbar/Scrollbar";
 import { apiRequests } from "~src/shared/api/requests";
 import { monthsNameByNumberLocal, regexes } from "~src/shared/constants/default";
 import { useGetUser } from "~src/shared/hooks/useGetUser";
-import { useGetAllFacilities } from "~src/shared/hooks/useRequests";
 import { createWorkerType } from "~src/shared/types/employees";
 import { facilityTimesheetSettingType } from "~src/shared/types/facilities";
 import { Button } from "~src/shared/ui/button/button";
 import { Checkbox } from "~src/shared/ui/checkbox/checkbox";
-import { Icon } from "~src/shared/ui/icon/icon";
 import { Input } from "~src/shared/ui/input/input";
 import { Modal } from "~src/shared/ui/modal/modal";
 import { Select } from "~src/shared/ui/select/select";
@@ -44,21 +51,42 @@ export interface headerType {
   dayName?: string;
   renderer?: MemoExoticComponent<
     ({
-      facilityTimesheetSetting
+      facilityTimesheetSetting,
+      totalVariant
     }: {
       facilityTimesheetSetting?: facilityTimesheetSettingType;
+      totalVariant: totalVariantType;
     }) => React.JSX.Element
   >;
   cellRenderer?: MemoExoticComponent<
     ({
       employeeTotal,
-      facilityTimesheetSetting
+      facilityTimesheetSetting,
+      totalVariant
     }: {
       employeeTotal: employeeTotalType;
       facilityTimesheetSetting?: facilityTimesheetSettingType;
+      totalVariant: totalVariantType;
     }) => React.JSX.Element
   >;
 }
+
+const items: MenuProps["items"] = [
+  {
+    label: "Сохранить",
+    key: "save"
+  },
+  {
+    label: "Создать нового сотрудника",
+    key: "create employee"
+  },
+  {
+    label: "Скачать excel файл",
+    key: "excel download"
+  }
+];
+
+export type totalVariantType = "letters" | "numbers";
 
 export const TimesheetPage = () => {
   const { id: facilityId } = useParams();
@@ -75,16 +103,11 @@ export const TimesheetPage = () => {
 
   const { data: facilityByIdData } = useQuery({
     queryKey: ["facility by id", facilityId],
-    queryFn: () => apiRequests.getFacilityId(+facilityId),
+    queryFn: () => apiRequests.getFacilityId(+facilityId, +currentYear, +currentMonth),
     enabled: facilityId !== undefined
   });
 
   const [isModalOpen, setModalOpen] = useState<boolean>(false);
-
-  const { data: allFacilities, isFetching: isAllFacilitiesFetching } = useGetAllFacilities({
-    page: 1,
-    pageSize: 1000
-  });
 
   const {
     getValues,
@@ -110,6 +133,8 @@ export const TimesheetPage = () => {
       status: "working"
     }
   });
+
+  const [totalVariant, setTotalVariant] = useState<totalVariantType>("numbers");
 
   useEffect(() => {
     reset();
@@ -341,9 +366,11 @@ export const TimesheetPage = () => {
                           total: String(newDate.total)
                         }
                       : {
-                          ...(integers?.allowDay && { day: String(newDate.day) }),
-                          ...(integers?.allowNight && { night: String(newDate.night) }),
-                          ...(integers?.allowOverwork && { overwork: String(newDate.overwork) })
+                          ...(integers?.allowDay && { day: String(newDate.day ?? "") }),
+                          ...(integers?.allowNight && { night: String(newDate.night ?? "") }),
+                          ...(integers?.allowOverwork && {
+                            overwork: String(newDate.overwork ?? "")
+                          })
                         })
                   };
                 }
@@ -426,9 +453,18 @@ export const TimesheetPage = () => {
       let hoursOfOverworkMoreTwoHours: number = 0;
       let hoursOfOnlyTotalHours: number = 0;
 
+      const lettersSum: lettersSumType = cellLetters.reduce((acc, item) => {
+        acc[item.value] = 0;
+        return acc;
+      }, {});
+
       for (const i in copyOfPrev[indexOfCurrentId].dates) {
         const element = copyOfPrev[indexOfCurrentId].dates[i];
         const isWeekend = daysInMonth.find((day) => day.date === i)?.isWeekend;
+
+        if (typeof element === "string" && element) {
+          lettersSum[element] = lettersSum[element] + 1;
+        }
 
         if (
           typeof element === "object" &&
@@ -473,7 +509,8 @@ export const TimesheetPage = () => {
         hoursOfWeekendWorkDays,
         hoursOfOverworkTwoHours,
         hoursOfOverworkMoreTwoHours,
-        hoursOfOnlyTotalHours
+        hoursOfOnlyTotalHours,
+        lettersSum: lettersSum
       };
       return copyOfPrev;
     });
@@ -489,6 +526,15 @@ export const TimesheetPage = () => {
         let totalNigthHours: number = 0;
         let totalOverworkHours: number = 0;
         let totalTotalHours: number = 0;
+        const lettersSum: lettersSumType = {
+          А: 0,
+          Б: 0,
+          В: 0,
+          МО: 0,
+          О: 0,
+          П: 0,
+          Я: 0
+        };
 
         const date = totalDays[i].date;
 
@@ -500,17 +546,21 @@ export const TimesheetPage = () => {
         for (let j = 0; j < currentDayValues.length; j++) {
           const currentDayValue = currentDayValues[j];
           if (typeof currentDayValue === "object") {
-            totalDayHours += +currentDayValue.day;
-            totalNigthHours += +currentDayValue.night;
-            totalOverworkHours += +currentDayValue.overwork;
-            totalTotalHours += +currentDayValue?.total;
+            totalDayHours += +currentDayValue.day || 0;
+            totalNigthHours += +currentDayValue.night || 0;
+            totalOverworkHours += +currentDayValue.overwork || 0;
+            totalTotalHours += +currentDayValue?.total || 0;
+          } else if (typeof currentDayValue === "string" && currentDayValue) {
+            lettersSum[currentDayValue as keyof lettersSumType] =
+              lettersSum[currentDayValue as keyof lettersSumType] + 1;
           }
         }
         copyOfPrev[copyOfPrev?.length - 1].dates[date] = {
           day: String(totalDayHours),
           night: String(totalNigthHours),
           overwork: String(totalOverworkHours),
-          total: String(totalTotalHours)
+          total: String(totalTotalHours),
+          lettersSum
         };
       }
 
@@ -522,6 +572,15 @@ export const TimesheetPage = () => {
       let hoursOfOverworkTwoHours: number = 0;
       let hoursOfOverworkMoreTwoHours: number = 0;
       let hoursOfOnlyTotalHours: number = 0;
+      const totalLettersSum: lettersSumType = {
+        А: 0,
+        Б: 0,
+        В: 0,
+        МО: 0,
+        О: 0,
+        П: 0,
+        Я: 0
+      };
 
       const totalOfAllElements = copyOfPrev?.flatMap((prevCopy) =>
         prevCopy.isTotal ? undefined : prevCopy.total
@@ -529,14 +588,18 @@ export const TimesheetPage = () => {
 
       for (let i = 0; i < totalOfAllElements.length; i++) {
         const totalOfElement = totalOfAllElements[i];
-        hoursOfDay += +(totalOfElement?.hoursOfDay ?? 0);
-        hoursOfNight += +(totalOfElement?.hoursOfNight ?? 0);
-        countOfWorkDays += +(totalOfElement?.countOfWorkDays ?? 0);
-        hoursOfWeekendWorkDays += +(totalOfElement?.hoursOfWeekendWorkDays ?? 0);
-        countOfWeekendWorkDays += +(totalOfElement?.countOfWeekendWorkDays ?? 0);
-        hoursOfOverworkTwoHours += +(totalOfElement?.hoursOfOverworkTwoHours ?? 0);
-        hoursOfOverworkMoreTwoHours += +(totalOfElement?.hoursOfOverworkMoreTwoHours ?? 0);
-        hoursOfOnlyTotalHours += +(totalOfElement?.hoursOfOnlyTotalHours ?? 0);
+        for (const k in totalOfElement?.lettersSum) {
+          const typedK: keyof lettersSumType = k as keyof lettersSumType;
+          totalLettersSum[typedK] = totalLettersSum[typedK] + totalOfElement?.lettersSum[k];
+        }
+        hoursOfDay += +(totalOfElement?.hoursOfDay || 0);
+        hoursOfNight += +(totalOfElement?.hoursOfNight || 0);
+        countOfWorkDays += +(totalOfElement?.countOfWorkDays || 0);
+        hoursOfWeekendWorkDays += +(totalOfElement?.hoursOfWeekendWorkDays || 0);
+        countOfWeekendWorkDays += +(totalOfElement?.countOfWeekendWorkDays || 0);
+        hoursOfOverworkTwoHours += +(totalOfElement?.hoursOfOverworkTwoHours || 0);
+        hoursOfOverworkMoreTwoHours += +(totalOfElement?.hoursOfOverworkMoreTwoHours || 0);
+        hoursOfOnlyTotalHours += +(totalOfElement?.hoursOfOnlyTotalHours || 0);
       }
 
       copyOfPrev[copyOfPrev.length - 1].total = {
@@ -547,11 +610,49 @@ export const TimesheetPage = () => {
         hoursOfWeekendWorkDays,
         hoursOfOverworkTwoHours,
         hoursOfOverworkMoreTwoHours,
-        hoursOfOnlyTotalHours
+        hoursOfOnlyTotalHours,
+        lettersSum: totalLettersSum
       };
 
       return copyOfPrev;
     });
+  };
+
+  const handleMenuClick: MenuProps["onClick"] = (e) => {
+    const key = e.key;
+    if (key === "save") {
+      apiRequests.saveWorkLogs(innerData, facilityId ? +facilityId : undefined).then(() => {
+        toast.success("Успешно обновлено");
+        setTimeout(() => {
+          // window.location.reload();
+        }, 500);
+      });
+      return;
+    }
+
+    if (key === "create employee") {
+      return setModalOpen(true);
+    }
+
+    if (key === "excel download") {
+      apiRequests
+        .downloadReport(facilityId ? +facilityId : 0, dayjs(currentDate)?.format("MM-YYYY"))
+        .then(async (response) => {
+          const url = window.URL.createObjectURL(new Blob([response.data]));
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "downloaded_file.xlsx";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          window.URL.revokeObjectURL(url);
+        });
+    }
+  };
+
+  const menuProps = {
+    items: userRole === "financier" ? items?.filter((el) => el?.key !== '"create employee') : items,
+    onClick: handleMenuClick
   };
 
   return (
@@ -564,7 +665,7 @@ export const TimesheetPage = () => {
             </div>
             <Button
               type="default"
-              className="ml-5 h-6 md:text-base text-[12px]"
+              className="ml-5 h-6 text-sm max-w-32"
               onClick={() => {
                 setCurrentDate((prev) => {
                   return dayjs(prev).subtract(1, "month");
@@ -574,7 +675,7 @@ export const TimesheetPage = () => {
             </Button>
             <Button
               type="default"
-              className="h-6 md:text-base text-[12px]"
+              className="h-6 text-sm  max-w-32"
               onClick={() => {
                 setCurrentDate((prev) => {
                   const nextDate = dayjs(prev).add(1, "month");
@@ -584,38 +685,31 @@ export const TimesheetPage = () => {
               }}>
               Следующий месяц
             </Button>
-            {userRole !== "master" && (
-              <div className="mb-2 text-center flex items-center justify-between flex-row-reverse gap-5 ">
-                <Icon
-                  onClick={async () => {
-                    apiRequests
-                      .downloadReport(
-                        facilityId ? +facilityId : 0,
-                        dayjs(currentDate)?.format("MM-YYYY")
-                      )
-                      .then(async (response) => {
-                        const url = window.URL.createObjectURL(new Blob([response.data]));
-                        const a = document.createElement("a");
-                        a.href = url;
-                        a.download = "downloaded_file.xlsx";
-                        document.body.appendChild(a);
-                        a.click();
-                        a.remove();
-                        window.URL.revokeObjectURL(url);
-                      });
-                  }}
-                  className={clsx("cursor-pointer text-[#343434], hover:text-[#B74858]")}
-                  name="Excel"
-                  size={24}
-                />
-              </div>
-            )}
           </div>
-          <div className="flex flex-row items-center gap-4">
-            {userRole !== "financier" && (
-              <Button onClick={() => setModalOpen(true)}>Создать нового сотрудника</Button>
-            )}
 
+          <div className="flex flex-row items-center">
+            <div className="flex flex-row items-center gap-2">
+              <div>Итоги по буквам</div>
+              <Switch
+                size="small"
+                checked={totalVariant === "letters"}
+                onChange={() =>
+                  setTotalVariant((prev) => (prev === "letters" ? "numbers" : "letters"))
+                }
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-row items-center gap-4">
+            <Dropdown
+              menu={{
+                items: cellLetters.map((el) => ({
+                  key: el.value,
+                  label: el.label
+                }))
+              }}>
+              <Button className="max-w-24">Обозначения</Button>
+            </Dropdown>
             <Input
               placeholder="Поиск работника"
               value={searchingEmployee}
@@ -624,21 +718,11 @@ export const TimesheetPage = () => {
               }}
               className="relative top-1"
             />
+
             {userRole !== "financier" && (
-              <Button
-                className="mr-5"
-                onClick={() => {
-                  apiRequests
-                    .saveWorkLogs(innerData, facilityId ? +facilityId : undefined)
-                    .then(() => {
-                      toast.success("Успешно обновлено");
-                      setTimeout(() => {
-                        // window.location.reload();
-                      }, 500);
-                    });
-                }}>
-                Сохранить
-              </Button>
+              <Dropdown menu={menuProps} trigger={["click"]}>
+                <Button className="max-w-20">Действия</Button>
+              </Dropdown>
             )}
           </div>
         </div>
@@ -654,11 +738,15 @@ export const TimesheetPage = () => {
                   day.className && day.className,
                   "min-w-12 max-w-12 border-b-[1px] border-b-black flex-1 border-r-[1px] bg-[#fafafa]  shadow-md flex items-center justify-center text-center ",
                   day.isWeekend && "bg-gray-300",
-                  day.dayName && "flex flex-col"
+                  day.dayName && "flex flex-col",
+                  day.type === "location" && "shadow-right-custom"
                 )}>
                 {day.renderer ? (
                   <>
-                    <day.renderer facilityTimesheetSetting={facilitySettings} />
+                    <day.renderer
+                      facilityTimesheetSetting={facilitySettings}
+                      totalVariant={totalVariant}
+                    />
                   </>
                 ) : (
                   <div className="w-full h-full">
@@ -691,7 +779,9 @@ export const TimesheetPage = () => {
             }}>
             <div
               style={{
-                height: `${rowVirtualizer.getTotalSize()}px`,
+                height: `${
+                  rowVirtualizer.getTotalSize() + (totalVariant === "numbers" ? 0 : 50)
+                }px`,
                 width: "100%",
                 position: "relative",
                 minWidth: headerRef?.current?.scrollWidth
@@ -711,7 +801,9 @@ export const TimesheetPage = () => {
                       top: 0,
                       left: 0,
                       width: "100%",
-                      height: `${virtualRow.size}px`,
+                      height: `${
+                        virtualRow.size + (totalVariant === "numbers" ? 0 : isLast ? 50 : 0)
+                      }px`,
                       transform: `translateY(${virtualRow.start}px)`,
                       pointerEvents: userRole === "financier" ? "none" : "all"
                     }}
@@ -729,10 +821,12 @@ export const TimesheetPage = () => {
                               <day.cellRenderer
                                 employeeTotal={ppl.total}
                                 facilityTimesheetSetting={facilitySettings}
+                                totalVariant={totalVariant}
                               />
                             ) : (
                               <TableCell
                                 key={index}
+                                productionCalendar={facilityByIdData?.productionCalendar}
                                 isLast={isLast}
                                 lastIsOutOfTown={ppl.lastIsOutOfTown}
                                 className={day.className}
@@ -750,6 +844,7 @@ export const TimesheetPage = () => {
                                 value={ppl?.dates?.[day.value]}
                                 isWeekend={day.isWeekend ?? false}
                                 id={ppl.employeeId}
+                                totalVariant={totalVariant}
                                 facilitySettings={facilitySettings}
                                 handleChange={(field, value, type) => {
                                   setInnerData((prev) => {

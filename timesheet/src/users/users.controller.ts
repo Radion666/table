@@ -20,10 +20,10 @@ import { UpdateUserDto } from './dto/updateUserDto';
 import { UsersService } from './users.service';
 
 @ApiTags('Пользователи')
+@UseGuards(JwtAuthGuard)
 @Roles('admin', 'personnel_officer')
 @UseGuards(RolesGuards)
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}

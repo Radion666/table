@@ -54,4 +54,20 @@ export class CreateFacilityDto {
 
   @IsObject()
   settings: facilityTimeSheetSettingType;
+
+  @ApiProperty({
+    example: ['monday', 'tuesday'],
+    description: 'Массив рабочих дней',
+  })
+  @IsOptional()
+  @IsArray()
+  workDays?: string[];
+
+  @ApiProperty({
+    example: ['2024-10-10'],
+    description: 'Массив нерабочих дней',
+  })
+  @IsOptional()
+  @IsArray()
+  notWorkingDays?: string[];
 }

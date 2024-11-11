@@ -11,6 +11,22 @@ export interface facilitiyType {
     master: Pick<UserType, "lastName" | "firstName" | "middleName" | "phoneNumber">;
   }[];
   settings: facilityTimesheetSettingType;
+  productionCalendar: productionCalendarType[];
+}
+
+export interface productionCalendarType {
+  id: number;
+  facilityId: number;
+  startDate: string;
+  endDate: string | null;
+  workingDays: string[];
+  months: Month;
+  createdAt: string;
+}
+
+export interface Month {
+  month: number;
+  days: number[];
 }
 
 export interface masterFacilityType {

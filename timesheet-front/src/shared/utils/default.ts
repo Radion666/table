@@ -14,3 +14,27 @@ export const getShortUserFio = (user: any) => {
     user?.middleName?.charAt(0) ?? ""
   }`;
 };
+
+export const convertToDateArray = (
+  year?: number,
+  monthDays?: { month: number; days: number[] }[]
+): string[] => {
+  const dateArray: string[] = [];
+
+  if (year && monthDays?.length) {
+    if (monthDays?.length) {
+      monthDays?.forEach(({ month, days }) => {
+        days?.forEach((day) => {
+          // Формируем строку даты в формате YYYY-MM-DD
+          const dateString = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(
+            2,
+            "0"
+          )}`;
+          dateArray.push(dateString);
+        });
+      });
+    }
+  }
+
+  return dateArray;
+};

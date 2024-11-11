@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 
-import { Pagination } from "antd";
+import { Calendar, Card, Col, Pagination, Row } from "antd";
+import ruRU from "antd/es/locale/ru_RU";
+import dayjs, { Dayjs } from "dayjs";
 import { Controller, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -9,6 +11,7 @@ import { workersStatuses } from "../workers/utils/constants";
 
 import { facilitiesColumns } from "./utils/constants";
 
+import "dayjs/locale/ru"; // Импортируем локаль для dayjs
 import { GridTable } from "~src/components/grid-table/grid-table";
 import { Loader } from "~src/components/loader/loader";
 import { apiRequests } from "~src/shared/api/requests";
@@ -18,7 +21,8 @@ import { useGetUser } from "~src/shared/hooks/useGetUser";
 import {
   useGetAllFacilities,
   useGetAllMasters,
-  useGetAllPositions
+  useGetAllPositions,
+  useGetProductionCalendar
 } from "~src/shared/hooks/useRequests";
 import { createWorkerType } from "~src/shared/types/employees";
 import {
@@ -32,6 +36,8 @@ import { Modal } from "~src/shared/ui/modal/modal";
 import { Select } from "~src/shared/ui/select/select";
 import { getUserFio } from "~src/shared/utils/default";
 
+dayjs.locale("ru");
+
 export const FacilitiesPage = () => {
   const { user, userRole } = useGetUser();
 
@@ -43,6 +49,8 @@ export const FacilitiesPage = () => {
     pageSize: pageSize
   });
 
+  const { data: productionCalendarData } = useGetProductionCalendar();
+
   const [windowWidth, setWindowWidth] = useState<number>();
 
   useEffect(() => {
@@ -50,6 +58,15 @@ export const FacilitiesPage = () => {
       setTotalPage(data?.data?.totalPage);
     }
   }, [data?.data]);
+
+  const [selectedDaysOfWeek, setSelectedDaysOfWeek] = useState<string[]>([
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday"
+  ]);
+  const [disabledDays, setDisabledDays] = useState<string[]>([]);
 
   const { data: masterData, isFetching: isMastersFetching } = useGetAllMasters();
 
@@ -107,6 +124,8 @@ export const FacilitiesPage = () => {
   const [isModalOpen, setModalOpen] = useState<boolean>(false);
   const [isCreateModalOpen, setCreateModalOpen] = useState<boolean>(false);
 
+  const [isProductionCalendarVisible, setProductionCalendarVisible] = useState<boolean>(false);
+
   const [isBtnLoading, setBtnLoading] = useState<boolean>(false);
 
   const handleCreateFacilitiy = async (data: createFacilityWithMasterType) => {
@@ -121,11 +140,15 @@ export const FacilitiesPage = () => {
       .createFacility({
         mastersIds: selectedMasters.map((masterId) => +masterId),
         name: facilityName,
-        settings: facilitySettings.settings
+        settings: facilitySettings.settings,
+        workDays: selectedDaysOfWeek,
+        notWorkingDays: disabledDays
       })
       .then(() => {
         setModalOpen(false);
         reset();
+        setSelectedDaysOfWeek(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]);
+        setDisabledDays([]);
         toast.success("Объект был создан");
         refetch();
       })
@@ -178,6 +201,8 @@ export const FacilitiesPage = () => {
 
   useEffect(() => {
     reset();
+    setSelectedDaysOfWeek(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]);
+    setDisabledDays([]);
   }, [isModalOpen]);
 
   useEffect(() => {
@@ -198,6 +223,58 @@ export const FacilitiesPage = () => {
   if (isFetching) {
     return <Loader />;
   }
+
+  const holidays = productionCalendarData?.data?.holidays;
+
+  const dateCellRender = (value: Dayjs) => {
+    const date = value.format("YYYY-MM-DD");
+
+    // Проверяем, является ли число 5
+    if (disabledDays?.includes(date)) {
+      return (
+        <div
+          onClick={() => {
+            setDisabledDays((prev) => {
+              return prev?.filter((el) => el !== date);
+            });
+          }}
+          className="rounded-full bg-blue-500 w-6 h-6 flex justify-center items-center text-white">
+          {value.date()}
+        </div>
+      );
+    }
+    return (
+      <div
+        onClick={() => {
+          setDisabledDays((prev) => {
+            return [...prev, date];
+          });
+        }}>
+        {value.date()}
+      </div>
+    ); // Для остальных дней возвращаем стандартный рендер
+  };
+
+  const renderCalendars = () => {
+    const months = Array.from({ length: 12 }, (_, month) => (
+      <Col span={4} key={month}>
+        <Card
+          title={dayjs().month(month).format("MMMM")}
+          className="text-center min-w-[280px]"
+          bordered={false}>
+          <Calendar
+            fullscreen={false}
+            headerRender={() => <></>} // Отключаем заголовок календаря
+            locale={{ lang: ruRU }} // Устанавливаем локаль для календаря
+            value={dayjs().month(month)} // Устанавливаем месяц
+            fullCellRender={dateCellRender} // Кастомизируем ячейки даты
+          />
+        </Card>
+      </Col>
+    ));
+
+    return months;
+  };
 
   return (
     <>
@@ -313,46 +390,17 @@ export const FacilitiesPage = () => {
                 );
               }}
             />
+
             <div>
-              <div className="text-center font-medium ">Настройки в табеле</div>
-              <div className="flex justify-center items-center mt-5 w-full justify-between">
+              <div className="text-center font-medium ">Настройки производственного календаря</div>
+              <div className="flex flex-row w-full justify-center items-center mt-4">
                 <div>
-                  <Checkbox
-                    checked={facilitySettings?.settings?.integers?.allowOnlyTotal}
-                    label="Общее значение для ячейки"
-                    onChange={(e) => {
-                      updateFacilitySettings("allowOnlyTotal", e?.target?.checked);
-                    }}
-                  />
-                </div>
-                <div>
-                  <div>
-                    <Checkbox
-                      label="День"
-                      checked={facilitySettings?.settings?.integers?.allowDay}
-                      onChange={(e) => {
-                        updateFacilitySettings("allowDay", e?.target?.checked);
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <Checkbox
-                      label="Ночь"
-                      checked={facilitySettings?.settings?.integers?.allowNight}
-                      onChange={(e) => {
-                        updateFacilitySettings("allowNight", e?.target?.checked);
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <Checkbox
-                      label="Переработки"
-                      checked={facilitySettings?.settings?.integers?.allowOverwork}
-                      onChange={(e) => {
-                        updateFacilitySettings("allowOverwork", e?.target?.checked);
-                      }}
-                    />
-                  </div>
+                  {!!disabledDays?.length && (
+                    <div className="text-center">Выбрано {disabledDays?.length} нерабочих дней</div>
+                  )}
+                  <Button onClick={() => setProductionCalendarVisible(true)} type="default">
+                    Настроить календарь
+                  </Button>
                 </div>
               </div>
             </div>
@@ -520,6 +568,48 @@ export const FacilitiesPage = () => {
               <Button htmlType="submit">Сохранить</Button>
             </div>
           </form>
+        </Modal>
+      )}
+      {isProductionCalendarVisible && (
+        <Modal
+          state={isProductionCalendarVisible}
+          setState={setProductionCalendarVisible}
+          width={"90%"}
+          onCancel={() => {
+            setDisabledDays([]);
+          }}>
+          <div className="text-center w-2/3 ml-auto mr-auto">
+            Это модальное окно отображает производственный календарь с нерабочими днями. Если вы
+            хотите сделать день рабочим, уберите его из календаря, сняв отметку о нерабочем статусе.
+            Вы можете настроить календарь, добавив или убрав нерабочие дни в зависимости от ваших
+            требований.
+          </div>
+          <div className="min-w-full flex justify-between mt-2 mb-2 ">
+            <Button
+              onClick={() => setDisabledDays(holidays ?? [])}
+              style={{
+                minWidth: 350
+              }}>
+              Использовать текущий производственный календарь РФ
+            </Button>
+            <div className="flex flex-row items-center gap-5">
+              <Button
+                onClick={() => {
+                  const copyOfDisabledDays = structuredClone(disabledDays);
+                  setTimeout(() => setDisabledDays(copyOfDisabledDays), 0);
+
+                  setProductionCalendarVisible(false);
+                }}>
+                Сохранить
+              </Button>
+              <Button type="default" onClick={() => setDisabledDays([])}>
+                Сбросить
+              </Button>
+            </div>
+          </div>
+          <Row gutter={[16, 16]}>
+            {renderCalendars()} {/* Рендерим все 12 календарей */}
+          </Row>
         </Modal>
       )}
     </>

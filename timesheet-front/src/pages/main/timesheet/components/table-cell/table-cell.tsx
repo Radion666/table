@@ -4,16 +4,16 @@ import clsx from "clsx";
 import dayjs, { Dayjs } from "dayjs";
 
 import { dateValueType, employeeType } from "../../data";
-import { fieldType, headerCellType } from "../../timesheet";
+import { fieldType, headerCellType, totalVariantType } from "../../timesheet";
 
-import { CellInput } from "./component/cell-input";
+import { CellInput, cellLetters } from "./component/cell-input";
 import { Indentificators } from "./component/identificators";
 
 import { dateRegex, daysInMonth, parseDate } from "~src/pages/main/utils/utils";
 import { workerStatuses } from "~src/pages/main/workers/utils/constants";
 import { useGetUser } from "~src/shared/hooks/useGetUser";
 import { employmentPeriodsType, facilityPeriodsType } from "~src/shared/types/employees";
-import { facilityTimesheetSettingType } from "~src/shared/types/facilities";
+import { facilityTimesheetSettingType, productionCalendarType } from "~src/shared/types/facilities";
 import { Icon } from "~src/shared/ui/icon/icon";
 
 interface TableCellProps {
@@ -35,6 +35,8 @@ interface TableCellProps {
   userShortName?: string;
   userPosition?: string;
   facilitySettings?: facilityTimesheetSettingType;
+  productionCalendar?: productionCalendarType[];
+  totalVariant: totalVariantType;
 }
 
 const checkDate = (dateToCheck: Dayjs) => {
@@ -66,7 +68,9 @@ export const TableCell: FC<TableCellProps> = memo(
     lastIsOutOfTown,
     userPosition,
     userShortName,
-    facilitySettings
+    facilitySettings,
+    productionCalendar,
+    totalVariant
   }) => {
     const { userRole } = useGetUser();
     const [errorMsg, setErrorMsg] = useState<string>("Недоступно");
@@ -81,12 +85,50 @@ export const TableCell: FC<TableCellProps> = memo(
     const isDisabled = useMemo(() => {
       if (dayValue && dateRegex.test(dayValue) && employmentPeriods?.length) {
         const cellDate = dayjs(parseDate(dayValue));
+        const cellDay = cellDate.date();
 
         const today = dayjs();
 
         if (cellDate.isAfter(today, "day")) {
           setErrorMsg("");
           return true;
+        }
+
+        if (productionCalendar?.length) {
+          for (let i = 0; i < productionCalendar?.length; i++) {
+            const calendarDay = productionCalendar?.[i];
+
+            const startDate = calendarDay?.startDate;
+            const endDate = calendarDay?.endDate;
+
+            if (startDate && (endDate || endDate === null)) {
+              const start = dayjs(startDate);
+              const end = endDate === null ? null : dayjs(endDate);
+
+              if (
+                (cellDate.isSame(start, "day") || cellDate.isAfter(start, "date")) &&
+                end === null
+              ) {
+                if (calendarDay.months.month === cellDate.month() + 1) {
+                  if (calendarDay.months.days.includes(cellDay)) {
+                    setErrorMsg("Вых.");
+                    return true;
+                  }
+                }
+              } else if (start && end) {
+                if (
+                  (start?.isBefore(cellDate, "day") ||
+                    (start?.isSame(cellDate, "day") && start.diff(end, "hour") > 1)) &&
+                  (end?.isAfter(cellDate, "day") || end?.isSame(cellDate, "day"))
+                ) {
+                  if (calendarDay?.months?.days?.includes(cellDay)) {
+                    setErrorMsg("Вых.");
+                    return true;
+                  }
+                }
+              }
+            }
+          }
         }
 
         for (let i = 0; i < facilityPeriods?.length; i++) {
@@ -188,7 +230,7 @@ export const TableCell: FC<TableCellProps> = memo(
         return true;
         // return new Date(parseDate(dayValue)) > new Date(firedAt);
       }
-    }, [dayValue, employmentPeriods, facilityPeriods]);
+    }, [dayValue, employmentPeriods, facilityPeriods, productionCalendar]);
 
     const allowedToMaster = useMemo(() => {
       if (userRole === "master" && !isLast) {
@@ -245,6 +287,8 @@ export const TableCell: FC<TableCellProps> = memo(
       return result.length > 0 ? result : [];
     };
 
+    const totalLettersSum = isLast && typeof value === "object" ? value.lettersSum : null;
+
     const getAllowedFields = () => {
       const fields = [];
 
@@ -281,19 +325,30 @@ export const TableCell: FC<TableCellProps> = memo(
           isWeekend && "bg-gray-300",
           fieldType === "input" && "",
           (isDisabled || !allowedToMaster || isNotAllowed) &&
-            "bg-slate-100 opacity-50  cursor-not-allowed"
+            "bg-slate-100 opacity-50  cursor-not-allowed",
+          fieldType === "location" && "shadow-right-custom"
         )}>
         {isLast ? (
           <>
             {headerCellType === "worker" ? (
               <div className="flex flex-col h-full w-full">
-                {allowableHours?.map((el) => (
-                  <div
-                    className="border-b-[1px] flex items-center justify-center"
-                    style={{ height: `${heightPercentage}%` }}>
-                    Итого: {el}
-                  </div>
-                ))}
+                {totalVariant === "numbers" ? (
+                  <>
+                    {allowableHours?.map((el) => (
+                      <div
+                        className="border-b-[1px] flex items-center justify-center"
+                        style={{ height: `${heightPercentage}%` }}>
+                        Итого: {el}
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    {cellLetters?.map((el) => (
+                      <div className="text-sm border-b-[1px]">{el.value}</div>
+                    ))}
+                  </>
+                )}
               </div>
             ) : (
               <>
@@ -303,13 +358,35 @@ export const TableCell: FC<TableCellProps> = memo(
                   <>
                     {headerCellType === "field" && typeof value === "object" ? (
                       <div className="flex flex-col w-full h-full">
-                        {allowedFields?.map((fld) => (
-                          <div
-                            className=" w-full flex items-center justify-center border-b-[1px]"
-                            style={{ height: `${heightPercentage}%` }}>
-                            {value[`${fld}`]}
-                          </div>
-                        ))}
+                        {totalVariant === "numbers" ? (
+                          <>
+                            {allowedFields?.map((fld) => (
+                              <div
+                                className=" w-full flex items-center justify-center border-b-[1px]"
+                                style={{ height: `${heightPercentage}%` }}>
+                                {value[`${fld}`]}
+                              </div>
+                            ))}
+                          </>
+                        ) : (
+                          <>
+                            {totalLettersSum && (
+                              <>
+                                <div>
+                                  <div className="border-b-[1px] text-sm">{totalLettersSum?.Я}</div>
+                                  <div className="border-b-[1px] text-sm">{totalLettersSum?.П}</div>
+                                  <div className="border-b-[1px] text-sm">{totalLettersSum?.Б}</div>
+                                  <div className="border-b-[1px] text-sm">{totalLettersSum?.В}</div>
+                                  <div className="border-b-[1px] text-sm">{totalLettersSum?.О}</div>
+                                  <div className="border-b-[1px] text-sm">
+                                    {totalLettersSum?.МО}
+                                  </div>
+                                  <div className="border-b-[1px] text-sm">{totalLettersSum?.А}</div>
+                                </div>
+                              </>
+                            )}
+                          </>
+                        )}
                       </div>
                     ) : (
                       ""
@@ -322,7 +399,7 @@ export const TableCell: FC<TableCellProps> = memo(
         ) : (
           <>
             {isDisabled && !isNotAllowed ? (
-              <div className="overflow-hidden text-sm text-ellipsis text-nowrap">{errorMsg}</div>
+              <div className="overflow-hidden text-sm text-ellipsis text-nowrap ">{errorMsg}</div>
             ) : (
               <>
                 {fieldType === "text" ? (
@@ -352,6 +429,8 @@ export const TableCell: FC<TableCellProps> = memo(
                     date={cellParsedDate}
                     isDisabled={isDisabled || !allowedToMaster || isNotAllowed}
                     facilitySettings={facilitySettings}
+                    isWeekend={isWeekend}
+                    integers={integers}
                   />
                 )}
               </>
