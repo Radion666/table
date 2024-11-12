@@ -231,10 +231,26 @@ export const apiRequests = {
     });
   },
 
+  updateWorkerFromLogs: async (data: Omit<createWorkerType, "createdById">, id?: number) => {
+    if (!id) return;
+    return apiConfigRequests<workersResponseType>({
+      method: "patch",
+      url: `/employees/update/employee/logs/${id}`,
+      data
+    });
+  },
+
   downloadReport: async (facilityId: number, date: string) => {
     return apiConfigRequests({
       method: "get",
       url: `work-logs/download?date=${date}&id=${facilityId}`,
+      responseType: "blob"
+    });
+  },
+  downloadReportByFacilities: async (date: string) => {
+    return apiConfigRequests({
+      method: "get",
+      url: `work-logs/download-all?date=${date}`,
       responseType: "blob"
     });
   },

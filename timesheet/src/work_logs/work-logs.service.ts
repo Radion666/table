@@ -46,6 +46,16 @@ import { MasterFacilities } from 'src/master_facilities/master-facilities.model'
 import { ProductionCalendar } from 'src/production-calendar/production-calendar.model';
 import { PassThrough } from 'stream';
 
+export type lettersSumType = {
+  Я: number;
+  П: number;
+  Б: number;
+  В: number;
+  О: number;
+  МО: number;
+  А: number;
+};
+
 @Injectable()
 export class WorkLogsService {
   constructor(
@@ -763,6 +773,25 @@ export class WorkLogsService {
 
     let startColumn = 'D';
 
+    const allowOnlyTotal = integers?.allowOnlyTotal;
+
+    const allowAllTypes =
+      integers?.allowDay && integers?.allowNight && integers?.allowOverwork;
+
+    const allowDayNight =
+      integers?.allowDay && integers?.allowNight && !integers?.allowOverwork;
+    const allowDayOverwork =
+      integers?.allowDay && !integers?.allowNight && integers?.allowOverwork;
+    const allowNightOverwork =
+      !integers?.allowDay && integers?.allowNight && integers?.allowOverwork;
+
+    const allowOnlyDay =
+      integers?.allowDay && !integers?.allowNight && !integers?.allowOverwork;
+    const allowOnlyNight =
+      !integers?.allowDay && integers?.allowNight && !integers?.allowOverwork;
+    const allowOnlyOverwork =
+      !integers?.allowDay && !integers?.allowNight && integers?.allowOverwork;
+
     for (let i = 0; i < dates?.length; i++) {
       const day = dates[i];
       const isWeekend = day.isWeekend;
@@ -812,6 +841,12 @@ export class WorkLogsService {
     const totalSmens = incrementColumn(nextColumn);
     const totalHours = incrementColumn(totalSmens);
     const totalSmensWeekends = incrementColumn(totalHours);
+    const progulColumn = incrementColumn(totalSmensWeekends);
+    const bolnichColumn = incrementColumn(progulColumn);
+    const vihodColumn = incrementColumn(bolnichColumn);
+    const otpuskColumn = incrementColumn(vihodColumn);
+    const mejVahOtpuskColumn = incrementColumn(otpuskColumn);
+    const adminOtpuskColumn = incrementColumn(mejVahOtpuskColumn);
 
     // const totalHoursRow = `${startColumn}1:${nextColumn}1`;
     // const totalDayHoursRow = `${startColumn}2:${nextColumn}2`;
@@ -822,12 +857,25 @@ export class WorkLogsService {
     const totalHoursSecondRow = `${totalHours}1:${totalHours}4`;
     const totalSmensWeekendsRow = `${totalSmensWeekends}1:${totalSmensWeekends}4`;
 
+    const progulRow = `${progulColumn}1:${progulColumn}4`;
+    const bolichniyRow = `${bolnichColumn}1:${bolnichColumn}4`;
+    const vihodRow = `${vihodColumn}1:${vihodColumn}4`;
+    const otpuskRow = `${otpuskColumn}1:${otpuskColumn}4`;
+    const mejVahtRow = `${mejVahOtpuskColumn}1:${mejVahOtpuskColumn}4`;
+    const adminOtpushRow = `${adminOtpuskColumn}1:${adminOtpuskColumn}4`;
+
     // worksheet.mergeCells(totalHoursRow);
     // worksheet.mergeCells(totalDayHoursRow);
     // worksheet.mergeCells(totalNigthHoursRow);
     worksheet.mergeCells(totalSmensRow);
     worksheet.mergeCells(totalHoursSecondRow);
     worksheet.mergeCells(totalSmensWeekendsRow);
+    worksheet.mergeCells(progulRow);
+    worksheet.mergeCells(bolichniyRow);
+    worksheet.mergeCells(vihodRow);
+    worksheet.mergeCells(otpuskRow);
+    worksheet.mergeCells(mejVahtRow);
+    worksheet.mergeCells(adminOtpushRow);
 
     if (integers?.allowOnlyTotal) {
       const totalHoursRow = `${startColumn}1:${nextColumn}4`;
@@ -946,6 +994,13 @@ export class WorkLogsService {
     applyAlignment(worksheet, totalSmensRow, 'Итого смен', 20);
     applyAlignment(worksheet, totalHoursSecondRow, 'Итого часов (вых)', 20);
     applyAlignment(worksheet, totalSmensWeekendsRow, 'Итого смен (вых)', 20);
+
+    applyAlignment(worksheet, progulRow, 'П');
+    applyAlignment(worksheet, bolichniyRow, 'Б');
+    applyAlignment(worksheet, vihodRow, 'В');
+    applyAlignment(worksheet, otpuskRow, 'О');
+    applyAlignment(worksheet, mejVahtRow, 'МО');
+    applyAlignment(worksheet, adminOtpushRow, 'А');
 
     const a1a2Cell = worksheet.getCell('A1:A2');
     const b1b2Cell = worksheet.getCell('B1:B2');
@@ -1500,6 +1555,13 @@ export class WorkLogsService {
       const totalHoursWeekends = incrementColumn(totalSmens);
       const totalSmensWeekends = incrementColumn(totalHoursWeekends);
 
+      const totalRowProguls = incrementColumn(totalSmensWeekends);
+      const totalRowBolnich = incrementColumn(totalRowProguls);
+      const totalRowVihod = incrementColumn(totalRowBolnich);
+      const totalRowOtpusk = incrementColumn(totalRowVihod);
+      const totalRowMejVahOtpusk = incrementColumn(totalRowOtpusk);
+      const totalRowAdminOtpush = incrementColumn(totalRowMejVahOtpusk);
+
       const singleCell = `${startColumn}${employeeStart}:${nextColumn}${employeeEnd}`;
 
       const singleOverworkFirstCell = `${startColumn}${employeeStart}:${startColumn}${employeeEnd}`;
@@ -1516,6 +1578,13 @@ export class WorkLogsService {
       const totalSmensCell = `${totalSmens}${employeeStart}:${totalSmens}${employeeEnd}`;
       const totalWeekendsHoursCell = `${totalHoursWeekends}${employeeStart}:${totalHoursWeekends}${employeeEnd}`;
       const totalWeekendsSmensCell = `${totalSmensWeekends}${employeeStart}:${totalSmensWeekends}${employeeEnd}`;
+
+      const totalProgulCell = `${totalRowProguls}${employeeStart}:${totalRowProguls}${employeeEnd}`;
+      const totalBolnichCell = `${totalRowBolnich}${employeeStart}:${totalRowBolnich}${employeeEnd}`;
+      const totalVihodCell = `${totalRowVihod}${employeeStart}:${totalRowVihod}${employeeEnd}`;
+      const totalOtpushCell = `${totalRowOtpusk}${employeeStart}:${totalRowOtpusk}${employeeEnd}`;
+      const totalMejvahOtpuskCell = `${totalRowMejVahOtpusk}${employeeStart}:${totalRowMejVahOtpusk}${employeeEnd}`;
+      const totalAdminOtpuskCell = `${totalRowAdminOtpush}${employeeStart}:${totalRowAdminOtpush}${employeeEnd}`;
 
       if (integers?.allowOnlyTotal) {
         worksheet.mergeCells(singleCell);
@@ -1572,11 +1641,18 @@ export class WorkLogsService {
       worksheet.mergeCells(totalWeekendsHoursCell);
       worksheet.mergeCells(totalWeekendsSmensCell);
 
-      const totalHoursCells: string[] = [];
-      const dayHoursCells: string[] = [];
-      const nightHoursCells: string[] = [];
+      worksheet.mergeCells(totalProgulCell);
+      worksheet.mergeCells(totalBolnichCell);
+      worksheet.mergeCells(totalVihodCell);
+      worksheet.mergeCells(totalOtpushCell);
+      worksheet.mergeCells(totalMejvahOtpuskCell);
+      worksheet.mergeCells(totalAdminOtpuskCell);
 
-      const totalWeekendCells: string[] = [];
+      let totalHoursSum: number = 0;
+      let dayHoursSum: number = 0;
+      let nightHoursSum: number = 0;
+
+      let totalWeekendSum: number = 0;
 
       let countOfWorkDays: number = 0;
 
@@ -1587,10 +1663,29 @@ export class WorkLogsService {
 
       let newStartColumn = 'D';
 
+      const lettersSum: Omit<lettersSumType, 'Я'> = {
+        А: 0,
+        Б: 0,
+        В: 0,
+        МО: 0,
+        О: 0,
+        П: 0,
+      };
+
       for (let j = 0; j < dates?.length; j++) {
         const day = dates[j];
         const isWeekend = day.isWeekend;
-        const cellData = foundEmployee?.workDays?.[day.fullDate];
+        const cellData = foundEmployee?.workDays?.[
+          day.fullDate
+        ] as cellValueType;
+
+        if (typeof cellData === 'string') {
+          const newCellData = cellData as keyof Omit<lettersSumType, 'Я'>;
+          if (newCellData) {
+            //@ts-ignore
+            lettersSum[cellData] = (lettersSum[cellData] as number) + 1;
+          }
+        }
 
         if (typeof cellData === 'object' && cellData?.overwork && !isWeekend) {
           const value = +(cellData?.overwork ?? 0);
@@ -1606,15 +1701,15 @@ export class WorkLogsService {
 
         if (typeof cellData === 'object' && !isWeekend) {
           if (integers?.allowOnlyTotal) {
-            totalHoursCells.push(`${newStartColumn}${employeeStart}`);
+            totalHoursSum += cellData.total;
           } else {
             if (integers?.allowDay && integers?.allowNight) {
-              dayHoursCells.push(`${newStartColumn}${employeeStart}`);
-              nightHoursCells.push(`${newStartColumn}${employeeStart + 1}`);
+              dayHoursSum += cellData.day;
+              nightHoursSum += cellData.night;
             } else if (integers?.allowDay && !integers?.allowNight) {
-              dayHoursCells.push(`${newStartColumn}${employeeStart}`);
+              dayHoursSum += cellData.day;
             } else if (!integers?.allowDay && integers?.allowNight) {
-              nightHoursCells.push(`${newStartColumn}${employeeStart}`);
+              nightHoursSum += cellData.night;
             }
           }
 
@@ -1627,15 +1722,15 @@ export class WorkLogsService {
         }
         if (typeof cellData === 'object' && isWeekend) {
           if (integers?.allowOnlyTotal) {
-            totalWeekendCells.push(`${newStartColumn}${employeeStart}`);
+            totalWeekendSum += cellData.total;
           } else {
             if (integers?.allowDay && integers?.allowNight) {
-              totalWeekendCells.push(`${newStartColumn}${employeeStart}`);
-              totalWeekendCells.push(`${newStartColumn}${employeeStart + 1}`);
+              totalWeekendSum += cellData.day;
+              totalWeekendSum += cellData.night;
             } else if (integers?.allowDay && !integers?.allowNight) {
-              totalWeekendCells.push(`${newStartColumn}${employeeStart}`);
+              totalWeekendSum += cellData.day;
             } else if (!integers?.allowDay && integers?.allowNight) {
-              totalWeekendCells.push(`${newStartColumn}${employeeStart}`);
+              totalWeekendSum += cellData.night;
             }
           }
 
@@ -1648,27 +1743,15 @@ export class WorkLogsService {
       }
 
       if (integers?.allowOnlyTotal) {
-        worksheet.getCell(singleCell).value = totalHoursCells?.length
-          ? {
-              formula: `SUM(${totalHoursCells.join(', ')})`,
-            }
-          : 0;
+        worksheet.getCell(singleCell).value = totalHoursSum;
       } else {
         if (
           integers?.allowDay &&
           integers?.allowNight &&
           integers?.allowOverwork
         ) {
-          worksheet.getCell(totalDayHoursCell).value = dayHoursCells?.length
-            ? {
-                formula: `SUM(${dayHoursCells.join(', ')})`,
-              }
-            : 0;
-          worksheet.getCell(totalNightHoursCell).value = nightHoursCells?.length
-            ? {
-                formula: `SUM(${nightHoursCells.join(', ')})`,
-              }
-            : 0;
+          worksheet.getCell(totalDayHoursCell).value = dayHoursSum;
+          worksheet.getCell(totalNightHoursCell).value = nightHoursSum;
           worksheet.getCell(totalOverworkFirstHoursCell).value =
             hoursOfOverworkTwoHours;
           worksheet.getCell(totalOverworkSecondHoursCell).value =
@@ -1678,11 +1761,7 @@ export class WorkLogsService {
           integers?.allowNight &&
           integers?.allowOverwork
         ) {
-          worksheet.getCell(firstDoubleCell).value = nightHoursCells?.length
-            ? {
-                formula: `SUM(${nightHoursCells.join(', ')})`,
-              }
-            : 0;
+          worksheet.getCell(firstDoubleCell).value = nightHoursSum;
           worksheet.getCell(totalOverworkFirstHoursCell).value =
             hoursOfOverworkTwoHours;
           worksheet.getCell(totalOverworkSecondHoursCell).value =
@@ -1692,11 +1771,7 @@ export class WorkLogsService {
           !integers?.allowNight &&
           integers?.allowOverwork
         ) {
-          worksheet.getCell(firstDoubleCell).value = dayHoursCells?.length
-            ? {
-                formula: `SUM(${dayHoursCells.join(', ')})`,
-              }
-            : 0;
+          worksheet.getCell(firstDoubleCell).value = dayHoursSum;
           worksheet.getCell(totalOverworkFirstHoursCell).value =
             hoursOfOverworkTwoHours;
           worksheet.getCell(totalOverworkSecondHoursCell).value =
@@ -1706,17 +1781,9 @@ export class WorkLogsService {
           integers?.allowNight &&
           !integers?.allowOverwork
         ) {
-          worksheet.getCell(firstDoubleCell).value = dayHoursCells?.length
-            ? {
-                formula: `SUM(${dayHoursCells.join(', ')})`,
-              }
-            : 0;
+          worksheet.getCell(firstDoubleCell).value = dayHoursSum;
 
-          worksheet.getCell(secondDoubleCell).value = nightHoursCells?.length
-            ? {
-                formula: `SUM(${nightHoursCells.join(', ')})`,
-              }
-            : 0;
+          worksheet.getCell(secondDoubleCell).value = nightHoursSum;
         } else if (
           !integers?.allowDay &&
           !integers?.allowNight &&
@@ -1731,31 +1798,20 @@ export class WorkLogsService {
           !integers?.allowNight &&
           !integers?.allowOverwork
         ) {
-          worksheet.getCell(singleCell).value = dayHoursCells?.length
-            ? {
-                formula: `SUM(${dayHoursCells.join(', ')})`,
-              }
-            : 0;
+          worksheet.getCell(singleCell).value = dayHoursSum;
         } else if (
           !integers?.allowDay &&
           integers?.allowNight &&
           !integers?.allowOverwork
         ) {
-          worksheet.getCell(singleCell).value = nightHoursCells?.length
-            ? {
-                formula: `SUM(${nightHoursCells.join(', ')})`,
-              }
-            : 0;
+          worksheet.getCell(singleCell).value = nightHoursSum;
         }
       }
 
       worksheet.getCell(totalSmensCell).value = countOfWorkDays;
-      worksheet.getCell(totalWeekendsHoursCell).value =
-        totalWeekendCells?.length
-          ? {
-              formula: `SUM(${totalWeekendCells.join(', ')})`,
-            }
-          : 0;
+      worksheet.getCell(totalWeekendsHoursCell).value = isNaN(totalWeekendSum)
+        ? 0
+        : totalWeekendSum;
       worksheet.getCell(totalWeekendsSmensCell).value = countOfWeekendWorkDays;
 
       applyAlignment(worksheet, totalDayHoursCell);
@@ -1765,6 +1821,13 @@ export class WorkLogsService {
       applyAlignment(worksheet, totalSmensCell);
       applyAlignment(worksheet, totalWeekendsHoursCell);
       applyAlignment(worksheet, totalWeekendsSmensCell);
+
+      applyAlignment(worksheet, totalProgulCell, lettersSum.П);
+      applyAlignment(worksheet, totalBolnichCell, lettersSum.Б);
+      applyAlignment(worksheet, totalVihodCell, lettersSum.В);
+      applyAlignment(worksheet, totalOtpushCell, lettersSum.О);
+      applyAlignment(worksheet, totalMejvahOtpuskCell, lettersSum.МО);
+      applyAlignment(worksheet, totalAdminOtpuskCell, lettersSum.А);
 
       employeeStart =
         employeeStart +
@@ -1786,23 +1849,6 @@ export class WorkLogsService {
             : 2);
     }
 
-    const allowAllTypes =
-      integers?.allowDay && integers?.allowNight && integers?.allowOverwork;
-
-    const allowDayNight =
-      integers?.allowDay && integers?.allowNight && !integers?.allowOverwork;
-    const allowDayOverwork =
-      integers?.allowDay && !integers?.allowNight && integers?.allowOverwork;
-    const allowNightOverwork =
-      !integers?.allowDay && integers?.allowNight && integers?.allowOverwork;
-
-    const allowOnlyDay =
-      integers?.allowDay && !integers?.allowNight && !integers?.allowOverwork;
-    const allowOnlyNight =
-      !integers?.allowDay && integers?.allowNight && !integers?.allowOverwork;
-    const allowOnlyOverwork =
-      !integers?.allowDay && !integers?.allowNight && integers?.allowOverwork;
-
     const totalSingleCell = `A${employeeStart}`;
 
     if (integers?.allowOnlyTotal) {
@@ -1812,6 +1858,12 @@ export class WorkLogsService {
       worksheet.mergeCells(totalCell);
 
       applyAlignment(worksheet, totalCell);
+      applyAlignment(worksheet, `A${employeeStart + 2}`, 'П');
+      applyAlignment(worksheet, `A${employeeStart + 3}`, 'Б');
+      applyAlignment(worksheet, `A${employeeStart + 4}`, 'В');
+      applyAlignment(worksheet, `A${employeeStart + 5}`, 'О');
+      applyAlignment(worksheet, `A${employeeStart + 6}`, 'МО');
+      applyAlignment(worksheet, `A${employeeStart + 7}`, 'А');
     } else {
       if (allowAllTypes) {
         const totalDayCell = `A${employeeStart}`;
@@ -1825,6 +1877,13 @@ export class WorkLogsService {
         applyAlignment(worksheet, totalDayCell);
         applyAlignment(worksheet, totalNightCell);
         applyAlignment(worksheet, totalOverworkCell);
+
+        applyAlignment(worksheet, `A${employeeEnd + 1}`, 'П');
+        applyAlignment(worksheet, `A${employeeEnd + 2}`, 'Б');
+        applyAlignment(worksheet, `A${employeeEnd + 3}`, 'В');
+        applyAlignment(worksheet, `A${employeeEnd + 4}`, 'О');
+        applyAlignment(worksheet, `A${employeeEnd + 5}`, 'МО');
+        applyAlignment(worksheet, `A${employeeEnd + 6}`, 'А');
       } else if (allowDayNight) {
         const totalDayCell = `A${employeeStart}`;
         const totalNightCell = `A${employeeStart + 1}`;
@@ -1833,6 +1892,13 @@ export class WorkLogsService {
         worksheet.getCell(totalNightCell).value = 'Итого: ночных';
         applyAlignment(worksheet, totalDayCell);
         applyAlignment(worksheet, totalNightCell);
+
+        applyAlignment(worksheet, `A${employeeStart + 2}`, 'П');
+        applyAlignment(worksheet, `A${employeeStart + 3}`, 'Б');
+        applyAlignment(worksheet, `A${employeeStart + 4}`, 'В');
+        applyAlignment(worksheet, `A${employeeStart + 5}`, 'О');
+        applyAlignment(worksheet, `A${employeeStart + 6}`, 'МО');
+        applyAlignment(worksheet, `A${employeeStart + 7}`, 'А');
       } else if (allowNightOverwork) {
         const totalNightCell = `A${employeeStart}`;
         const totalOverworkCell = `A${employeeStart + 1}`;
@@ -1842,6 +1908,13 @@ export class WorkLogsService {
 
         applyAlignment(worksheet, totalNightCell);
         applyAlignment(worksheet, totalOverworkCell);
+
+        applyAlignment(worksheet, `A${employeeStart + 2}`, 'П');
+        applyAlignment(worksheet, `A${employeeStart + 3}`, 'Б');
+        applyAlignment(worksheet, `A${employeeStart + 4}`, 'В');
+        applyAlignment(worksheet, `A${employeeStart + 5}`, 'О');
+        applyAlignment(worksheet, `A${employeeStart + 6}`, 'МО');
+        applyAlignment(worksheet, `A${employeeStart + 7}`, 'А');
       } else if (allowDayOverwork) {
         const totalDayCell = `A${employeeStart}`;
         const totalOverworkCell = `A${employeeStart + 1}`;
@@ -1851,86 +1924,344 @@ export class WorkLogsService {
 
         applyAlignment(worksheet, totalDayCell);
         applyAlignment(worksheet, totalOverworkCell);
+
+        applyAlignment(worksheet, `A${employeeStart + 2}`, 'П');
+        applyAlignment(worksheet, `A${employeeStart + 3}`, 'Б');
+        applyAlignment(worksheet, `A${employeeStart + 4}`, 'В');
+        applyAlignment(worksheet, `A${employeeStart + 5}`, 'О');
+        applyAlignment(worksheet, `A${employeeStart + 6}`, 'МО');
+        applyAlignment(worksheet, `A${employeeStart + 7}`, 'А');
       } else if (allowOnlyOverwork) {
         worksheet.getCell(totalSingleCell).value = 'Итого: переработка';
         applyAlignment(worksheet, totalSingleCell);
+
+        applyAlignment(worksheet, `A${employeeStart + 1}`, 'П');
+        applyAlignment(worksheet, `A${employeeStart + 2}`, 'Б');
+        applyAlignment(worksheet, `A${employeeStart + 3}`, 'В');
+        applyAlignment(worksheet, `A${employeeStart + 4}`, 'О');
+        applyAlignment(worksheet, `A${employeeStart + 5}`, 'МО');
+        applyAlignment(worksheet, `A${employeeStart + 6}`, 'А');
       } else if (allowOnlyDay) {
         worksheet.getCell(totalSingleCell).value = 'Итого: дневных';
         applyAlignment(worksheet, totalSingleCell);
+
+        applyAlignment(worksheet, `A${employeeStart + 1}`, 'П');
+        applyAlignment(worksheet, `A${employeeStart + 2}`, 'Б');
+        applyAlignment(worksheet, `A${employeeStart + 3}`, 'В');
+        applyAlignment(worksheet, `A${employeeStart + 4}`, 'О');
+        applyAlignment(worksheet, `A${employeeStart + 5}`, 'МО');
+        applyAlignment(worksheet, `A${employeeStart + 6}`, 'А');
       } else if (allowOnlyNight) {
         worksheet.getCell(totalSingleCell).value = 'Итого: ночных';
         applyAlignment(worksheet, totalSingleCell);
+
+        applyAlignment(worksheet, `A${employeeStart + 1}`, 'П');
+        applyAlignment(worksheet, `A${employeeStart + 2}`, 'Б');
+        applyAlignment(worksheet, `A${employeeStart + 3}`, 'В');
+        applyAlignment(worksheet, `A${employeeStart + 4}`, 'О');
+        applyAlignment(worksheet, `A${employeeStart + 5}`, 'МО');
+        applyAlignment(worksheet, `A${employeeStart + 6}`, 'А');
       }
     }
 
     let totalStartColumn = 'D';
+
+    const totalOfTotalLetters: Omit<lettersSumType, 'Я'> = {
+      А: 0,
+      Б: 0,
+      В: 0,
+      МО: 0,
+      О: 0,
+      П: 0,
+    };
+
+    let totalHoursSum: number = 0;
+
+    let totalDayHoursSum: number = 0;
+    let totalNightHoursSum: number = 0;
+    let totalOverworkHoursSum: number = 0;
 
     for (let i = 0; i < dates?.length; i++) {
       const day = dates[i];
       const isWeekend = day.isWeekend;
 
       if (integers?.allowOnlyTotal) {
+        let totalOfTotalCell = 0;
+
         const cellId = `${totalStartColumn}${employeeStart}:${totalStartColumn}${employeeStart + 1}`;
+
+        const progulCellId = `${totalStartColumn}${employeeStart + 2}`;
+        const bolnichCellId = `${totalStartColumn}${employeeStart + 3}`;
+        const vihodCellId = `${totalStartColumn}${employeeStart + 4}`;
+        const otpushCellId = `${totalStartColumn}${employeeStart + 5}`;
+        const mejVahOtpuskCellId = `${totalStartColumn}${employeeStart + 6}`;
+        const adminOtpuskCellId = `${totalStartColumn}${employeeStart + 7}`;
 
         worksheet.mergeCells(cellId);
 
-        setSumWithStep(worksheet, cellId, 5, employeeStart, isWeekend, 2);
+        const innerTotalOfTotalLetters: Omit<lettersSumType, 'Я'> = {
+          А: 0,
+          Б: 0,
+          В: 0,
+          МО: 0,
+          О: 0,
+          П: 0,
+        };
+
+        for (let j = 0; j < workLogsData?.length; j++) {
+          const element = workLogsData?.[j];
+          const newWorkLogs = (element.workDays as never as WorkDaysType)[
+            day.fullDate
+          ];
+
+          if (typeof newWorkLogs === 'string') {
+            innerTotalOfTotalLetters[newWorkLogs] =
+              innerTotalOfTotalLetters[newWorkLogs] + 1;
+            totalOfTotalLetters[newWorkLogs] =
+              totalOfTotalLetters[newWorkLogs] + 1;
+          }
+
+          if (typeof newWorkLogs === 'object') {
+            totalOfTotalCell += newWorkLogs.total;
+            totalHoursSum += newWorkLogs.total;
+            // newWorkLogs.overwork;
+          }
+        }
+        applyAlignment(worksheet, cellId, totalOfTotalCell);
+
+        applyAlignment(worksheet, progulCellId, innerTotalOfTotalLetters.П);
+        applyAlignment(worksheet, bolnichCellId, innerTotalOfTotalLetters.Б);
+        applyAlignment(worksheet, vihodCellId, innerTotalOfTotalLetters.В);
+        applyAlignment(worksheet, otpushCellId, innerTotalOfTotalLetters.О);
+        applyAlignment(
+          worksheet,
+          mejVahOtpuskCellId,
+          innerTotalOfTotalLetters.МО,
+        );
+        applyAlignment(
+          worksheet,
+          adminOtpuskCellId,
+          innerTotalOfTotalLetters.А,
+        );
       } else {
         if (allowAllTypes) {
+          let totalOfTotalDayCell = 0;
+          let totalOfTotalNightCell = 0;
+          let totalOfTotalOveroworkCell = 0;
+
           const dayTargetCellId = `${totalStartColumn}${employeeStart}`;
           const nightTargetCellId = `${totalStartColumn}${employeeStart + 1}`;
           const overworkTargetCellId = `${totalStartColumn}${employeeEnd}`;
 
-          setSumWithStep(
-            worksheet,
-            dayTargetCellId,
-            5,
-            employeeStart,
-            isWeekend,
-          );
-          setSumWithStep(
-            worksheet,
-            nightTargetCellId,
-            6,
-            employeeStart + 1,
-            isWeekend,
-          );
-          setSumWithStep(
+          const progulCellId = `${totalStartColumn}${employeeEnd + 1}`;
+          const bolnichCellId = `${totalStartColumn}${employeeEnd + 2}`;
+          const vihodCellId = `${totalStartColumn}${employeeEnd + 3}`;
+          const otpushCellId = `${totalStartColumn}${employeeEnd + 4}`;
+          const mejVahOtpuskCellId = `${totalStartColumn}${employeeEnd + 5}`;
+          const adminOtpuskCellId = `${totalStartColumn}${employeeEnd + 6}`;
+
+          const innerTotalOfTotalLetters: Omit<lettersSumType, 'Я'> = {
+            А: 0,
+            Б: 0,
+            В: 0,
+            МО: 0,
+            О: 0,
+            П: 0,
+          };
+
+          for (let j = 0; j < workLogsData?.length; j++) {
+            const element = workLogsData?.[j];
+            const newWorkLogs = (element.workDays as never as WorkDaysType)[
+              day.fullDate
+            ];
+
+            if (typeof newWorkLogs === 'string') {
+              innerTotalOfTotalLetters[newWorkLogs] =
+                innerTotalOfTotalLetters[newWorkLogs] + 1;
+              totalOfTotalLetters[newWorkLogs] =
+                totalOfTotalLetters[newWorkLogs] + 1;
+            }
+
+            if (typeof newWorkLogs === 'object') {
+              totalDayHoursSum += newWorkLogs.day;
+              totalNightHoursSum = newWorkLogs.night;
+              totalOverworkHoursSum = newWorkLogs.overwork;
+
+              totalOfTotalDayCell += newWorkLogs.day;
+              totalOfTotalNightCell += newWorkLogs.night;
+              totalOfTotalOveroworkCell += newWorkLogs.overwork;
+
+              // newWorkLogs.overwork;
+            }
+          }
+
+          applyAlignment(worksheet, dayTargetCellId, totalOfTotalDayCell);
+          applyAlignment(worksheet, nightTargetCellId, totalOfTotalNightCell);
+          applyAlignment(
             worksheet,
             overworkTargetCellId,
-            7,
-            employeeEnd,
-            isWeekend,
+            totalOfTotalOveroworkCell,
+          );
+
+          applyAlignment(worksheet, progulCellId, innerTotalOfTotalLetters.П);
+          applyAlignment(worksheet, bolnichCellId, innerTotalOfTotalLetters.Б);
+          applyAlignment(worksheet, vihodCellId, innerTotalOfTotalLetters.В);
+          applyAlignment(worksheet, otpushCellId, innerTotalOfTotalLetters.О);
+          applyAlignment(
+            worksheet,
+            mejVahOtpuskCellId,
+            innerTotalOfTotalLetters.МО,
+          );
+          applyAlignment(
+            worksheet,
+            adminOtpuskCellId,
+            innerTotalOfTotalLetters.А,
           );
         } else if (allowNightOverwork || allowDayNight || allowDayOverwork) {
-          const firstTargetCellId = `${totalStartColumn}${employeeStart}`;
-          const secondTargetCellId = `${totalStartColumn}${employeeStart + 1}`;
+          let firstCellValue = 0;
+          let secondCellValue = 0;
 
-          setSumWithStep(
-            worksheet,
-            firstTargetCellId,
-            5,
-            employeeStart,
-            isWeekend,
-            2,
-          );
-          setSumWithStep(
-            worksheet,
-            secondTargetCellId,
-            6,
-            employeeStart + 1,
-            isWeekend,
-            2,
-          );
+          const dayTargetCellId = `${totalStartColumn}${employeeStart}`;
+          const nightTargetCellId = `${totalStartColumn}${employeeStart + 1}`;
+
+          const progulCellId = `${totalStartColumn}${employeeStart + 2}`;
+          const bolnichCellId = `${totalStartColumn}${employeeStart + 3}`;
+          const vihodCellId = `${totalStartColumn}${employeeStart + 4}`;
+          const otpushCellId = `${totalStartColumn}${employeeStart + 5}`;
+          const mejVahOtpuskCellId = `${totalStartColumn}${employeeStart + 6}`;
+          const adminOtpuskCellId = `${totalStartColumn}${employeeStart + 7}`;
+
+          const innerTotalOfTotalLetters: Omit<lettersSumType, 'Я'> = {
+            А: 0,
+            Б: 0,
+            В: 0,
+            МО: 0,
+            О: 0,
+            П: 0,
+          };
+
+          for (let j = 0; j < workLogsData?.length; j++) {
+            const element = workLogsData?.[j];
+            const newWorkLogs = (element.workDays as never as WorkDaysType)[
+              day.fullDate
+            ];
+
+            if (typeof newWorkLogs === 'string') {
+              innerTotalOfTotalLetters[newWorkLogs] =
+                innerTotalOfTotalLetters[newWorkLogs] + 1;
+              totalOfTotalLetters[newWorkLogs] =
+                totalOfTotalLetters[newWorkLogs] + 1;
+            }
+
+            if (typeof newWorkLogs === 'object') {
+              totalDayHoursSum += newWorkLogs.day;
+              totalNightHoursSum = newWorkLogs.night;
+              totalOverworkHoursSum = newWorkLogs.overwork;
+
+              firstCellValue +=
+                allowDayNight || allowDayOverwork
+                  ? newWorkLogs.day
+                  : allowDayNight
+                    ? newWorkLogs.night
+                    : 0;
+              secondCellValue +=
+                allowDayOverwork || allowNightOverwork
+                  ? +newWorkLogs.overwork
+                  : allowDayNight
+                    ? +newWorkLogs.night
+                    : 0;
+
+              // newWorkLogs.overwork;
+            }
+
+            applyAlignment(worksheet, dayTargetCellId, firstCellValue);
+            applyAlignment(worksheet, nightTargetCellId, secondCellValue);
+
+            applyAlignment(worksheet, progulCellId, innerTotalOfTotalLetters.П);
+            applyAlignment(
+              worksheet,
+              bolnichCellId,
+              innerTotalOfTotalLetters.Б,
+            );
+            applyAlignment(worksheet, vihodCellId, innerTotalOfTotalLetters.В);
+            applyAlignment(worksheet, otpushCellId, innerTotalOfTotalLetters.О);
+            applyAlignment(
+              worksheet,
+              mejVahOtpuskCellId,
+              innerTotalOfTotalLetters.МО,
+            );
+            applyAlignment(
+              worksheet,
+              adminOtpuskCellId,
+              innerTotalOfTotalLetters.А,
+            );
+          }
         } else if (allowOnlyDay || allowOnlyNight || allowOnlyOverwork) {
+          let firstCellValue = 0;
+
           const firstTargetCellId = `${totalStartColumn}${employeeStart}`;
-          setSumWithStep(
+
+          const innerTotalOfTotalLetters: Omit<lettersSumType, 'Я'> = {
+            А: 0,
+            Б: 0,
+            В: 0,
+            МО: 0,
+            О: 0,
+            П: 0,
+          };
+
+          const progulCellId = `${totalStartColumn}${employeeStart + 1}`;
+          const bolnichCellId = `${totalStartColumn}${employeeStart + 2}`;
+          const vihodCellId = `${totalStartColumn}${employeeStart + 3}`;
+          const otpushCellId = `${totalStartColumn}${employeeStart + 4}`;
+          const mejVahOtpuskCellId = `${totalStartColumn}${employeeStart + 5}`;
+          const adminOtpuskCellId = `${totalStartColumn}${employeeStart + 6}`;
+
+          for (let j = 0; j < workLogsData?.length; j++) {
+            const element = workLogsData?.[j];
+            const newWorkLogs = (element.workDays as never as WorkDaysType)[
+              day.fullDate
+            ];
+
+            if (typeof newWorkLogs === 'string') {
+              innerTotalOfTotalLetters[newWorkLogs] =
+                innerTotalOfTotalLetters[newWorkLogs] + 1;
+              totalOfTotalLetters[newWorkLogs] =
+                totalOfTotalLetters[newWorkLogs] + 1;
+            }
+
+            if (typeof newWorkLogs === 'object') {
+              totalDayHoursSum += newWorkLogs.day;
+              totalNightHoursSum = newWorkLogs.night;
+              totalOverworkHoursSum = newWorkLogs.overwork;
+
+              firstCellValue += allowOnlyDay
+                ? newWorkLogs.day
+                : allowOnlyNight
+                  ? newWorkLogs.night
+                  : allowOnlyOverwork
+                    ? newWorkLogs.overwork
+                    : 0;
+            }
+
+            // newWorkLogs.overwork;
+          }
+
+          applyAlignment(worksheet, firstTargetCellId, firstCellValue);
+
+          applyAlignment(worksheet, progulCellId, innerTotalOfTotalLetters.П);
+          applyAlignment(worksheet, bolnichCellId, innerTotalOfTotalLetters.Б);
+          applyAlignment(worksheet, vihodCellId, innerTotalOfTotalLetters.В);
+          applyAlignment(worksheet, otpushCellId, innerTotalOfTotalLetters.О);
+          applyAlignment(
             worksheet,
-            firstTargetCellId,
-            5,
-            employeeStart,
-            isWeekend,
-            2,
+            mejVahOtpuskCellId,
+            innerTotalOfTotalLetters.МО,
+          );
+          applyAlignment(
+            worksheet,
+            adminOtpuskCellId,
+            innerTotalOfTotalLetters.А,
           );
         }
       }
@@ -1942,6 +2273,19 @@ export class WorkLogsService {
     const totalTotalSmens = incrementColumn(nextTotalColumn);
     const totalTotalHoursWeekends = incrementColumn(totalTotalSmens);
     const totalTotalSmensWeekends = incrementColumn(totalTotalHoursWeekends);
+
+    const totalTotalProgulWeekends = incrementColumn(totalTotalSmensWeekends);
+    const totalTotalBolnickaWeekends = incrementColumn(
+      totalTotalProgulWeekends,
+    );
+    const totalTotalVihodWeekends = incrementColumn(totalTotalBolnickaWeekends);
+    const totalTotalOtpuskWeekends = incrementColumn(totalTotalVihodWeekends);
+    const totalTotalMejOtpuskWeekends = incrementColumn(
+      totalTotalOtpuskWeekends,
+    );
+    const totalTotalAdminOtpuskWeekends = incrementColumn(
+      totalTotalMejOtpuskWeekends,
+    );
 
     if (integers?.allowOnlyTotal) {
       const totalCellId = `${totalStartColumn}${employeeStart}:${nextTotalColumn}${employeeStart + 1}`;
@@ -2076,9 +2420,23 @@ export class WorkLogsService {
     const totalWeekendsHoursCell = `${totalTotalHoursWeekends}${employeeStart}:${totalTotalHoursWeekends}${employeeEnd}`;
     const totalWeekendsSmensCell = `${totalTotalSmensWeekends}${employeeStart}:${totalTotalSmensWeekends}${employeeEnd}`;
 
+    const total1 = `${totalTotalProgulWeekends}${employeeStart}:${totalTotalProgulWeekends}${employeeEnd}`;
+    const total2 = `${totalTotalBolnickaWeekends}${employeeStart}:${totalTotalBolnickaWeekends}${employeeEnd}`;
+    const total3 = `${totalTotalVihodWeekends}${employeeStart}:${totalTotalVihodWeekends}${employeeEnd}`;
+    const total4 = `${totalTotalOtpuskWeekends}${employeeStart}:${totalTotalOtpuskWeekends}${employeeEnd}`;
+    const total5 = `${totalTotalMejOtpuskWeekends}${employeeStart}:${totalTotalMejOtpuskWeekends}${employeeEnd}`;
+    const total6 = `${totalTotalAdminOtpuskWeekends}${employeeStart}:${totalTotalAdminOtpuskWeekends}${employeeEnd}`;
+
     worksheet.mergeCells(totalSmensCell);
     worksheet.mergeCells(totalWeekendsHoursCell);
     worksheet.mergeCells(totalWeekendsSmensCell);
+
+    worksheet.mergeCells(total1);
+    worksheet.mergeCells(total2);
+    worksheet.mergeCells(total3);
+    worksheet.mergeCells(total4);
+    worksheet.mergeCells(total5);
+    worksheet.mergeCells(total6);
 
     setSumWithStep(
       worksheet,
@@ -2104,6 +2462,13 @@ export class WorkLogsService {
       false,
       allowAllTypes ? 3 : 2,
     );
+
+    applyAlignment(worksheet, total1, totalOfTotalLetters.П);
+    applyAlignment(worksheet, total2, totalOfTotalLetters.Б);
+    applyAlignment(worksheet, total3, totalOfTotalLetters.В);
+    applyAlignment(worksheet, total4, totalOfTotalLetters.О);
+    applyAlignment(worksheet, total5, totalOfTotalLetters.МО);
+    applyAlignment(worksheet, total6, totalOfTotalLetters.А);
 
     const startCell = 'A1';
 
@@ -2211,15 +2576,36 @@ export class WorkLogsService {
     const totalHoursWeekends = incrementColumn(totalSmens);
     const totalSmensWeekends = incrementColumn(totalHoursWeekends);
 
+    const progulColumn = incrementColumn(totalSmensWeekends);
+    const bolnichnColumn = incrementColumn(progulColumn);
+    const vihodColumn = incrementColumn(bolnichnColumn);
+    const otpuskColumn = incrementColumn(vihodColumn);
+    const mejOtpuskColumn = incrementColumn(otpuskColumn);
+    const adminColumn = incrementColumn(mejOtpuskColumn);
+
     const totalHours = `${startColumn}1:${nextColumn}2`;
     const totalSmensRow = `${totalSmens}1:${totalSmens}2`;
     const totalHoursSecondRow = `${totalHoursWeekends}1:${totalHoursWeekends}2`;
     const totalSmensWeekendsRow = `${totalSmensWeekends}1:${totalSmensWeekends}2`;
 
+    const totalProgulRow = `${progulColumn}1:${progulColumn}2`;
+    const totalBolnichRow = `${bolnichnColumn}1:${bolnichnColumn}2`;
+    const totalVihodRow = `${vihodColumn}1:${vihodColumn}2`;
+    const totalOtpuskRow = `${otpuskColumn}1:${otpuskColumn}2`;
+    const totalMejOtpuskRow = `${mejOtpuskColumn}1:${mejOtpuskColumn}2`;
+    const totalAdminColumnRow = `${adminColumn}1:${adminColumn}2`;
+
     worksheet.mergeCells(totalHours);
     worksheet.mergeCells(totalSmensRow);
     worksheet.mergeCells(totalHoursSecondRow);
     worksheet.mergeCells(totalSmensWeekendsRow);
+
+    worksheet.mergeCells(totalProgulRow);
+    worksheet.mergeCells(totalBolnichRow);
+    worksheet.mergeCells(totalVihodRow);
+    worksheet.mergeCells(totalOtpuskRow);
+    worksheet.mergeCells(totalMejOtpuskRow);
+    worksheet.mergeCells(totalAdminColumnRow);
 
     applyAlignment(worksheet, totalHours, 'Итоги');
     applyAlignment(worksheet, totalSmensRow + 1, 'Итого смен', 20);
@@ -2230,6 +2616,13 @@ export class WorkLogsService {
       'Итого смен (вых)',
       20,
     );
+
+    applyAlignment(worksheet, totalProgulRow, 'П');
+    applyAlignment(worksheet, totalBolnichRow, 'Б');
+    applyAlignment(worksheet, totalVihodRow, 'В');
+    applyAlignment(worksheet, totalOtpuskRow, 'О');
+    applyAlignment(worksheet, totalMejOtpuskRow, 'МО');
+    applyAlignment(worksheet, totalAdminColumnRow, 'А');
 
     let startCell = 'A3';
 
@@ -2256,6 +2649,12 @@ export class WorkLogsService {
           night: number;
           overwork: number;
           onlyTotal: number;
+          А: number;
+          Б: number;
+          В: number;
+          МО: number;
+          О: number;
+          П: number;
         }
       > = {};
 
@@ -2268,6 +2667,12 @@ export class WorkLogsService {
         totalSmensCount: number;
         allWeekenedHours: number;
         allWeekendSmensCount: number;
+        А: number;
+        Б: number;
+        В: number;
+        МО: number;
+        О: number;
+        П: number;
       } = {
         onlyTotalHours: 0,
         totalDayHours: 0,
@@ -2277,6 +2682,12 @@ export class WorkLogsService {
         totalSmensCount: 0,
         allWeekenedHours: 0,
         allWeekendSmensCount: 0,
+        А: 0,
+        Б: 0,
+        В: 0,
+        МО: 0,
+        О: 0,
+        П: 0,
       };
 
       for (let i = 0; i < allFacilities?.length; i++) {
@@ -2470,6 +2881,15 @@ export class WorkLogsService {
         let totalWeekendsHours: number = 0;
         let totalWeekendSmensCount: number = 0;
 
+        const totalLetters: Omit<lettersSumType, 'Я'> = {
+          А: 0,
+          Б: 0,
+          В: 0,
+          МО: 0,
+          О: 0,
+          П: 0,
+        };
+
         let columnIdForTotalStart: string = '';
 
         for (let j = 0; j < allowedEmployees?.length; j++) {
@@ -2486,6 +2906,15 @@ export class WorkLogsService {
             const sumAtNight: number[] = [];
             const sumAtOverwork: number[] = [];
 
+            const innerTotalOfTotalLetters: Omit<lettersSumType, 'Я'> = {
+              А: 0,
+              Б: 0,
+              В: 0,
+              МО: 0,
+              О: 0,
+              П: 0,
+            };
+
             for (let n = 0; n < workLogsData?.length; n++) {
               const workLog = workLogsData?.[n];
 
@@ -2500,6 +2929,15 @@ export class WorkLogsService {
               const totalValue = +(workDayValue?.total ?? 0);
 
               const isCurrentEmployee = workLog?.employee?.id === employee?.id;
+
+              if (isCurrentEmployee) {
+                if (typeof workDayValue === 'string') {
+                  //@ts-ignore
+                  totalLetters[workDayValue] += 1;
+                  //@ts-ignore
+                  innerTotalOfTotalLetters[workDayValue] += 1;
+                }
+              }
 
               if (typeof workDayValue === 'object') {
                 if (allowOnlyTotal) {
@@ -2683,6 +3121,16 @@ export class WorkLogsService {
                 }
               }
             }
+
+            allTotalsObject[day.fullDate] = {
+              ...allTotalsObject[day.fullDate],
+              П: innerTotalOfTotalLetters?.П ?? 0,
+              Б: innerTotalOfTotalLetters?.Б ?? 0,
+              В: innerTotalOfTotalLetters?.В ?? 0,
+              О: innerTotalOfTotalLetters?.О ?? 0,
+              МО: innerTotalOfTotalLetters?.МО ?? 0,
+              А: innerTotalOfTotalLetters?.А ?? 0,
+            };
 
             if (allowOnlyTotal) {
               const allTypesCell = `${startColumn}${facilityStart}`;
@@ -2883,6 +3331,13 @@ export class WorkLogsService {
           const totalHoursWeekends = incrementColumn(totalSmens);
           const totalSmensWeekends = incrementColumn(totalHoursWeekends);
 
+          const total1 = incrementColumn(totalSmensWeekends);
+          const total2 = incrementColumn(total1);
+          const total3 = incrementColumn(total2);
+          const total4 = incrementColumn(total3);
+          const total5 = incrementColumn(total4);
+          const total6 = incrementColumn(total5);
+
           // worksheet.mergeCells(totalHours);
 
           if (allowOnlyTotal) {
@@ -2996,6 +3451,25 @@ export class WorkLogsService {
             `${totalSmensWeekends}${facilityStart}:${totalSmensWeekends}${nextColumnIndex}`,
           );
 
+          worksheet.mergeCells(
+            `${total1}${facilityStart}:${total1}${nextColumnIndex}`,
+          );
+          worksheet.mergeCells(
+            `${total2}${facilityStart}:${total2}${nextColumnIndex}`,
+          );
+          worksheet.mergeCells(
+            `${total3}${facilityStart}:${total3}${nextColumnIndex}`,
+          );
+          worksheet.mergeCells(
+            `${total4}${facilityStart}:${total4}${nextColumnIndex}`,
+          );
+          worksheet.mergeCells(
+            `${total5}${facilityStart}:${total5}${nextColumnIndex}`,
+          );
+          worksheet.mergeCells(
+            `${total6}${facilityStart}:${total6}${nextColumnIndex}`,
+          );
+
           applyAlignment(
             worksheet,
             `${totalSmens}${facilityStart}:${totalSmens}${facilityEnd}`,
@@ -3011,9 +3485,47 @@ export class WorkLogsService {
             `${totalSmensWeekends}${facilityStart}:${totalSmensWeekends}${facilityEnd}`,
             totalWeekendSmensCount,
           );
+
+          applyAlignment(
+            worksheet,
+            `${total1}${facilityStart}:${total1}${facilityEnd}`,
+            totalLetters.П,
+          );
+          applyAlignment(
+            worksheet,
+            `${total2}${facilityStart}:${total2}${facilityEnd}`,
+            totalLetters.Б,
+          );
+          applyAlignment(
+            worksheet,
+            `${total3}${facilityStart}:${total3}${facilityEnd}`,
+            totalLetters.В,
+          );
+          applyAlignment(
+            worksheet,
+            `${total4}${facilityStart}:${total4}${facilityEnd}`,
+            totalLetters.О,
+          );
+          applyAlignment(
+            worksheet,
+            `${total5}${facilityStart}:${total5}${facilityEnd}`,
+            totalLetters.МО,
+          );
+          applyAlignment(
+            worksheet,
+            `${total6}${facilityStart}:${total6}${facilityEnd}`,
+            totalLetters.А,
+          );
+
           allTotalsTotalObject.totalSmensCount += totalSmensCount;
           allTotalsTotalObject.allWeekenedHours += totalWeekendsHours;
           allTotalsTotalObject.allWeekendSmensCount += totalWeekendSmensCount;
+          allTotalsTotalObject.А += totalLetters.А;
+          allTotalsTotalObject.Б += totalLetters.Б;
+          allTotalsTotalObject.В += totalLetters.В;
+          allTotalsTotalObject.МО += totalLetters.МО;
+          allTotalsTotalObject.П += totalLetters.П;
+          allTotalsTotalObject.О += totalLetters.О;
 
           // applyAlignment(worksheet, totalHoursWeekends, totalWeekendsHours);
           // applyAlignment(worksheet, totalSmensWeekends, totalWeekendSmensCount);
@@ -3042,8 +3554,22 @@ export class WorkLogsService {
       }
 
       const totalNameCell = `A${facilityStart}:A${facilityStart + 3}`;
+      const letter1Cell = `A${facilityStart + 4}`;
+      const letter2Cell = `A${facilityStart + 5}`;
+      const letter3Cell = `A${facilityStart + 6}`;
+      const letter4Cell = `A${facilityStart + 7}`;
+      const letter5Cell = `A${facilityStart + 8}`;
+      const letter6Cell = `A${facilityStart + 9}`;
+
       worksheet.mergeCells(totalNameCell);
       applyAlignment(worksheet, totalNameCell, 'Итоги');
+
+      applyAlignment(worksheet, letter1Cell, 'П');
+      applyAlignment(worksheet, letter2Cell, 'Б');
+      applyAlignment(worksheet, letter3Cell, 'В');
+      applyAlignment(worksheet, letter4Cell, 'О');
+      applyAlignment(worksheet, letter5Cell, 'МО');
+      applyAlignment(worksheet, letter6Cell, 'А');
 
       const onlyHoursCell = `B${facilityStart}`;
       const dayCell = `B${facilityStart + 1}`;
@@ -3056,7 +3582,6 @@ export class WorkLogsService {
       applyAlignment(worksheet, overworkCell, 'п');
 
       let newStartColumn = 'C';
-
       for (let i = 0; i < dates?.length; i++) {
         const isWeekend = dates[i]?.isWeekend;
         const dayName = dates[i]?.fullDate;
@@ -3067,6 +3592,13 @@ export class WorkLogsService {
         const dayCell = `${newStartColumn}${facilityStart + 1}`;
         const nightCell = `${newStartColumn}${facilityStart + 2}`;
         const overworkCell = `${newStartColumn}${facilityStart + 3}`;
+
+        const letter1Cell = `${newStartColumn}${facilityStart + 4}`;
+        const letter2Cell = `${newStartColumn}${facilityStart + 5}`;
+        const letter3Cell = `${newStartColumn}${facilityStart + 6}`;
+        const letter4Cell = `${newStartColumn}${facilityStart + 7}`;
+        const letter5Cell = `${newStartColumn}${facilityStart + 8}`;
+        const letter6Cell = `${newStartColumn}${facilityStart + 9}`;
 
         applyAlignment(
           worksheet,
@@ -3096,6 +3628,49 @@ export class WorkLogsService {
           undefined,
           isWeekend,
         );
+        //Буквы
+        applyAlignment(
+          worksheet,
+          letter1Cell,
+          totalObjByDay?.П ?? 0,
+          undefined,
+          isWeekend,
+        );
+        applyAlignment(
+          worksheet,
+          letter2Cell,
+          totalObjByDay?.Б ?? 0,
+          undefined,
+          isWeekend,
+        );
+        applyAlignment(
+          worksheet,
+          letter3Cell,
+          totalObjByDay?.В ?? 0,
+          undefined,
+          isWeekend,
+        );
+        applyAlignment(
+          worksheet,
+          letter4Cell,
+          totalObjByDay?.О ?? 0,
+          undefined,
+          isWeekend,
+        );
+        applyAlignment(
+          worksheet,
+          letter5Cell,
+          totalObjByDay?.МО ?? 0,
+          undefined,
+          isWeekend,
+        );
+        applyAlignment(
+          worksheet,
+          letter6Cell,
+          totalObjByDay?.А ?? 0,
+          undefined,
+          isWeekend,
+        );
 
         newStartColumn = incrementColumn(newStartColumn);
       }
@@ -3105,6 +3680,13 @@ export class WorkLogsService {
       const totalSmens = incrementColumn(nextColumn);
       const totalHoursWeekends = incrementColumn(totalSmens);
       const totalSmensWeekends = incrementColumn(totalHoursWeekends);
+
+      const total1 = incrementColumn(totalSmensWeekends);
+      const total2 = incrementColumn(total1);
+      const total3 = incrementColumn(total2);
+      const total4 = incrementColumn(total3);
+      const total5 = incrementColumn(total4);
+      const total6 = incrementColumn(total5);
 
       const totalHoursCell = `${newStartColumn}${facilityStart}:${nextColumn}${facilityStart}`;
       const dayHoursCell = `${newStartColumn}${facilityStart + 1}:${nextColumn}${facilityStart + 1}`;
@@ -3142,6 +3724,7 @@ export class WorkLogsService {
         allTotalsTotalObject?.totalOverworkSecondPartHours,
       );
 
+
       worksheet.mergeCells(
         `${totalSmens}${facilityStart}:${totalSmens}${facilityStart + 3}`,
       );
@@ -3150,6 +3733,25 @@ export class WorkLogsService {
       );
       worksheet.mergeCells(
         `${totalSmensWeekends}${facilityStart}:${totalSmensWeekends}${facilityStart + 3}`,
+      );
+      //Буквы
+      worksheet.mergeCells(
+        `${total1}${facilityStart}:${total1}${facilityStart + 3}`,
+      );
+      worksheet.mergeCells(
+        `${total2}${facilityStart}:${total2}${facilityStart + 3}`,
+      );
+      worksheet.mergeCells(
+        `${total3}${facilityStart}:${total3}${facilityStart + 3}`,
+      );
+      worksheet.mergeCells(
+        `${total4}${facilityStart}:${total4}${facilityStart + 3}`,
+      );
+      worksheet.mergeCells(
+        `${total5}${facilityStart}:${total5}${facilityStart + 3}`,
+      );
+      worksheet.mergeCells(
+        `${total6}${facilityStart}:${total6}${facilityStart + 3}`,
       );
 
       applyAlignment(
@@ -3166,6 +3768,37 @@ export class WorkLogsService {
         worksheet,
         `${totalSmensWeekends}${facilityStart}:${totalSmensWeekends}${facilityStart + 3}`,
         allTotalsTotalObject?.allWeekendSmensCount,
+      );
+      //Буквы
+      applyAlignment(
+        worksheet,
+        `${total1}${facilityStart}:${total1}${facilityStart + 3}`,
+        allTotalsTotalObject?.П,
+      );
+      applyAlignment(
+        worksheet,
+        `${total2}${facilityStart}:${total2}${facilityStart + 3}`,
+        allTotalsTotalObject?.Б,
+      );
+      applyAlignment(
+        worksheet,
+        `${total3}${facilityStart}:${total3}${facilityStart + 3}`,
+        allTotalsTotalObject?.В,
+      );
+      applyAlignment(
+        worksheet,
+        `${total4}${facilityStart}:${total4}${facilityStart + 3}`,
+        allTotalsTotalObject?.О,
+      );
+      applyAlignment(
+        worksheet,
+        `${total5}${facilityStart}:${total5}${facilityStart + 3}`,
+        allTotalsTotalObject?.МО,
+      );
+      applyAlignment(
+        worksheet,
+        `${total6}${facilityStart}:${total6}${facilityStart + 3}`,
+        allTotalsTotalObject?.А,
       );
     }
 

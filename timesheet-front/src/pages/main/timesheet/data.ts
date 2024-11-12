@@ -42,6 +42,10 @@ export interface employeeType {
   employmentPeriods: employmentPeriodsType[];
   facilityPeriods: facilityPeriodsType[];
   employeeId: number;
+  phoneNumber: string;
+  lastName: string;
+  firstName: string;
+  middleName: string;
   dates: employeeDatesType;
   total: employeeTotalType;
   lastPosition: {

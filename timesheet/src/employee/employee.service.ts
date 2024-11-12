@@ -25,7 +25,10 @@ import { Positions } from 'src/positions/positions.model';
 import { Roles } from 'src/roles/role.model';
 import { User } from 'src/users/user.model';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
-import { UpdateEmployeeDto } from './dto/update-employee.dto';
+import {
+  UpdateEmployeeDto,
+  UpdateEmployeeDtoFromWorkLogs,
+} from './dto/update-employee.dto';
 import { Employee } from './employee.model';
 
 @Injectable()
@@ -221,6 +224,114 @@ export class EmployeeService {
     );
 
     return data;
+  }
+
+  async updateFromLogs(
+    id: number,
+    updateEmployeeDto: UpdateEmployeeDtoFromWorkLogs,
+  ) {
+    console.log(id);
+    // await this.validateDto(updateEmployeeDto, id);
+
+    await this.cacheManager.del(EMPLOYEES_CACHE_KEY);
+
+    const [_, [data]] = await this.employeeModel.update(
+      {
+        middleName: updateEmployeeDto.middleName,
+        lastName: updateEmployeeDto.lastName,
+        firstName: updateEmployeeDto.firstName,
+        phoneNumber: updateEmployeeDto.phoneNumber,
+        registeredAddress: updateEmployeeDto.registeredAddress,
+        actualAddress: updateEmployeeDto.actualAddress,
+        lastIsOutOfTown: updateEmployeeDto.isOutOfTown,
+        lastPositionId: updateEmployeeDto?.positionId ?? null,
+        lastStatus: updateEmployeeDto?.status,
+      },
+      {
+        where: {
+          id,
+        },
+        returning: true,
+      },
+    );
+
+    await this.updateEmploymentPeriodFromWorkLogs(
+      id,
+      updateEmployeeDto.status,
+      updateEmployeeDto.positionId,
+      updateEmployeeDto.isOutOfTown,
+    );
+
+    return data;
+  }
+
+  private async updateEmploymentPeriodFromWorkLogs(
+    employeeId: number,
+    status: EmploymentStatus,
+    positionId: number,
+    isOutOfTown: boolean,
+  ) {
+    const currentPeriod = await this.employmentPeriodModel.findOne({
+      where: {
+        employeeId,
+        endDate: null,
+      },
+    });
+
+    const currentPosition = await this.positionPeriodModel.findOne({
+      where: {
+        employeeId,
+        endDate: null,
+      },
+    });
+
+    const currentIsOutOfTown = await this.outOfTownPeriodModel.findOne({
+      where: {
+        employeeId,
+        endDate: null,
+      },
+    });
+
+    if (
+      currentIsOutOfTown ? currentIsOutOfTown.isOutOfTown !== isOutOfTown : true
+    ) {
+      if (currentIsOutOfTown) {
+        currentIsOutOfTown.endDate = new Date();
+        await currentIsOutOfTown.save();
+      }
+
+      await this.outOfTownPeriodModel.create({
+        employeeId,
+        startDate: new Date(),
+        isOutOfTown,
+      });
+    }
+
+    if (currentPosition ? currentPosition.positionId !== positionId : true) {
+      if (currentPosition) {
+        currentPosition.endDate = new Date();
+        await currentPosition.save();
+      }
+
+      await this.positionPeriodModel.create({
+        employeeId,
+        startDate: new Date(),
+        positionId,
+      });
+    }
+
+    if (currentPeriod?.status ? currentPeriod.status !== status : true) {
+      if (currentPeriod) {
+        currentPeriod.endDate = new Date();
+        await currentPeriod.save();
+      }
+
+      await this.employmentPeriodModel.create({
+        employeeId,
+        startDate: new Date(),
+        status,
+      });
+    }
   }
 
   private async updateEmploymentPeriod(
@@ -660,6 +771,9 @@ export class EmployeeService {
           lastName: employee?.lastName,
           firstName: employee?.firstName,
           middleName: employee?.middleName,
+          registeredAddress: employee?.registeredAddress,
+          phoneNumber: employee?.phoneNumber,
+          lastStatus: employee?.lastStatus,
           position: {},
           employmentPeriods: allowedPeriods,
           facilityPeriods: allowedFacilityEmployees.filter(

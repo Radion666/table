@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { Calendar, Card, Col, Pagination, Row } from "antd";
+import { Calendar, Card, Col, DatePicker, Pagination, Row } from "antd";
 import ruRU from "antd/es/locale/ru_RU";
 import dayjs, { Dayjs } from "dayjs";
 import { Controller, useForm } from "react-hook-form";
@@ -279,7 +279,31 @@ export const FacilitiesPage = () => {
   return (
     <>
       <div className="flex flex-1 flex-col gap-5 justify-center p-5">
-        <div>
+        <div className="flex flex-row justify-end gap-5">
+          <DatePicker
+            onChange={(date) => {
+              //@ts-ignore
+              const formattedDate = date.format("MM-YYYY");
+
+              apiRequests.downloadReportByFacilities(formattedDate).then(async (response) => {
+                const url = window.URL.createObjectURL(new Blob([response.data]));
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "downloaded_file.xlsx";
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+              });
+            }}
+            value={""}
+            picker="month"
+            locale={{
+              lang: ruRU
+            }}
+            placeholder="Выберите месяц для скачивания отчета по объектам"
+            className="min-w-[300px]"
+          />
           {userRole !== "master" && userRole !== "financier" && (
             <div className="flex justify-end">
               <Button onClick={() => setModalOpen(true)}>Создать новый объект</Button>

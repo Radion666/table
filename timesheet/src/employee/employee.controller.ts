@@ -16,7 +16,10 @@ import { UserDecorator } from 'src/common/UserDecorator/UserDecorator';
 import { EmploymentStatus } from 'src/employment-periods/employment-periods.model';
 import { User } from 'src/users/user.model';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
-import { UpdateEmployeeDto } from './dto/update-employee.dto';
+import {
+  UpdateEmployeeDto,
+  UpdateEmployeeDtoFromWorkLogs,
+} from './dto/update-employee.dto';
 import { EmployeeService } from './employee.service';
 
 @Controller('employees')
@@ -80,6 +83,16 @@ export class EmployeeController {
     @Body() updateEmployeeDto: UpdateEmployeeDto,
   ) {
     return this.employeeService.update(+id, updateEmployeeDto);
+  }
+
+  @Roles('admin', 'master', 'personnel_officer')
+  @UseGuards(RolesGuards)
+  @Patch('/update/employee/logs/:id')
+  updateEmployeeFromWorkLogs(
+    @Param('id') id: string,
+    @Body() updateEmployeeDto: UpdateEmployeeDtoFromWorkLogs,
+  ) {
+    return this.employeeService.updateFromLogs(+id, updateEmployeeDto);
   }
 
   // @Delete(':id')

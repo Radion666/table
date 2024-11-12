@@ -1,7 +1,10 @@
 import { FC, HTMLProps, memo, useMemo, useState } from "react";
 
+import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
 import dayjs, { Dayjs } from "dayjs";
+import { Controller, useForm } from "react-hook-form";
+import { toast } from "react-toastify";
 
 import { dateValueType, employeeType } from "../../data";
 import { fieldType, headerCellType, totalVariantType } from "../../timesheet";
@@ -10,11 +13,23 @@ import { CellInput, cellLetters } from "./component/cell-input";
 import { Indentificators } from "./component/identificators";
 
 import { dateRegex, daysInMonth, parseDate } from "~src/pages/main/utils/utils";
-import { workerStatuses } from "~src/pages/main/workers/utils/constants";
+import { workersStatuses, workerStatuses } from "~src/pages/main/workers/utils/constants";
+import { apiRequests } from "~src/shared/api/requests";
+import { regexes } from "~src/shared/constants/default";
 import { useGetUser } from "~src/shared/hooks/useGetUser";
-import { employmentPeriodsType, facilityPeriodsType } from "~src/shared/types/employees";
+import {
+  createWorkerType,
+  employmentPeriodsType,
+  facilityPeriodsType
+} from "~src/shared/types/employees";
 import { facilityTimesheetSettingType, productionCalendarType } from "~src/shared/types/facilities";
+import { CreateEmployeeType } from "~src/shared/types/user";
+import { Button } from "~src/shared/ui/button/button";
+import { Checkbox } from "~src/shared/ui/checkbox/checkbox";
 import { Icon } from "~src/shared/ui/icon/icon";
+import { Input } from "~src/shared/ui/input/input";
+import { Modal } from "~src/shared/ui/modal/modal";
+import { Select } from "~src/shared/ui/select/select";
 
 interface TableCellProps {
   label: string;
@@ -37,6 +52,13 @@ interface TableCellProps {
   facilitySettings?: facilityTimesheetSettingType;
   productionCalendar?: productionCalendarType[];
   totalVariant: totalVariantType;
+  facilityId: number;
+  phoneNumber: string;
+  lastName: string;
+  firstName: string;
+  middleName: string;
+  positionId: number;
+  refetch?: () => void;
 }
 
 const checkDate = (dateToCheck: Dayjs) => {
@@ -70,10 +92,20 @@ export const TableCell: FC<TableCellProps> = memo(
     userShortName,
     facilitySettings,
     productionCalendar,
-    totalVariant
+    totalVariant,
+    facilityId,
+    id: employeeId,
+    phoneNumber,
+    firstName,
+    middleName,
+    lastName,
+    positionId,
+    refetch
   }) => {
     const { userRole } = useGetUser();
-    const [errorMsg, setErrorMsg] = useState<string>("Недоступно");
+    const [errorMsg, setErrorMsg] = useState<string>("");
+
+    const [isModalOpen, setModalOpen] = useState<boolean>(false);
 
     const cellParsedDate = useMemo(() => {
       if (dayValue && dateRegex.test(dayValue) && employmentPeriods?.length) {
@@ -202,7 +234,7 @@ export const TableCell: FC<TableCellProps> = memo(
             newPeriod?.endDate === null &&
             cellDate.isAfter(newPeriod?.startDate)
           ) {
-            setErrorMsg(workerStatuses[newPeriod?.status]);
+            setErrorMsg(`${workerStatuses[newPeriod?.status].slice(0, 2)}`);
           }
 
           if (
@@ -316,12 +348,49 @@ export const TableCell: FC<TableCellProps> = memo(
 
     const heightPercentage = numberOfHours === 1 ? 100 : 100 / numberOfHours;
 
+    const {
+      getValues,
+      control,
+      handleSubmit,
+      reset,
+      watch,
+      formState: { errors },
+      setValue
+    } = useForm<createWorkerType>({
+      defaultValues: {
+        actualAddress: "",
+        firstName: firstName,
+        isOutOfTown: lastIsOutOfTown,
+        lastName: lastName,
+        middleName: middleName,
+        phoneNumber: phoneNumber,
+        positionId: positionId,
+        registeredAddress: "",
+        status: "working"
+      }
+    });
+
+    const { data: positionsData, isFetching: isPositionsFetching } = useQuery({
+      queryKey: ["facility by id", positionId],
+      queryFn: () => apiRequests.getPositionsByFacilityId(facilityId ?? undefined)
+    });
+
+    const handleUpdate = async (data: CreateEmployeeType) => {
+      if (data) {
+        await apiRequests.updateWorkerFromLogs(data as any, employeeId).then(() => {
+          toast.success("Сотрудник успешно обновлен");
+          setModalOpen(false);
+          refetch();
+        });
+      }
+    };
+
     return (
       <div
         tabIndex={-1}
         className={clsx(
           className && className,
-          "min-w-12 flex-1  border-r-[1px]  flex items-center justify-center text-center z-20  max-w-12",
+          "min-w-12 flex-1  border-r-[1px]  flex items-center justify-center text-center z-20  max-w-12 border-gray-400",
           isWeekend && "bg-gray-300",
           fieldType === "input" && "",
           (isDisabled || !allowedToMaster || isNotAllowed) &&
@@ -407,7 +476,9 @@ export const TableCell: FC<TableCellProps> = memo(
                 ) : fieldType === "info" ? (
                   <Indentificators facilitySettings={facilitySettings} />
                 ) : fieldType === "employee" ? (
-                  <div>
+                  <div
+                    className=" h-full w-full flex items-center justify-center"
+                    onClick={() => setModalOpen(true)}>
                     <div>{userShortName ?? ""}</div>
                     <div className="text-gray-300">{userPosition ?? ""}</div>
                   </div>
@@ -437,6 +508,130 @@ export const TableCell: FC<TableCellProps> = memo(
             )}
           </>
         )}
+
+        <Modal title="Редактирование сотрудника" state={isModalOpen} setState={setModalOpen}>
+          <form className="flex flex-col gap-2 mt-4" onSubmit={handleSubmit(handleUpdate)}>
+            <Controller
+              control={control}
+              name="lastName"
+              rules={{
+                required: "Фамилия обязательна"
+              }}
+              render={({ field }) => (
+                <Input errorMessage={errors?.lastName?.message} label="Фамилия" {...field} />
+              )}
+            />
+
+            <Controller
+              rules={{
+                required: "Имя обязательно"
+              }}
+              control={control}
+              name="firstName"
+              render={({ field }) => (
+                <Input errorMessage={errors?.firstName?.message} label="Имя" {...field} />
+              )}
+            />
+
+            <Controller
+              rules={{
+                required: "Отчество обязательно"
+              }}
+              control={control}
+              name="middleName"
+              render={({ field }) => (
+                <Input errorMessage={errors?.middleName?.message} label="Отчество" {...field} />
+              )}
+            />
+
+            <Controller
+              rules={{
+                required: "Должность обязательна"
+              }}
+              control={control}
+              name="positionId"
+              render={({ field }) => (
+                <Select
+                  optionFilterProp="label"
+                  loading={isPositionsFetching}
+                  options={positionsData?.data?.map((position) => ({
+                    value: position.id,
+                    label: position.name
+                  }))}
+                  showSearch
+                  errorMessage={errors?.positionId?.message}
+                  label="Должность"
+                  {...field}
+                />
+              )}
+            />
+
+            <Controller
+              rules={{
+                required: "Статус обязателен"
+              }}
+              control={control}
+              name="status"
+              render={({ field }) => (
+                <Select
+                  optionFilterProp="label"
+                  options={workersStatuses?.map((status) => ({
+                    value: status.value,
+                    label: status.label
+                  }))}
+                  showSearch
+                  errorMessage={errors?.status?.message}
+                  label="Статус"
+                  {...field}
+                />
+              )}
+            />
+
+            <Controller
+              rules={{
+                required: "Номер телефона обязателен",
+                pattern: {
+                  value: regexes.phone,
+                  message: "Номер телефона не соответствует стандарту"
+                }
+              }}
+              control={control}
+              name="phoneNumber"
+              render={({ field }) => (
+                <Input
+                  label="Номер телефона"
+                  isPhone
+                  errorMessage={errors.phoneNumber?.message}
+                  {...field}
+                />
+              )}
+            />
+
+            <Controller
+              rules={{
+                required: ""
+              }}
+              control={control}
+              name="isOutOfTown"
+              render={({ field }) => <Checkbox label="Местный" {...field} />}
+            />
+
+            <Controller
+              control={control}
+              name="registeredAddress"
+              render={({ field }) => <Input label="Адрес регистрации" {...field} />}
+            />
+            <Controller
+              control={control}
+              name="actualAddress"
+              render={({ field }) => <Input label="Адрес фактического проживания" {...field} />}
+            />
+
+            <div className="flex justify-center mt-4">
+              <Button htmlType="submit">Сохранить</Button>
+            </div>
+          </form>
+        </Modal>
       </div>
     );
   }

@@ -107,6 +107,8 @@ export const TimesheetPage = () => {
     enabled: facilityId !== undefined
   });
 
+  const [selectedIndex, setSelectedIndex] = useState<number>(-1);
+
   const [isModalOpen, setModalOpen] = useState<boolean>(false);
 
   const {
@@ -139,12 +141,6 @@ export const TimesheetPage = () => {
   useEffect(() => {
     reset();
   }, [isModalOpen]);
-
-  const { data: positionsData, isFetching: isPositionsFetching } = useQuery({
-    queryKey: ["facility by id", watch("facilityId")],
-    queryFn: () => apiRequests.getPositionsByFacilityId(getValues("facilityId") ?? undefined),
-    enabled: typeof getValues("facilityId") === "number" && userRole !== "financier"
-  });
 
   const { data: allMastersData, isLoading: isAllMastersLoading } = useQuery({
     queryKey: ["all masters", getValues("facilityId")],
@@ -297,6 +293,10 @@ export const TimesheetPage = () => {
             employmentPeriods: el.employmentPeriods,
             facilityPeriods: el.facilityPeriods,
             lastIsOutOfTown: el.lastIsOutOfTown,
+            phoneNumber: el.phoneNumber,
+            lastName: el.lastName,
+            firstName: el.firstName,
+            middleName: el.middleName,
             lastPosition: el.lastPosition,
             dates: {
               //@ts-ignore
@@ -655,6 +655,12 @@ export const TimesheetPage = () => {
     onClick: handleMenuClick
   };
 
+  const { data: positionsData, isFetching: isPositionsFetching } = useQuery({
+    queryKey: ["facility by id", watch("facilityId")],
+    queryFn: () => apiRequests.getPositionsByFacilityId(getValues("facilityId") ?? undefined),
+    enabled: typeof getValues("facilityId") === "number"
+  });
+
   return (
     <>
       <div className="flex flex-col flex-1 p-5 md:text-base text-[12px]">
@@ -736,7 +742,7 @@ export const TimesheetPage = () => {
                 key={index}
                 className={clsx(
                   day.className && day.className,
-                  "min-w-12 max-w-12 border-b-[1px] border-b-black flex-1 border-r-[1px] bg-[#fafafa]  shadow-md flex items-center justify-center text-center ",
+                  "min-w-12 max-w-12 border-b-[1px] border-b-black flex-1 border-r-[1px] border-r-gray-400 bg-[#fafafa]  shadow-md flex items-center justify-center text-center ",
                   day.isWeekend && "bg-gray-300",
                   day.dayName && "flex flex-col",
                   day.type === "location" && "shadow-right-custom"
@@ -796,6 +802,8 @@ export const TimesheetPage = () => {
                 return (
                   <div
                     key={virtualRow.index}
+                    onMouseEnter={() => setSelectedIndex(virtualRow.index)}
+                    onMouseLeave={() => setSelectedIndex(-1)}
                     style={{
                       position: "absolute",
                       top: 0,
@@ -811,7 +819,8 @@ export const TimesheetPage = () => {
                       "transition-all",
                       isSearched
                         ? "border-b-[2px] border-yellow-400 shadow-lg"
-                        : "border-b-[1px]  border-black"
+                        : "border-b-[1px]  border-black",
+                      selectedIndex === virtualRow.index && "bg-blue-200"
                     )}>
                     <div className="flex h-full md:text-base text-[12px]">
                       {tableHeaders.map((day, index) => {
@@ -839,6 +848,7 @@ export const TimesheetPage = () => {
                                 }
                                 userShortName={ppl.fullName}
                                 userPosition={ppl?.lastPosition?.name}
+                                positionId={ppl?.lastPosition?.id}
                                 employmentPeriods={ppl.employmentPeriods}
                                 facilityPeriods={ppl?.facilityPeriods}
                                 value={ppl?.dates?.[day.value]}
@@ -846,6 +856,12 @@ export const TimesheetPage = () => {
                                 id={ppl.employeeId}
                                 totalVariant={totalVariant}
                                 facilitySettings={facilitySettings}
+                                facilityId={facilityId}
+                                phoneNumber={ppl.phoneNumber}
+                                lastName={ppl.lastName}
+                                firstName={ppl.firstName}
+                                refetch={refetch}
+                                middleName={ppl.middleName}
                                 handleChange={(field, value, type) => {
                                   setInnerData((prev) => {
                                     const copyOfPrev = structuredClone(prev);
