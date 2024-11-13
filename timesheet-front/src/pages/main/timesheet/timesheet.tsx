@@ -657,28 +657,6 @@ export const TimesheetPage = () => {
     });
   };
 
-  useEffect(() => {
-    const handleBeforeUnload = (event) => {
-      const message =
-        "Вы уверены, что хотите покинуть страницу? Несохранённые данные будут потеряны.";
-      event.preventDefault();
-      event.returnValue = message;
-      return message;
-    };
-
-    const handleOnBeforeUnload = (event) => {
-      return "Вы уверены, что хотите покинуть страницу? Несохранённые данные будут потеряны.";
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    window.onbeforeunload = handleOnBeforeUnload; // Дополнительная попытка
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      window.onbeforeunload = null;
-    };
-  }, []);
-
   const handleMenuClick: MenuProps["onClick"] = (e) => {
     const key = e.key;
     if (key === "save") {
