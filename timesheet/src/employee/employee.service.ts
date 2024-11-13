@@ -230,8 +230,53 @@ export class EmployeeService {
     id: number,
     updateEmployeeDto: UpdateEmployeeDtoFromWorkLogs,
   ) {
-    console.log(id);
-    // await this.validateDto(updateEmployeeDto, id);
+    const findByPhone = await this.employeeModel.findOne({
+      where: {
+        phoneNumber: updateEmployeeDto.phoneNumber,
+      },
+    });
+
+    if (findByPhone?.id && !id) {
+      throw new HttpException(
+        'Пользователь с таким номером телефона уже существует',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (findByPhone?.id && id && findByPhone?.id !== id) {
+      throw new HttpException(
+        'Пользователь с таким номером телефона уже существует',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const position = await this.positionModel.findOne({
+      where: { id: updateEmployeeDto.positionId },
+      include: [
+        {
+          model: Facilities,
+          where: { id: updateEmployeeDto.facilityId },
+          through: { attributes: [] },
+        },
+      ],
+    });
+
+    if (!position) {
+      throw new BadRequestException(
+        'Переданная должность не связана с указанным объектом',
+      );
+    }
+
+    const isPositionExists = await this.positionModel.findByPk(
+      updateEmployeeDto.positionId,
+    );
+
+    if (!isPositionExists && updateEmployeeDto.positionId) {
+      throw new HttpException(
+        `Должности с id - ${updateEmployeeDto.positionId} не найден`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
 
     await this.cacheManager.del(EMPLOYEES_CACHE_KEY);
 
@@ -765,6 +810,18 @@ export class EmployeeService {
         }
       }
 
+      allowedPeriods?.sort((a, b) => {
+        return b.createdAt.getTime() - a.createdAt.getTime();
+      });
+
+      const facilityPeriods = allowedFacilityEmployees.filter(
+        (emp) => emp.employeeId === employee.id,
+      );
+
+      facilityPeriods?.sort((a, b) => {
+        return b.createdAt.getTime() - a.createdAt.getTime();
+      });
+
       if (allowedPeriods?.length) {
         allowedEmployees.push({
           id: employee.id,
@@ -772,13 +829,12 @@ export class EmployeeService {
           firstName: employee?.firstName,
           middleName: employee?.middleName,
           registeredAddress: employee?.registeredAddress,
+          actualAddress: employee?.actualAddress,
           phoneNumber: employee?.phoneNumber,
           lastStatus: employee?.lastStatus,
           position: {},
           employmentPeriods: allowedPeriods,
-          facilityPeriods: allowedFacilityEmployees.filter(
-            (emp) => emp.employeeId === employee.id,
-          ),
+          facilityPeriods: facilityPeriods,
           lastPosition: employee.lastPosition,
           lastIsOutOfTown: employee.lastIsOutOfTown,
         } as any);

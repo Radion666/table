@@ -101,7 +101,7 @@ export const CellInput: FC<CellInputProps> = ({
     }
   }, [value]);
 
-  useEffect(() => {
+  const handleUpdatePrev = (value: any) => {
     if (value && prevSelectedValue) {
       if (date && JSON.stringify(value) !== JSON.stringify(prevSelectedValue)) {
         const cellDateDay = date.format("YYYY-MM-DD");
@@ -119,7 +119,7 @@ export const CellInput: FC<CellInputProps> = ({
     } else {
       setBorderColor("");
     }
-  }, [value]);
+  };
 
   const integers = facilitySettings?.integers;
 
@@ -138,6 +138,7 @@ export const CellInput: FC<CellInputProps> = ({
               size={20}
               className="absolute top-0 right-[-2px] bg-white rounded-full shadow-md cursor-pointer z-20 hover:bg-gray-200"
               onClick={() => {
+                handleUpdatePrev("");
                 handleChange(field, "delete");
               }}
             />
@@ -168,6 +169,7 @@ export const CellInput: FC<CellInputProps> = ({
               size={20}
               className="absolute top-0 right-[-2px] bg-white rounded-full shadow-md cursor-pointer z-20 hover:bg-gray-200"
               onClick={() => {
+                handleUpdatePrev("");
                 handleChange(field, "delete");
               }}
             />
@@ -180,6 +182,8 @@ export const CellInput: FC<CellInputProps> = ({
                 const value = e.target.value;
 
                 if (value === "") {
+                  handleUpdatePrev("");
+
                   return handleChange(field, "", "overwork");
                 }
 
@@ -188,6 +192,8 @@ export const CellInput: FC<CellInputProps> = ({
                 const isValid = regex.test(value);
 
                 if (isValid) {
+                  handleUpdatePrev(value);
+
                   handleChange(field, value, "overwork");
                 }
               }}
@@ -205,6 +211,8 @@ export const CellInput: FC<CellInputProps> = ({
                     const value = e.target.value;
 
                     if (value === "") {
+                      handleUpdatePrev("");
+
                       return handleChange(field, "", key);
                     }
 
@@ -233,6 +241,8 @@ export const CellInput: FC<CellInputProps> = ({
                     }
 
                     if (isValid) {
+                      handleUpdatePrev(value);
+
                       handleChange(field, value, key);
                     }
                   }}
@@ -262,6 +272,8 @@ export const CellInput: FC<CellInputProps> = ({
             <Button
               className="ml-auto mr-auto"
               onClick={() => {
+                handleUpdatePrev(selectedValue);
+
                 handleChange(field, selectedValue);
                 setModalOpen(false);
               }}>

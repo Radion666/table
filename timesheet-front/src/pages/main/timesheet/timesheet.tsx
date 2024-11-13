@@ -39,10 +39,20 @@ import { getShortUserFio, getUserFio, removeLeadingZeroFromDate } from "~src/sha
 
 type tableValueType = (object: employeeType) => string;
 
-export type fieldType = "input" | "text" | "info" | "employee" | "location";
+export type fieldType = "input" | "text" | "info" | "employee" | "location" | "index" | "position";
 export type headerCellType = "worker" | "location" | "field" | "total" | "info";
 export interface headerType {
-  label: string | (() => React.JSX.Element);
+  label:
+    | string
+    | (({
+        positionColumn,
+        onSelect,
+        selectedFilter
+      }: {
+        positionColumn: boolean;
+        onSelect: (type: "red" | "green") => void;
+        selectedFilter: "red" | "green" | null;
+      }) => React.JSX.Element);
   type: headerCellType;
   value: keyof employeeType | tableValueType | string;
   className?: HTMLProps<HTMLElement>["className"];
@@ -111,6 +121,8 @@ export const TimesheetPage = () => {
 
   const [isModalOpen, setModalOpen] = useState<boolean>(false);
 
+  const [selectedFilter, setSelectedFilter] = useState<"red" | "green" | null>(null);
+
   const {
     getValues,
     control,
@@ -137,6 +149,9 @@ export const TimesheetPage = () => {
   });
 
   const [totalVariant, setTotalVariant] = useState<totalVariantType>("numbers");
+  const [positionColumn, setPositionColumn] = useState<boolean>(false);
+
+  const parentDivRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     reset();
@@ -232,11 +247,29 @@ export const TimesheetPage = () => {
     setDaysInMonths(getDaysInMonth(diffInMonths));
   }, [currentDate]);
 
+  useEffect(() => {
+    const handleBeforeUnload = (event: any) => {
+      const message =
+        "Вы уверены, что хотите покинуть страницу? Несохранённые данные будут потеряны.";
+      event.preventDefault();
+      event.returnValue = message; // В некоторых браузерах нужно возвращать текстовое сообщение
+      return message; // Для отображения диалога в некоторых браузерах
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    // Убираем обработчик при размонтировании компонента
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
+
   const containerRef = useRef<HTMLDivElement | null>(null);
   const headerRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
 
   const [innerData, setInnerData] = useState<employeeType[]>([]);
+  const [copyOfInnerData, setCopyOfInnerData] = useState<employeeType[]>([]);
 
   useEffect(() => {
     const checkWidth = () => {
@@ -298,6 +331,9 @@ export const TimesheetPage = () => {
             firstName: el.firstName,
             middleName: el.middleName,
             lastPosition: el.lastPosition,
+            actualAddress: el.actualAddress,
+            registeredAddress: el.registeredAddress,
+            lastStatus: el.lastStatus,
             dates: {
               //@ts-ignore
               ...(prevFromInnerData?.dates ?? (newDates as never))
@@ -390,6 +426,7 @@ export const TimesheetPage = () => {
         }
 
         setInnerData(copyOfPrev);
+        setCopyOfInnerData(copyOfPrev);
 
         for (let i = 0; i < copyOfPrev?.length; i++) {
           const id = copyOfPrev[i].employeeId;
@@ -399,9 +436,11 @@ export const TimesheetPage = () => {
         updateTotalOfAll();
       } else {
         setInnerData(newInnerData);
+        setCopyOfInnerData(newInnerData);
       }
     } else {
       setInnerData([]);
+      setCopyOfInnerData([]);
     }
   }, [logsData?.data]);
 
@@ -426,7 +465,7 @@ export const TimesheetPage = () => {
       ...el
     }));
     copyOfDefaultHeader.splice(
-      3,
+      4,
       0,
       ...daysInMonth.map((day) => ({
         fieldType: "input" as any,
@@ -618,6 +657,28 @@ export const TimesheetPage = () => {
     });
   };
 
+  useEffect(() => {
+    const handleBeforeUnload = (event) => {
+      const message =
+        "Вы уверены, что хотите покинуть страницу? Несохранённые данные будут потеряны.";
+      event.preventDefault();
+      event.returnValue = message;
+      return message;
+    };
+
+    const handleOnBeforeUnload = (event) => {
+      return "Вы уверены, что хотите покинуть страницу? Несохранённые данные будут потеряны.";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.onbeforeunload = handleOnBeforeUnload; // Дополнительная попытка
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.onbeforeunload = null;
+    };
+  }, []);
+
   const handleMenuClick: MenuProps["onClick"] = (e) => {
     const key = e.key;
     if (key === "save") {
@@ -663,7 +724,7 @@ export const TimesheetPage = () => {
 
   return (
     <>
-      <div className="flex flex-col flex-1 p-5 md:text-base text-[12px]">
+      <div className="flex flex-col flex-1 p-5 md:text-base text-[12px]" ref={parentDivRef}>
         <div className="flex justify-between mb-4 md:flex-nowrap flex-wrap">
           <div className="flex gap-5 items-center">
             <div className="font-bold">
@@ -693,7 +754,7 @@ export const TimesheetPage = () => {
             </Button>
           </div>
 
-          <div className="flex flex-row items-center">
+          <div className="flex flex-row items-center gap-5">
             <div className="flex flex-row items-center gap-2">
               <div>Итоги по буквам</div>
               <Switch
@@ -737,7 +798,7 @@ export const TimesheetPage = () => {
           <div
             ref={headerRef}
             className="flex rounded-t-md  overflow-x-hidden scrollbar-hide border-l-[1px] border-r-[1px] md:min-w-[calc(100vw-140px)] md:max-w-[calc(100vw-140px)] min-h-[110px] max-h-[110px]">
-            {tableHeaders.map((day, index) => (
+            {tableHeaders?.map((day, index) => (
               <div
                 key={index}
                 className={clsx(
@@ -763,7 +824,44 @@ export const TimesheetPage = () => {
                           "border-b-[1px] flex items-center justify-center h-1/2 w-full",
                         !day.dayName && "h-full"
                       )}>
-                      {typeof day.label === "string" ? day.label : day.label()}
+                      {typeof day.label === "string"
+                        ? day.label
+                        : day.label({
+                            positionColumn: positionColumn,
+                            onSelect: (type) => {
+                              setSelectedFilter(type);
+
+                              if (type === null) {
+                                setInnerData(copyOfInnerData);
+
+                                for (let i = 0; i < copyOfInnerData?.length; i++) {
+                                  const id = copyOfInnerData[i].employeeId;
+
+                                  updateTotalOfCurrentEditing(id);
+                                }
+                                updateTotalOfAll();
+                              } else {
+                                const newData = copyOfInnerData.filter((el, index) => {
+                                  if (index === copyOfInnerData?.length - 1) {
+                                    return true;
+                                  }
+
+                                  return type === "green"
+                                    ? el?.lastIsOutOfTown === false
+                                    : el?.lastIsOutOfTown === true;
+                                });
+                                setInnerData(newData);
+                                for (let i = 0; i < newData?.length; i++) {
+                                  const id = newData[i].employeeId;
+
+                                  updateTotalOfCurrentEditing(id);
+                                }
+                                updateTotalOfAll();
+                                rowVirtualizer?.measure();
+                              }
+                            },
+                            selectedFilter: selectedFilter
+                          })}
                     </div>
                     {day.dayName && (
                       <div className="uppercase h-1/2 items-center justify-center flex">
@@ -801,7 +899,7 @@ export const TimesheetPage = () => {
 
                 return (
                   <div
-                    key={virtualRow.index}
+                    key={virtualRow.index + innerData[virtualRow?.index]?.employeeId}
                     onMouseEnter={() => setSelectedIndex(virtualRow.index)}
                     onMouseLeave={() => setSelectedIndex(-1)}
                     style={{
@@ -810,7 +908,7 @@ export const TimesheetPage = () => {
                       left: 0,
                       width: "100%",
                       height: `${
-                        virtualRow.size + (totalVariant === "numbers" ? 0 : isLast ? 50 : 0)
+                        virtualRow.size + (totalVariant === "numbers" ? 0 : isLast ? 30 : 0)
                       }px`,
                       transform: `translateY(${virtualRow.start}px)`,
                       pointerEvents: userRole === "financier" ? "none" : "all"
@@ -823,18 +921,20 @@ export const TimesheetPage = () => {
                       selectedIndex === virtualRow.index && "bg-blue-200"
                     )}>
                     <div className="flex h-full md:text-base text-[12px]">
-                      {tableHeaders.map((day, index) => {
+                      {tableHeaders?.map((day, index) => {
                         return (
                           <>
                             {day?.cellRenderer ? (
                               <day.cellRenderer
+                                key={day.dayName}
                                 employeeTotal={ppl.total}
                                 facilityTimesheetSetting={facilitySettings}
                                 totalVariant={totalVariant}
                               />
                             ) : (
                               <TableCell
-                                key={index}
+                                key={day.dayName}
+                                index={virtualRow.index + 1}
                                 productionCalendar={facilityByIdData?.productionCalendar}
                                 isLast={isLast}
                                 lastIsOutOfTown={ppl.lastIsOutOfTown}
@@ -857,9 +957,13 @@ export const TimesheetPage = () => {
                                 totalVariant={totalVariant}
                                 facilitySettings={facilitySettings}
                                 facilityId={facilityId}
+                                positionColumn={positionColumn}
+                                actualAddress={ppl.actualAddress}
+                                registeredAddress={ppl.registeredAddress}
                                 phoneNumber={ppl.phoneNumber}
                                 lastName={ppl.lastName}
                                 firstName={ppl.firstName}
+                                lastStatus={ppl.lastStatus}
                                 refetch={refetch}
                                 middleName={ppl.middleName}
                                 handleChange={(field, value, type) => {

@@ -6,19 +6,34 @@ import { TableLocationHeader } from "./../timesheet/components/table-location-he
 
 export const defaultHeaders: headerType[] = [
   {
+    label: "П.н.",
+    value: (obj) => obj.fullName,
+    fieldType: "index",
+    type: "worker",
+    className: "!min-w-8 flex-1 sticky left-0 bg-white z-40 overflow-hidden text-ellipsis text-sm"
+  },
+  {
     label: "Работник",
     value: (obj) => `${obj.fullName} + ${obj.lastPosition?.name}`,
     // value: () => <TableEmployeeRenderer />,
 
     className:
-      "md:!min-w-48 !min-w-20 flex-1 sticky left-0 bg-white z-40 overflow-hidden text-ellipsis ",
+      "md:!min-w-48 !min-w-20 flex-1 sticky left-8 bg-white z-40 overflow-hidden text-ellipsis ",
     fieldType: "employee",
+    type: "worker"
+  },
+  {
+    fieldType: "position",
+    label: "Должность",
+    value: (obj) => obj.position,
+    className:
+      "md:!min-w-48 !min-w-20 flex-1 sticky md:left-56 left-28 bg-white z-40 overflow-hidden text-ellipsis ",
     type: "worker"
   },
   {
     label: TableLocationHeader,
     className:
-      "min-w-12 flex-1 sticky md:left-48 left-20 bg-white z-40 border-r-1 border-gray-500 max-w-12 shadow-md",
+      "min-w-12 flex-1 sticky md:left-[416px] left-28 bg-white z-40 border-r-1 border-gray-500 max-w-12 shadow-md",
     fieldType: "location",
     type: "location",
     value: (obj) => String(obj.lastIsOutOfTown ? 1 : 0)

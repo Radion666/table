@@ -1,4 +1,4 @@
-import { FC, HTMLProps, memo, useMemo, useState } from "react";
+import { FC, HTMLProps, memo, useEffect, useMemo, useState } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
@@ -20,7 +20,8 @@ import { useGetUser } from "~src/shared/hooks/useGetUser";
 import {
   createWorkerType,
   employmentPeriodsType,
-  facilityPeriodsType
+  facilityPeriodsType,
+  workerStatusType
 } from "~src/shared/types/employees";
 import { facilityTimesheetSettingType, productionCalendarType } from "~src/shared/types/facilities";
 import { CreateEmployeeType } from "~src/shared/types/user";
@@ -59,6 +60,11 @@ interface TableCellProps {
   middleName: string;
   positionId: number;
   refetch?: () => void;
+  actualAddress: string;
+  registeredAddress: string;
+  lastStatus: string;
+  index: number;
+  positionColumn: boolean;
 }
 
 const checkDate = (dateToCheck: Dayjs) => {
@@ -100,7 +106,12 @@ export const TableCell: FC<TableCellProps> = memo(
     middleName,
     lastName,
     positionId,
-    refetch
+    refetch,
+    actualAddress,
+    registeredAddress,
+    lastStatus,
+    index,
+    positionColumn
   }) => {
     const { userRole } = useGetUser();
     const [errorMsg, setErrorMsg] = useState<string>("");
@@ -226,15 +237,9 @@ export const TableCell: FC<TableCellProps> = memo(
             }
 
             if (dayjs(newPeriod?.startDate)?.isAfter(cellDate)) {
+              return true;
               // setErrorMsg("Н/У");
             }
-          }
-          if (
-            (newPeriod?.status === "archived" || newPeriod?.status === "fired") &&
-            newPeriod?.endDate === null &&
-            cellDate.isAfter(newPeriod?.startDate)
-          ) {
-            setErrorMsg(`${workerStatuses[newPeriod?.status].slice(0, 2)}`);
           }
 
           if (
@@ -256,6 +261,15 @@ export const TableCell: FC<TableCellProps> = memo(
             // dayjs(newPeriod?.endDate)?.diff(newPeriod.startDate, "hour") > 8
           ) {
             return false;
+          }
+
+          if (
+            (newPeriod?.status === "archived" || newPeriod?.status === "fired") &&
+            newPeriod?.endDate === null &&
+            cellDate.isSame(newPeriod?.startDate, "day")
+          ) {
+            setErrorMsg(`${workerStatuses[newPeriod?.status].slice(0, 2)}`);
+            return true;
           }
         }
 
@@ -359,16 +373,28 @@ export const TableCell: FC<TableCellProps> = memo(
     } = useForm<createWorkerType>({
       defaultValues: {
         actualAddress: "",
-        firstName: firstName,
-        isOutOfTown: lastIsOutOfTown,
-        lastName: lastName,
-        middleName: middleName,
-        phoneNumber: phoneNumber,
-        positionId: positionId,
+        firstName: "",
+        isOutOfTown: false,
+        lastName: "",
+        middleName: "",
+        phoneNumber: "",
+        positionId: null,
         registeredAddress: "",
         status: "working"
       }
     });
+
+    useEffect(() => {
+      setValue("actualAddress", actualAddress);
+      setValue("registeredAddress", registeredAddress);
+      setValue("firstName", firstName);
+      setValue("isOutOfTown", lastIsOutOfTown);
+      setValue("lastName", lastName);
+      setValue("middleName", middleName);
+      setValue("phoneNumber", phoneNumber);
+      setValue("positionId", positionId);
+      setValue("status", lastStatus as workerStatusType);
+    }, [isModalOpen]);
 
     const { data: positionsData, isFetching: isPositionsFetching } = useQuery({
       queryKey: ["facility by id", positionId],
@@ -377,11 +403,13 @@ export const TableCell: FC<TableCellProps> = memo(
 
     const handleUpdate = async (data: CreateEmployeeType) => {
       if (data) {
-        await apiRequests.updateWorkerFromLogs(data as any, employeeId).then(() => {
-          toast.success("Сотрудник успешно обновлен");
-          setModalOpen(false);
-          refetch();
-        });
+        await apiRequests
+          .updateWorkerFromLogs({ ...(data as any), facilityId: +facilityId }, employeeId)
+          .then(() => {
+            toast.success("Сотрудник успешно обновлен");
+            setModalOpen(false);
+            refetch?.();
+          });
       }
     };
 
@@ -397,112 +425,132 @@ export const TableCell: FC<TableCellProps> = memo(
             "bg-slate-100 opacity-50  cursor-not-allowed",
           fieldType === "location" && "shadow-right-custom"
         )}>
-        {isLast ? (
+        {fieldType === "index" ? (
+          <>{index}</>
+        ) : (
           <>
-            {headerCellType === "worker" ? (
-              <div className="flex flex-col h-full w-full">
-                {totalVariant === "numbers" ? (
-                  <>
-                    {allowableHours?.map((el) => (
-                      <div
-                        className="border-b-[1px] flex items-center justify-center"
-                        style={{ height: `${heightPercentage}%` }}>
-                        Итого: {el}
-                      </div>
-                    ))}
-                  </>
-                ) : (
-                  <>
-                    {cellLetters?.map((el) => (
-                      <div className="text-sm border-b-[1px]">{el.value}</div>
-                    ))}
-                  </>
-                )}
-              </div>
-            ) : (
+            {isLast ? (
               <>
-                {headerCellType === "info" ? (
-                  <Indentificators />
+                {headerCellType === "worker" ? (
+                  <div className="flex flex-col h-full w-full">
+                    {totalVariant === "numbers" ? (
+                      <>
+                        {allowableHours?.map((el) => (
+                          <div
+                            className="border-b-[1px] flex items-center justify-center"
+                            style={{ height: `${heightPercentage}%` }}>
+                            Итого: {el}
+                          </div>
+                        ))}
+                      </>
+                    ) : (
+                      <>
+                        {cellLetters
+                          ?.filter((cell) => cell.value !== "Я")
+                          ?.map((el) => (
+                            <div className="text-sm border-b-[1px]">{el.value}</div>
+                          ))}
+                      </>
+                    )}
+                  </div>
                 ) : (
                   <>
-                    {headerCellType === "field" && typeof value === "object" ? (
-                      <div className="flex flex-col w-full h-full">
-                        {totalVariant === "numbers" ? (
-                          <>
-                            {allowedFields?.map((fld) => (
-                              <div
-                                className=" w-full flex items-center justify-center border-b-[1px]"
-                                style={{ height: `${heightPercentage}%` }}>
-                                {value[`${fld}`]}
-                              </div>
-                            ))}
-                          </>
-                        ) : (
-                          <>
-                            {totalLettersSum && (
+                    {headerCellType === "info" ? (
+                      <Indentificators />
+                    ) : (
+                      <>
+                        {headerCellType === "field" && typeof value === "object" ? (
+                          <div className="flex flex-col w-full h-full">
+                            {totalVariant === "numbers" ? (
                               <>
-                                <div>
-                                  <div className="border-b-[1px] text-sm">{totalLettersSum?.Я}</div>
-                                  <div className="border-b-[1px] text-sm">{totalLettersSum?.П}</div>
-                                  <div className="border-b-[1px] text-sm">{totalLettersSum?.Б}</div>
-                                  <div className="border-b-[1px] text-sm">{totalLettersSum?.В}</div>
-                                  <div className="border-b-[1px] text-sm">{totalLettersSum?.О}</div>
-                                  <div className="border-b-[1px] text-sm">
-                                    {totalLettersSum?.МО}
+                                {allowedFields?.map((fld) => (
+                                  <div
+                                    className=" w-full flex items-center justify-center border-b-[1px]"
+                                    style={{ height: `${heightPercentage}%` }}>
+                                    {value[`${fld}`]}
                                   </div>
-                                  <div className="border-b-[1px] text-sm">{totalLettersSum?.А}</div>
-                                </div>
+                                ))}
+                              </>
+                            ) : (
+                              <>
+                                {totalLettersSum && (
+                                  <>
+                                    <div>
+                                      <div className="border-b-[1px] text-sm">
+                                        {totalLettersSum?.П}
+                                      </div>
+                                      <div className="border-b-[1px] text-sm">
+                                        {totalLettersSum?.Б}
+                                      </div>
+                                      <div className="border-b-[1px] text-sm">
+                                        {totalLettersSum?.В}
+                                      </div>
+                                      <div className="border-b-[1px] text-sm">
+                                        {totalLettersSum?.О}
+                                      </div>
+                                      <div className="border-b-[1px] text-sm">
+                                        {totalLettersSum?.МО}
+                                      </div>
+                                      <div className="border-b-[1px] text-sm">
+                                        {totalLettersSum?.А}
+                                      </div>
+                                    </div>
+                                  </>
+                                )}
                               </>
                             )}
-                          </>
+                          </div>
+                        ) : (
+                          ""
                         )}
-                      </div>
-                    ) : (
-                      ""
+                      </>
                     )}
                   </>
                 )}
               </>
-            )}
-          </>
-        ) : (
-          <>
-            {isDisabled && !isNotAllowed ? (
-              <div className="overflow-hidden text-sm text-ellipsis text-nowrap ">{errorMsg}</div>
             ) : (
               <>
-                {fieldType === "text" ? (
-                  <>{label}</>
-                ) : fieldType === "info" ? (
-                  <Indentificators facilitySettings={facilitySettings} />
-                ) : fieldType === "employee" ? (
-                  <div
-                    className=" h-full w-full flex items-center justify-center"
-                    onClick={() => setModalOpen(true)}>
-                    <div>{userShortName ?? ""}</div>
-                    <div className="text-gray-300">{userPosition ?? ""}</div>
+                {isDisabled && !isNotAllowed ? (
+                  <div className="overflow-hidden text-sm text-ellipsis text-nowrap ">
+                    {errorMsg}
                   </div>
-                ) : fieldType === "location" ? (
-                  <>
-                    <div
-                      className={clsx(
-                        "flex flex-row items-center gap-1",
-                        lastIsOutOfTown ? "text-red-800" : "text-green-500"
-                      )}>
-                      <Icon name="House" size={20} />
-                    </div>
-                  </>
                 ) : (
-                  <CellInput
-                    value={value}
-                    handleChange={handleChange}
-                    field={dayValue}
-                    date={cellParsedDate}
-                    isDisabled={isDisabled || !allowedToMaster || isNotAllowed}
-                    facilitySettings={facilitySettings}
-                    isWeekend={isWeekend}
-                    integers={integers}
-                  />
+                  <>
+                    {fieldType === "text" ? (
+                      <>{label}</>
+                    ) : fieldType === "info" ? (
+                      <Indentificators facilitySettings={facilitySettings} />
+                    ) : fieldType === "employee" ? (
+                      <div
+                        className=" h-full w-full flex items-center justify-center"
+                        onClick={() => setModalOpen(true)}>
+                        <div>{userShortName ?? ""}</div>
+                      </div>
+                    ) : fieldType === "position" ? (
+                      <div>{userPosition}</div>
+                    ) : fieldType === "location" ? (
+                      <>
+                        <div
+                          className={clsx(
+                            "flex flex-row items-center gap-1",
+                            lastIsOutOfTown ? "text-red-800" : "text-green-500"
+                          )}>
+                          <Icon name="House" size={20} />
+                        </div>
+                      </>
+                    ) : (
+                      <CellInput
+                        value={value}
+                        handleChange={handleChange}
+                        field={dayValue}
+                        date={cellParsedDate}
+                        isDisabled={isDisabled || !allowedToMaster || isNotAllowed}
+                        facilitySettings={facilitySettings}
+                        isWeekend={isWeekend}
+                        integers={integers}
+                      />
+                    )}
+                  </>
                 )}
               </>
             )}
@@ -613,7 +661,9 @@ export const TableCell: FC<TableCellProps> = memo(
               }}
               control={control}
               name="isOutOfTown"
-              render={({ field }) => <Checkbox label="Местный" {...field} />}
+              render={({ field }) => (
+                <Checkbox label="Местный" {...field} checked={getValues("isOutOfTown")} />
+              )}
             />
 
             <Controller

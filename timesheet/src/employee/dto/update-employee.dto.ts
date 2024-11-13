@@ -15,5 +15,6 @@ export class UpdateEmployeeDtoFromWorkLogs extends PartialType(
     'isOutOfTown',
     'registeredAddress',
     'actualAddress',
+    'facilityId',
   ]),
 ) {}

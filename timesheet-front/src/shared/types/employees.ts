@@ -106,7 +106,10 @@ export interface workersByFacilityIdType {
   middleName: string;
   lastName: string;
   phoneNumber: string;
+  registeredAddress: string;
+  lastStatus: string;
 
+  actualAddress: string;
   employmentPeriods: employmentPeriodsType[];
   facilityPeriods: facilityPeriodsType[];
   lastIsOutOfTown: boolean;

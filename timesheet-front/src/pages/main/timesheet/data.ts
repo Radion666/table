@@ -40,6 +40,8 @@ export interface employeeType {
   local: number;
   isTotal?: boolean;
   employmentPeriods: employmentPeriodsType[];
+  actualAddress: string;
+  registeredAddress: string;
   facilityPeriods: facilityPeriodsType[];
   employeeId: number;
   phoneNumber: string;
@@ -48,6 +50,7 @@ export interface employeeType {
   middleName: string;
   dates: employeeDatesType;
   total: employeeTotalType;
+  lastStatus: string;
   lastPosition: {
     id: number;
     name: string;

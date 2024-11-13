@@ -90,11 +90,13 @@ export const TotalHeaderRenderer: FC<TotalHeaderRendererProps> = memo(
           </>
         ) : (
           <div className="flex flex-row justify-around w-full items-center">
-            {cellLetters.map((cell) => (
-              <div className="border-r-[1px] h-full  flex items-center justify-center w-full">
-                {cell.value}
-              </div>
-            ))}
+            {cellLetters
+              ?.filter((cell) => cell.value !== "Я")
+              .map((cell) => (
+                <div className="border-r-[1px] h-full  flex items-center justify-center w-full">
+                  {cell.value}
+                </div>
+              ))}
           </div>
         )}
       </div>

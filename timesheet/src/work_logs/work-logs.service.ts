@@ -664,7 +664,7 @@ export class WorkLogsService {
             (newPeriod?.status === 'archived' ||
               newPeriod?.status === 'fired') &&
             newPeriod?.endDate === null &&
-            parsedDate.isAfter(newPeriod?.startDate)
+            parsedDate.isSame(newPeriod?.startDate, 'day')
           ) {
             throw new BadRequestException(
               `Сотрудник ${employeeShortName} не был трудоустроен на момент - ${fullDate} `,
@@ -3723,7 +3723,6 @@ export class WorkLogsService {
         overworkSecondCell,
         allTotalsTotalObject?.totalOverworkSecondPartHours,
       );
-
 
       worksheet.mergeCells(
         `${totalSmens}${facilityStart}:${totalSmens}${facilityStart + 3}`,
