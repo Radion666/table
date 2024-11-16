@@ -414,6 +414,49 @@ export const FacilitiesPage = () => {
                 );
               }}
             />
+            <div>
+              <div className="text-center font-medium ">Настройки в табеле</div>
+              <div className="flex items-center mt-5 w-full justify-between">
+                <div>
+                  <Checkbox
+                    checked={facilitySettings?.settings?.integers?.allowOnlyTotal}
+                    label="Общее значение для ячейки"
+                    onChange={(e) => {
+                      updateFacilitySettings("allowOnlyTotal", e?.target?.checked);
+                    }}
+                  />
+                </div>
+                <div>
+                  <div>
+                    <Checkbox
+                      label="День"
+                      checked={facilitySettings?.settings?.integers?.allowDay}
+                      onChange={(e) => {
+                        updateFacilitySettings("allowDay", e?.target?.checked);
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <Checkbox
+                      label="Ночь"
+                      checked={facilitySettings?.settings?.integers?.allowNight}
+                      onChange={(e) => {
+                        updateFacilitySettings("allowNight", e?.target?.checked);
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <Checkbox
+                      label="Переработки"
+                      checked={facilitySettings?.settings?.integers?.allowOverwork}
+                      onChange={(e) => {
+                        updateFacilitySettings("allowOverwork", e?.target?.checked);
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
 
             <div>
               <div className="text-center font-medium ">Настройки производственного календаря</div>

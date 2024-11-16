@@ -465,7 +465,7 @@ export const TimesheetPage = () => {
       ...el
     }));
     copyOfDefaultHeader.splice(
-      4,
+      5,
       0,
       ...daysInMonth.map((day) => ({
         fieldType: "input" as any,

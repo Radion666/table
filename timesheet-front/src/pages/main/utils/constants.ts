@@ -33,7 +33,7 @@ export const defaultHeaders: headerType[] = [
   {
     label: TableLocationHeader,
     className:
-      "min-w-12 flex-1 sticky md:left-[416px] left-28 bg-white z-40 border-r-1 border-gray-500 max-w-12 shadow-md",
+      "min-w-12 flex-1 sticky md:left-[416px] left-[192px] bg-white z-40 border-r-1 border-gray-500 max-w-12 shadow-md",
     fieldType: "location",
     type: "location",
     value: (obj) => String(obj.lastIsOutOfTown ? 1 : 0)
@@ -42,7 +42,9 @@ export const defaultHeaders: headerType[] = [
     label: "",
     value: "info",
     fieldType: "info",
-    type: "info"
+    type: "info",
+    className:
+      "min-w-12 flex-1 sticky md:left-[464px] left-[240px] bg-white z-40 border-r-1 border-gray-500 max-w-12 shadow-md"
   },
   {
     label: "Итого",
