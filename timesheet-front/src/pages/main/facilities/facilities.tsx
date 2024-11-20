@@ -278,7 +278,7 @@ export const FacilitiesPage = () => {
 
   return (
     <>
-      <div className="flex flex-1 flex-col gap-5 justify-center p-5">
+      <div className="flex flex-1 flex-col gap-5 justify-center p-5 overflow-scroll">
         <div className="flex flex-row justify-end gap-5">
           <DatePicker
             onChange={(date) => {
@@ -325,7 +325,7 @@ export const FacilitiesPage = () => {
               }}
             />
           ) : (
-            <div className="flex flex-col gap-2 overflow-y-auto h-[calc(100%-400px)]">
+            <div className="flex flex-col gap-2 overflow-y-auto h-full">
               {data?.data?.items?.map((item) => {
                 const settings = item?.settings?.integers;
 

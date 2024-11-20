@@ -10,7 +10,7 @@ import { Controller, useForm } from "react-hook-form";
 import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 
-import { defaultHeaders } from "../utils/constants";
+import { defaultHeaders, mobileDefaultHeaders } from "../utils/constants";
 import { daysInMonth, getDaysInMonth } from "../utils/utils";
 import { workersStatuses } from "../workers/utils/constants";
 
@@ -461,11 +461,14 @@ export const TimesheetPage = () => {
   }, []);
 
   useEffect(() => {
-    const copyOfDefaultHeader = defaultHeaders.map((el) => ({
+    const isMobile = window.innerWidth < 770;
+
+    const copyOfDefaultHeader = (isMobile ? mobileDefaultHeaders : defaultHeaders).map((el) => ({
       ...el
     }));
+
     copyOfDefaultHeader.splice(
-      5,
+      isMobile ? 3 : 5,
       0,
       ...daysInMonth.map((day) => ({
         fieldType: "input" as any,
@@ -476,6 +479,7 @@ export const TimesheetPage = () => {
         type: "field"
       }))
     );
+
     setTableHeader(copyOfDefaultHeader);
   }, [daysInMonth]);
 
