@@ -105,7 +105,7 @@ export const ActionsRenderer = (params: CustomCellRendererProps<actualWorkersRes
           className="cursor-pointer text-blue-500 hover:text-red-500 transition-colors min-h-[41px]"
         />
       </Tooltip>
-      <Modal title="Создание нового сотрудника" state={isModalOpen} setState={setModalOpen}>
+      <Modal title="Редактирование сотрудника" state={isModalOpen} setState={setModalOpen}>
         <form className="flex flex-col gap-2 mt-4" onSubmit={handleSubmit(handleUpdate)}>
           <Controller
             control={control}

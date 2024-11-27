@@ -121,4 +121,12 @@ export class CreateEmployeeDto {
   @IsInt()
   @IsPositive()
   readonly masterId?: number;
+
+  @ApiProperty({
+    example: '2024-20-10',
+    description: 'Дата трудоустройства',
+  })
+  @IsOptional()
+  @IsString()
+  readonly createdAt?: string;
 }

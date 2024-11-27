@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { useQuery } from "@tanstack/react-query";
+import dayjs from "dayjs";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { useDebounceValue } from "usehooks-ts";
@@ -16,6 +17,7 @@ import { useGetAllFacilities, useGetAllWorkers } from "~src/shared/hooks/useRequ
 import { createWorkerType, workerStatusType } from "~src/shared/types/employees";
 import { Button } from "~src/shared/ui/button/button";
 import { Checkbox } from "~src/shared/ui/checkbox/checkbox";
+import { CustomDatePicker } from "~src/shared/ui/custom-datepicker/custom-datepicker";
 import { Input } from "~src/shared/ui/input/input";
 import { Modal } from "~src/shared/ui/modal/modal";
 import { Select } from "~src/shared/ui/select/select";
@@ -68,7 +70,8 @@ export const WorkersPage = () => {
       phoneNumber: "",
       positionId: null,
       registeredAddress: "",
-      status: "working"
+      status: "working",
+      createdAt: null
     }
   });
 
@@ -91,12 +94,25 @@ export const WorkersPage = () => {
 
   const handleCreate = async (data: createWorkerType) => {
     await apiRequests
-      .createWorker({ ...data, createdById: user?.id as number, isOutOfTown: !data?.isOutOfTown })
+      .createWorker({
+        ...data,
+        createdById: user?.id as number,
+        isOutOfTown: !data?.isOutOfTown,
+        createdAt: data?.createdAt ? dayjs(data?.createdAt).format() : null
+      })
       .then(() => {
         toast.success("Сотрудник успешно создан");
         refetch();
         setModalOpen(false);
       });
+  };
+
+  const today = dayjs();
+  const firstDayOfCurrentMonth = dayjs().startOf("month");
+  // Функция для отключения дней после сегодняшнего дня и до 1 числа месяца
+  const disabledDate = (current) => {
+    // Заблокировать все дни после сегодняшнего дня и до первого числа месяца
+    return current.isAfter(today, "day") || current.isBefore(firstDayOfCurrentMonth, "day");
   };
 
   useEffect(() => {
@@ -297,6 +313,21 @@ export const WorkersPage = () => {
             control={control}
             name="isOutOfTown"
             render={({ field }) => <Checkbox label="Местный" {...field} />}
+          />
+
+          <Controller
+            rules={{
+              required: ""
+            }}
+            control={control}
+            name="createdAt"
+            render={({ field }) => (
+              <CustomDatePicker
+                label="Дата трудоустройства"
+                disabledDate={disabledDate}
+                {...field}
+              />
+            )}
           />
 
           <Controller

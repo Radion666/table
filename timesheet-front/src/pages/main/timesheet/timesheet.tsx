@@ -32,6 +32,7 @@ import { createWorkerType } from "~src/shared/types/employees";
 import { facilityTimesheetSettingType } from "~src/shared/types/facilities";
 import { Button } from "~src/shared/ui/button/button";
 import { Checkbox } from "~src/shared/ui/checkbox/checkbox";
+import { CustomDatePicker } from "~src/shared/ui/custom-datepicker/custom-datepicker";
 import { Input } from "~src/shared/ui/input/input";
 import { Modal } from "~src/shared/ui/modal/modal";
 import { Select } from "~src/shared/ui/select/select";
@@ -144,7 +145,8 @@ export const TimesheetPage = () => {
       phoneNumber: "",
       positionId: null,
       registeredAddress: "",
-      status: "working"
+      status: "working",
+      createdAt: null
     }
   });
 
@@ -229,7 +231,12 @@ export const TimesheetPage = () => {
 
   const handleCreate = async (data: createWorkerType) => {
     await apiRequests
-      .createWorker({ ...data, createdById: user?.id as number, isOutOfTown: !data?.isOutOfTown })
+      .createWorker({
+        ...data,
+        createdById: user?.id as number,
+        isOutOfTown: !data?.isOutOfTown,
+        createdAt: data?.createdAt ? dayjs(data?.createdAt).format() : null
+      })
       .then(() => {
         toast.success("Сотрудник успешно создан");
         refetch();
@@ -704,6 +711,13 @@ export const TimesheetPage = () => {
     enabled: typeof getValues("facilityId") === "number"
   });
 
+  const today = dayjs();
+  const firstDayOfCurrentMonth = dayjs().startOf("month");
+
+  const disabledDate = (current) => {
+    return current.isAfter(today, "day") || current.isBefore(firstDayOfCurrentMonth, "day");
+  };
+
   return (
     <>
       <div className="flex flex-col flex-1 p-5 md:text-base text-[12px]" ref={parentDivRef}>
@@ -1139,6 +1153,21 @@ export const TimesheetPage = () => {
             control={control}
             name="isOutOfTown"
             render={({ field }) => <Checkbox label="Местный" {...field} />}
+          />
+
+          <Controller
+            rules={{
+              required: ""
+            }}
+            control={control}
+            name="createdAt"
+            render={({ field }) => (
+              <CustomDatePicker
+                label="Дата трудоустройства"
+                disabledDate={disabledDate}
+                {...field}
+              />
+            )}
           />
 
           <Controller

@@ -31,6 +31,7 @@ import {
 } from "~src/shared/types/facilities";
 import { Button } from "~src/shared/ui/button/button";
 import { Checkbox } from "~src/shared/ui/checkbox/checkbox";
+import { CustomDatePicker } from "~src/shared/ui/custom-datepicker/custom-datepicker";
 import { Input } from "~src/shared/ui/input/input";
 import { Modal } from "~src/shared/ui/modal/modal";
 import { Select } from "~src/shared/ui/select/select";
@@ -175,7 +176,8 @@ export const FacilitiesPage = () => {
       phoneNumber: "",
       positionId: null,
       registeredAddress: "",
-      status: "working"
+      status: "working",
+      createdAt: null
     }
   });
 
@@ -189,7 +191,12 @@ export const FacilitiesPage = () => {
 
   const handleCreate = async (data: createWorkerType) => {
     await apiRequests
-      .createWorker({ ...data, createdById: user?.id as number, isOutOfTown: !data?.isOutOfTown })
+      .createWorker({
+        ...data,
+        createdById: user?.id as number,
+        isOutOfTown: !data?.isOutOfTown,
+        createdAt: data?.createdAt ? dayjs(data?.createdAt).format() : null
+      })
       .then(() => {
         toast.success("Сотрудник успешно создан");
         refetch();
@@ -197,6 +204,14 @@ export const FacilitiesPage = () => {
       .finally(() => {
         setCreateModalOpen(false);
       });
+  };
+
+  const today = dayjs();
+  const firstDayOfCurrentMonth = dayjs().startOf("month");
+  // Функция для отключения дней после сегодняшнего дня и до 1 числа месяца
+  const disabledDate = (current) => {
+    // Заблокировать все дни после сегодняшнего дня и до первого числа месяца
+    return current.isAfter(today, "day") || current.isBefore(firstDayOfCurrentMonth, "day");
   };
 
   useEffect(() => {
@@ -279,7 +294,7 @@ export const FacilitiesPage = () => {
   return (
     <>
       <div className="flex flex-1 flex-col gap-5 justify-center p-5 overflow-scroll">
-        <div className="flex flex-row justify-end gap-5">
+        <div className="flex flex-row justify-end gap-5 flex-wrap">
           <DatePicker
             onChange={(date) => {
               //@ts-ignore
@@ -618,6 +633,21 @@ export const FacilitiesPage = () => {
               control={createWorkerControl}
               name="isOutOfTown"
               render={({ field }) => <Checkbox label="Местный" {...field} />}
+            />
+
+            <Controller
+              rules={{
+                required: ""
+              }}
+              control={createWorkerControl}
+              name="createdAt"
+              render={({ field }) => (
+                <CustomDatePicker
+                  label="Дата трудоустройства"
+                  disabledDate={disabledDate}
+                  {...field}
+                />
+              )}
             />
 
             <Controller

@@ -132,6 +132,7 @@ export interface createWorkerType {
   facilityId: number | null;
   positionId: number | null;
   masterId: number | null;
+  createdAt: string | null;
 }
 
 export type workerStatusType = "working" | "fired" | "archived";

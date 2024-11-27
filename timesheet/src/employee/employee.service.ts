@@ -169,6 +169,10 @@ export class EmployeeService {
 
     await this.cacheManager.del(EMPLOYEES_CACHE_KEY);
 
+    const createdAt = createEmployeeDto.createdAt
+      ? new Date(createEmployeeDto.createdAt)
+      : new Date();
+
     const newEmployee = await this.employeeModel.create({
       ...createEmployeeDto,
       lastFacilityId: createEmployeeDto?.facilityId ?? null,
@@ -176,6 +180,7 @@ export class EmployeeService {
       lastMasterId: createEmployeeDto?.masterId ?? null,
       lastPositionId: createEmployeeDto?.positionId ?? null,
       lastStatus: createEmployeeDto?.status,
+      createdAt: createdAt,
     });
 
     if (newEmployee) {
@@ -186,6 +191,7 @@ export class EmployeeService {
         createEmployeeDto.masterId,
         createEmployeeDto.positionId,
         createEmployeeDto.isOutOfTown,
+        createdAt,
       );
     }
 
@@ -386,6 +392,7 @@ export class EmployeeService {
     masterId: number,
     positionId: number,
     isOutOfTown: boolean,
+    createdAt?: Date,
   ) {
     const currentPeriod = await this.employmentPeriodModel.findOne({
       where: {
@@ -432,7 +439,7 @@ export class EmployeeService {
 
       await this.outOfTownPeriodModel.create({
         employeeId,
-        startDate: new Date(),
+        startDate: createdAt ?? new Date(),
         isOutOfTown,
       });
     }
@@ -445,7 +452,7 @@ export class EmployeeService {
 
       await this.positionPeriodModel.create({
         employeeId,
-        startDate: new Date(),
+        startDate: createdAt ?? new Date(),
         positionId,
       });
     }
@@ -458,7 +465,7 @@ export class EmployeeService {
 
       await this.masterPeriodModel.create({
         employeeId,
-        startDate: new Date(),
+        startDate: createdAt ?? new Date(),
         masterId,
       });
     }
@@ -471,7 +478,7 @@ export class EmployeeService {
 
       await this.facilityPeriodModel.create({
         employeeId,
-        startDate: new Date(),
+        startDate: createdAt ?? new Date(),
         facilityId,
       });
     }
@@ -484,7 +491,7 @@ export class EmployeeService {
 
       await this.employmentPeriodModel.create({
         employeeId,
-        startDate: new Date(),
+        startDate: createdAt ?? new Date(),
         status,
       });
     }
