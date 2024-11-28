@@ -37,6 +37,14 @@ export const apiRequests = {
     });
   },
 
+  deleteEmployee: (employeeId?: number) => {
+    if (!employeeId) return;
+    return apiConfigRequests({
+      method: "delete",
+      url: `/users/${employeeId}`
+    });
+  },
+
   updateUser: (updateEmployee: CreateEmployeeType, id?: number) => {
     if (!id) return;
 
@@ -231,6 +239,14 @@ export const apiRequests = {
     });
   },
 
+  deleteWorker: (workerId?: number) => {
+    if (!workerId) return;
+    return apiConfigRequests({
+      method: "delete",
+      url: `/employees/${workerId}`
+    });
+  },
+
   updateWorkerFromLogs: async (data: Omit<createWorkerType, "createdById">, id?: number) => {
     if (!id) return;
     return apiConfigRequests<workersResponseType>({
@@ -278,6 +294,14 @@ export const apiRequests = {
       url: `/facilities/${id}/${year}/${month}`
     });
     return data;
+  },
+
+  deleteFacility: (facilityId?: number) => {
+    if (!facilityId) return;
+    return apiConfigRequests({
+      method: "delete",
+      url: `/facilities/${facilityId}`
+    });
   },
 
   getWorkLogs: (date: string, id?: number) => {

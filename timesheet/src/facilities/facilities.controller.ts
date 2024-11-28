@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -58,5 +59,12 @@ export class FacilitiesController {
     @Body() updateFacilityDto: UpdateFacilityDto,
   ) {
     return this.facilitiesService.update(+id, updateFacilityDto);
+  }
+
+  @Roles('admin')
+  @UseGuards(RolesGuards)
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.facilitiesService.remove(+id);
   }
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { useQuery } from "@tanstack/react-query";
-import dayjs from "dayjs";
+import dayjs, { Dayjs } from "dayjs";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { useDebounceValue } from "usehooks-ts";
@@ -18,6 +18,7 @@ import { createWorkerType, workerStatusType } from "~src/shared/types/employees"
 import { Button } from "~src/shared/ui/button/button";
 import { Checkbox } from "~src/shared/ui/checkbox/checkbox";
 import { CustomDatePicker } from "~src/shared/ui/custom-datepicker/custom-datepicker";
+import { Icon } from "~src/shared/ui/icon/icon";
 import { Input } from "~src/shared/ui/input/input";
 import { Modal } from "~src/shared/ui/modal/modal";
 import { Select } from "~src/shared/ui/select/select";
@@ -109,9 +110,9 @@ export const WorkersPage = () => {
 
   const today = dayjs();
   const firstDayOfCurrentMonth = dayjs().startOf("month");
-  // Функция для отключения дней после сегодняшнего дня и до 1 числа месяца
-  const disabledDate = (current) => {
-    // Заблокировать все дни после сегодняшнего дня и до первого числа месяца
+
+  // Функция для отключения дней
+  const disabledDate = (current: Dayjs) => {
     return current.isAfter(today, "day") || current.isBefore(firstDayOfCurrentMonth, "day");
   };
 
@@ -154,7 +155,13 @@ export const WorkersPage = () => {
             />
           </div>
 
-          <Button onClick={() => setModalOpen(true)}>Создать нового сотрудника</Button>
+          <Icon
+            onClick={() => setModalOpen(true)}
+            name="Create"
+            width={30}
+            height={30}
+            className="cursor-pointer hover:text-blue-700"
+          />
         </div>
 
         <GridTable
@@ -324,7 +331,7 @@ export const WorkersPage = () => {
             render={({ field }) => (
               <CustomDatePicker
                 label="Дата трудоустройства"
-                disabledDate={disabledDate}
+                disabledDate={userRole === "admin" ? false : disabledDate}
                 {...field}
               />
             )}

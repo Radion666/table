@@ -133,18 +133,18 @@ export class Employee extends Model<Employee> {
   @BelongsTo(() => User, 'createdById')
   creator: User;
 
-  @HasMany(() => EmploymentPeriod)
+  @HasMany(() => EmploymentPeriod, { onDelete: 'CASCADE' })
   employmentPeriods: EmploymentPeriod[];
 
-  @HasMany(() => FacilityPeriod)
+  @HasMany(() => FacilityPeriod, { onDelete: 'CASCADE' })
   facilityPeriods: FacilityPeriod[];
 
-  @HasMany(() => MasterPeriod)
+  @HasMany(() => MasterPeriod, { onDelete: 'CASCADE' })
   masterPeriods: MasterPeriod[];
 
-  @HasMany(() => OutOfTownPeriod)
+  @HasMany(() => OutOfTownPeriod, { onDelete: 'CASCADE' })
   outOfTownPeriods: OutOfTownPeriod[];
 
-  @HasMany(() => PositionPeriod)
+  @HasMany(() => PositionPeriod, { onDelete: 'CASCADE' })
   positionPeriods: PositionPeriod[];
 }

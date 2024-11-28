@@ -8,7 +8,8 @@ export const facilitiesColumns: GridColumnsType<facilitiyType> = [
   {
     headerName: "ID объекта",
     field: "id",
-    minWidth: 300,
+    minWidth: 100,
+    maxWidth: 100,
     flex: 1
   },
   {

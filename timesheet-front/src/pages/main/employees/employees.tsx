@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 import { Controller, useForm } from "react-hook-form";
@@ -12,6 +12,7 @@ import { regexes } from "~src/shared/constants/default";
 import { useGetAllEmployees, useGetAllPositions } from "~src/shared/hooks/useRequests";
 import { CreateEmployeeType } from "~src/shared/types/user";
 import { Button } from "~src/shared/ui/button/button";
+import { Icon } from "~src/shared/ui/icon/icon";
 import { Input } from "~src/shared/ui/input/input";
 import { Modal } from "~src/shared/ui/modal/modal";
 import { Select } from "~src/shared/ui/select/select";
@@ -23,7 +24,7 @@ export const EmployeesPage = () => {
   const {
     control,
     handleSubmit,
-
+    reset,
     formState: { errors }
   } = useForm<CreateEmployeeType>({
     defaultValues: {
@@ -39,6 +40,10 @@ export const EmployeesPage = () => {
   });
 
   const [isModalOpen, setModalOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    reset();
+  }, [isModalOpen]);
 
   const { data: roles, isFetching: isRolesFetching } = useQuery({
     queryKey: ["all roles"],
@@ -65,7 +70,13 @@ export const EmployeesPage = () => {
     <>
       <div className="flex flex-1 flex-col gap-5 justify-center p-5">
         <div className="flex justify-end">
-          <Button onClick={() => setModalOpen(true)}>Создать нового пользователя</Button>
+          <Icon
+            onClick={() => setModalOpen(true)}
+            name="Create"
+            width={30}
+            height={30}
+            className="cursor-pointer hover:text-blue-700"
+          />
         </div>
         <GridTable
           rowData={data?.data ?? []}

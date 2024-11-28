@@ -37,6 +37,7 @@ export const getDaysInMonth = (value: number, isRestircted: boolean = false) => 
         dayName: daysOfWeekShort[day.format("dddd").toLowerCase()]
       });
     }
+    daysInMonth.reverse();
   } else {
     const totalDays = endOfMonth.date();
 

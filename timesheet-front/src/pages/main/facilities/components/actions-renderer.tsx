@@ -1,7 +1,7 @@
 import { memo, useEffect, useMemo, useState } from "react";
 
 import { CustomCellRendererProps } from "ag-grid-react";
-import { Calendar, Card, Col, Row } from "antd";
+import { Calendar, Card, Col, Popconfirm, Row } from "antd";
 import ruRU from "antd/es/locale/ru_RU";
 import dayjs, { Dayjs } from "dayjs";
 import { Controller, useForm } from "react-hook-form";
@@ -11,7 +11,12 @@ import { toast } from "react-toastify";
 import { queryClient } from "~src/app/App";
 import { apiRequests } from "~src/shared/api/requests";
 import { useGetUser } from "~src/shared/hooks/useGetUser";
-import { useGetAllMasters, useGetProductionCalendar } from "~src/shared/hooks/useRequests";
+import {
+  defaultQueryKeys,
+  refetchQuery,
+  useGetAllMasters,
+  useGetProductionCalendar
+} from "~src/shared/hooks/useRequests";
 import { createFacilityWithMasterType, facilitiyType } from "~src/shared/types/facilities";
 import { Button } from "~src/shared/ui/button/button";
 import { Input } from "~src/shared/ui/input/input";
@@ -20,6 +25,7 @@ import { Select } from "~src/shared/ui/select/select";
 import { convertToDateArray, getUserFio } from "~src/shared/utils/default";
 
 import "dayjs/locale/ru"; // Импортируем локаль для dayjs
+import { Icon } from "~src/shared/ui/icon/icon";
 dayjs.locale("ru");
 
 export const ActionsRenderer = memo((params: CustomCellRendererProps<facilitiyType>) => {
@@ -160,11 +166,18 @@ export const ActionsRenderer = memo((params: CustomCellRendererProps<facilitiyTy
     return months;
   };
 
+  const handleDelete = async () => {
+    await apiRequests.deleteFacility(params?.data?.id).then(() => {
+      toast.success("Объект успешно удален");
+      refetchQuery(defaultQueryKeys.allFacilities);
+    });
+  };
+
   return (
     <>
       <div className="flex flex-row items-center gap-5 justify-start h-[44px]">
         {userRole !== "master" && userRole !== "financier" && (
-          <Button className="max-h-8 w-36" color="primary" onClick={() => setModalOpen(true)}>
+          <Button className="max-h-8 max-w-32" color="primary" onClick={() => setModalOpen(true)}>
             Изменить объект
           </Button>
         )}
@@ -176,10 +189,24 @@ export const ActionsRenderer = memo((params: CustomCellRendererProps<facilitiyTy
 
             navigate(`/timesheet/${params?.data?.id}`);
           }}>
-          <Button className="max-h-8 w-36" type="dashed" onClick={() => setModalOpen(true)}>
+          <Button className="max-h-8 max-w-32" type="dashed" onClick={() => setModalOpen(true)}>
             Табель по объекту
           </Button>
         </a>
+        {userRole === "admin" && (
+          <Popconfirm
+            placement="top"
+            title="Удалить?"
+            okText="Удалить"
+            cancelText="Отменить"
+            onConfirm={handleDelete}>
+            <Icon
+              name="Delete"
+              size={26}
+              className="cursor-pointer text-blue-500 hover:text-red-500 transition-colors min-h-[41px]"
+            />
+          </Popconfirm>
+        )}
       </div>
       {userRole !== "master" && (
         <Modal title="Редактирование объекта" state={isModalOpen} setState={setModalOpen}>

@@ -126,7 +126,7 @@ export const TableCell: FC<TableCellProps> = memo(
     }, [dayValue, employmentPeriods?.length]);
 
     const isDisabled = useMemo(() => {
-      if (dayValue && dateRegex.test(dayValue) && employmentPeriods?.length) {
+      if (dayValue && dateRegex.test(dayValue) && employmentPeriods?.length && !value) {
         const cellDate = dayjs(parseDate(dayValue));
         const cellDay = cellDate.date();
 
@@ -444,13 +444,15 @@ export const TableCell: FC<TableCellProps> = memo(
                         ))}
                       </>
                     ) : (
-                      <>
+                      <div className="h-full">
                         {cellLetters
                           ?.filter((cell) => cell.value !== "Я")
                           ?.map((el) => (
-                            <div className="text-sm border-b-[1px]">{el.value}</div>
+                            <div className="border-b-[1px]  min-h-8 flex items-center justify-center">
+                              {el.value}
+                            </div>
                           ))}
-                      </>
+                      </div>
                     )}
                   </div>
                 ) : (
@@ -476,22 +478,22 @@ export const TableCell: FC<TableCellProps> = memo(
                                 {totalLettersSum && (
                                   <>
                                     <div>
-                                      <div className="border-b-[1px] text-sm">
+                                      <div className="border-b-[1px]  min-h-8 flex items-center justify-center">
                                         {totalLettersSum?.П}
                                       </div>
-                                      <div className="border-b-[1px] text-sm">
+                                      <div className="border-b-[1px]  min-h-8 flex items-center justify-center">
                                         {totalLettersSum?.Б}
                                       </div>
-                                      <div className="border-b-[1px] text-sm">
+                                      <div className="border-b-[1px]  min-h-8 flex items-center justify-center">
                                         {totalLettersSum?.В}
                                       </div>
-                                      <div className="border-b-[1px] text-sm">
+                                      <div className="border-b-[1px]  min-h-8 flex items-center justify-center">
                                         {totalLettersSum?.О}
                                       </div>
-                                      <div className="border-b-[1px] text-sm">
+                                      <div className="border-b-[1px]  min-h-8 flex items-center justify-center">
                                         {totalLettersSum?.МО}
                                       </div>
-                                      <div className="border-b-[1px] text-sm">
+                                      <div className="border-b-[1px]  min-h-8 flex items-center justify-center">
                                         {totalLettersSum?.А}
                                       </div>
                                     </div>

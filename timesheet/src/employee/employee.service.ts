@@ -10,6 +10,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { Cache } from 'cache-manager';
 import dayjs from 'dayjs';
 import { Op } from 'sequelize';
+import { ChangeLog } from 'src/change_logs/change-logs.model';
 import { EMPLOYEES_CACHE_KEY } from 'src/common/utils/common';
 import {
   EmploymentPeriod,
@@ -24,6 +25,7 @@ import { PositionPeriod } from 'src/position-periods/position-periods.model';
 import { Positions } from 'src/positions/positions.model';
 import { Roles } from 'src/roles/role.model';
 import { User } from 'src/users/user.model';
+import { WorkLog } from 'src/work_logs/work-logs.model';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import {
   UpdateEmployeeDto,
@@ -52,29 +54,13 @@ export class EmployeeService {
     private positionPeriodModel: typeof PositionPeriod,
     @InjectModel(MasterFacilities)
     private masterFacilitiesModel: typeof MasterFacilities,
+    @InjectModel(WorkLog)
+    private workLogModel: typeof WorkLog,
+    @InjectModel(ChangeLog)
+    private ChangeLogModel: typeof ChangeLog,
   ) {}
 
   async validateDto(createEmployeeDto: UpdateEmployeeDto, id?: number) {
-    const findByPhone = await this.employeeModel.findOne({
-      where: {
-        phoneNumber: createEmployeeDto.phoneNumber,
-      },
-    });
-
-    if (findByPhone?.id && !id) {
-      throw new HttpException(
-        'Пользователь с таким номером телефона уже существует',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    if (findByPhone?.id && id && findByPhone?.id !== id) {
-      throw new HttpException(
-        'Пользователь с таким номером телефона уже существует',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
     const position = await this.positionModel.findOne({
       where: { id: createEmployeeDto.positionId },
       include: [
@@ -236,26 +222,6 @@ export class EmployeeService {
     id: number,
     updateEmployeeDto: UpdateEmployeeDtoFromWorkLogs,
   ) {
-    const findByPhone = await this.employeeModel.findOne({
-      where: {
-        phoneNumber: updateEmployeeDto.phoneNumber,
-      },
-    });
-
-    if (findByPhone?.id && !id) {
-      throw new HttpException(
-        'Пользователь с таким номером телефона уже существует',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    if (findByPhone?.id && id && findByPhone?.id !== id) {
-      throw new HttpException(
-        'Пользователь с таким номером телефона уже существует',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
     const position = await this.positionModel.findOne({
       where: { id: updateEmployeeDto.positionId },
       include: [
@@ -851,7 +817,46 @@ export class EmployeeService {
     return allowedEmployees;
   }
 
-  // remove(id: number) {
-  //   return `This action removes a #${id} employee`;
-  // }
+  async remove(employeeId: number) {
+    try {
+      const employee = await this.employeeModel.findByPk(employeeId, {
+        include: [
+          EmploymentPeriod,
+          FacilityPeriod,
+          MasterPeriod,
+          OutOfTownPeriod,
+          PositionPeriod,
+        ],
+      });
+
+      if (!employee) {
+        throw new BadRequestException('Сотрудник не найден');
+      }
+
+      await this.workLogModel.destroy({
+        where: {
+          employeeId,
+        },
+      });
+      await this.ChangeLogModel.destroy({
+        where: {
+          employeeId,
+        },
+      });
+
+      await Promise.all([
+        EmploymentPeriod.destroy({ where: { employeeId } }),
+        FacilityPeriod.destroy({ where: { employeeId } }),
+        MasterPeriod.destroy({ where: { employeeId } }),
+        OutOfTownPeriod.destroy({ where: { employeeId } }),
+        PositionPeriod.destroy({ where: { employeeId } }),
+      ]);
+
+      await employee.destroy();
+      await this.cacheManager.del(EMPLOYEES_CACHE_KEY);
+    } catch (error) {
+      console.error(`Error removing employee with ID ${employeeId}:`, error);
+      throw new Error('Error removing employee');
+    }
+  }
 }

@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { AuthModule } from 'src/auth/auth.module';
 import { RolesGuards } from 'src/auth/roles.guard';
+import { ChangeLog } from 'src/change_logs/change-logs.model';
 import { EmploymentPeriod } from 'src/employment-periods/employment-periods.model';
 import { Facilities } from 'src/facilities/facilities.model';
 import { FacilityPeriod } from 'src/facility-periods/facility-periods.model';
@@ -15,6 +16,7 @@ import { Roles } from 'src/roles/role.model';
 import { RolesModule } from 'src/roles/roles.module';
 import { User } from 'src/users/user.model';
 import { UsersModule } from 'src/users/users.module';
+import { WorkLog } from 'src/work_logs/work-logs.model';
 import { EmployeeController } from './employee.controller';
 import { Employee } from './employee.model';
 import { EmployeeService } from './employee.service';
@@ -36,6 +38,8 @@ import { EmployeeService } from './employee.service';
       OutOfTownPeriod,
       PositionPeriod,
       MasterFacilities,
+      WorkLog,
+      ChangeLog,
     ]),
     AuthModule,
     RolesModule,

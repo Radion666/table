@@ -25,26 +25,6 @@ export class UsersService {
   ) {}
 
   async validateDto(dto: CreateUserDto, id?: number) {
-    const findByPhone = await this.userRepository.findOne({
-      where: {
-        phoneNumber: dto.phoneNumber,
-      },
-    });
-
-    if (findByPhone?.id && !id) {
-      throw new HttpException(
-        'Пользователь с таким номером телефона уже существует',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    if (findByPhone?.id && id && +findByPhone?.id !== +id) {
-      throw new HttpException(
-        'Пользователь с таким номером телефона уже существует',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
     const isPositionExists = await this.positionModel.findByPk(dto.positionId);
 
     if (!isPositionExists && dto.positionId) {
@@ -254,6 +234,31 @@ export class UsersService {
 
     if (isFoundUser?.role_id !== masterRoleId?.id) {
       throw new BadRequestException('Переданный мастер является некорректным');
+    }
+  }
+
+  async remove(userId: number) {
+    try {
+      const employee = await this.userRepository.findByPk(userId, {
+        include: [MasterFacilities],
+      });
+
+      if (!employee) {
+        throw new BadRequestException('Объект не найден');
+      }
+
+      await Promise.all([
+        MasterFacilities.destroy({
+          where: {
+            master_id: userId,
+          },
+        }),
+      ]);
+
+      await employee.destroy();
+    } catch (error) {
+      console.error(`Error removing employee with ID ${userId}:`, error);
+      throw new Error('Error removing employee');
     }
   }
 }

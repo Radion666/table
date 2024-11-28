@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 import { CustomCellRendererProps } from "ag-grid-react";
-import { Timeline, Tooltip } from "antd";
+import { Popconfirm, Timeline, Tooltip } from "antd";
 import clsx from "clsx";
 import dayjs from "dayjs";
 import { Controller, useForm } from "react-hook-form";
@@ -91,20 +91,43 @@ export const ActionsRenderer = (params: CustomCellRendererProps<actualWorkersRes
       });
   };
 
+  const handleDelete = async () => {
+    await apiRequests.deleteWorker(workerData?.id).then(() => {
+      toast.success("Сотрудник успешно удален");
+      refetchQuery(defaultQueryKeys.allWorkers);
+    });
+  };
+
   useEffect(() => {
     reset();
   }, [isModalOpen]);
 
   return (
     <>
-      <Tooltip placement="top" title="Редактировать">
-        <Icon
-          name="Edit"
-          onClick={() => setModalOpen(true)}
-          size={32}
-          className="cursor-pointer text-blue-500 hover:text-red-500 transition-colors min-h-[41px]"
-        />
-      </Tooltip>
+      <div className="flex flex-row items-center gap-2">
+        <Tooltip placement="top" title="Редактировать">
+          <Icon
+            name="Edit"
+            onClick={() => setModalOpen(true)}
+            size={32}
+            className="cursor-pointer text-blue-500 hover:text-red-500 transition-colors min-h-[41px]"
+          />
+        </Tooltip>
+        {userRole === "admin" && (
+          <Popconfirm
+            placement="top"
+            title="Удалить?"
+            okText="Удалить"
+            cancelText="Отменить"
+            onConfirm={handleDelete}>
+            <Icon
+              name="Delete"
+              size={26}
+              className="cursor-pointer text-blue-500 hover:text-red-500 transition-colors min-h-[41px]"
+            />
+          </Popconfirm>
+        )}
+      </div>
       <Modal title="Редактирование сотрудника" state={isModalOpen} setState={setModalOpen}>
         <form className="flex flex-col gap-2 mt-4" onSubmit={handleSubmit(handleUpdate)}>
           <Controller

@@ -27,8 +27,8 @@ export const defaultHeaders: headerType[] = [
     label: "Должность",
     value: (obj) => obj.position,
     className:
-      "md:!min-w-48 !min-w-20 flex-1 sticky md:left-56 left-28 bg-white z-40 overflow-hidden text-ellipsis ",
-    type: "worker"
+      "md:!min-w-48 !min-w-20 flex-1 sticky md:left-56 left-28 bg-white z-40 overflow-hidden text-ellipsis "
+    // type: "worker"
   },
   {
     label: TableLocationHeader,

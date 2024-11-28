@@ -10,6 +10,7 @@ import {
   transformDatesToMonthsArray,
   validateWorkDays,
 } from 'src/common/utils/date-utils';
+import { FacilityPeriod } from 'src/facility-periods/facility-periods.model';
 import { MasterFacilities } from 'src/master_facilities/master-facilities.model';
 import { ProductionCalendar } from 'src/production-calendar/production-calendar.model';
 import { Roles } from 'src/roles/role.model';
@@ -459,5 +460,32 @@ export class FacilitiesService {
     );
 
     return updatedFacilitiy;
+  }
+
+  async remove(facilityId: number) {
+    try {
+      const employee = await this.facilitiesRepository.findByPk(facilityId, {
+        include: [MasterFacilities, ProductionCalendar, FacilityPeriod],
+      });
+
+      if (!employee) {
+        throw new BadRequestException('Объект не найден');
+      }
+
+      await Promise.all([
+        MasterFacilities.destroy({
+          where: {
+            facility_id: facilityId,
+          },
+        }),
+        FacilityPeriod.destroy({ where: { facilityId } }),
+        ProductionCalendar.destroy({ where: { facilityId } }),
+      ]);
+
+      await employee.destroy();
+    } catch (error) {
+      console.error(`Error removing employee with ID ${facilityId}:`, error);
+      throw new Error('Error removing employee');
+    }
   }
 }

@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { CustomCellRendererProps } from "ag-grid-react";
-import { Tooltip } from "antd";
+import { Popconfirm, Tooltip } from "antd";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 
 import { apiRequests } from "~src/shared/api/requests";
 import { regexes } from "~src/shared/constants/default";
+import { useGetUser } from "~src/shared/hooks/useGetUser";
 import {
   defaultQueryKeys,
   refetchQuery,
@@ -22,6 +23,7 @@ import { Select } from "~src/shared/ui/select/select";
 
 export const ActionsRenderer = (params: CustomCellRendererProps<usersEmployeeType>) => {
   const userData = params?.data;
+  const { userRole } = useGetUser();
 
   const [isModalOpen, setModalOpen] = useState<boolean>(false);
 
@@ -31,7 +33,7 @@ export const ActionsRenderer = (params: CustomCellRendererProps<usersEmployeeTyp
   const {
     control,
     handleSubmit,
-
+    reset,
     formState: { errors }
   } = useForm<CreateEmployeeType>({
     defaultValues: {
@@ -45,6 +47,10 @@ export const ActionsRenderer = (params: CustomCellRendererProps<usersEmployeeTyp
     }
   });
 
+  useEffect(() => {
+    reset();
+  }, [isModalOpen]);
+
   const handleUpdate = async (data: CreateEmployeeType) => {
     await apiRequests.updateUser(data, userData?.id).then(() => {
       toast.success("Сотрудник успешно обновлен");
@@ -53,16 +59,39 @@ export const ActionsRenderer = (params: CustomCellRendererProps<usersEmployeeTyp
     });
   };
 
+  const handleDelete = async () => {
+    await apiRequests.deleteEmployee(params?.data?.id).then(() => {
+      toast.success("Пользователь успешно удален");
+      refetchQuery(defaultQueryKeys.allEmployess);
+    });
+  };
+
   return (
     <>
-      <Tooltip placement="top" title="Редактировать">
-        <Icon
-          name="Edit"
-          onClick={() => setModalOpen(true)}
-          size={32}
-          className="cursor-pointer text-blue-500 hover:text-red-500 transition-colors min-h-[41px]"
-        />
-      </Tooltip>
+      <div className="flex flex-row items-center gap-2">
+        <Tooltip placement="top" title="Редактировать">
+          <Icon
+            name="Edit"
+            onClick={() => setModalOpen(true)}
+            size={32}
+            className="cursor-pointer text-blue-500 hover:text-red-500 transition-colors min-h-[41px]"
+          />
+        </Tooltip>
+        {userRole === "admin" && (
+          <Popconfirm
+            placement="top"
+            title="Удалить?"
+            okText="Удалить"
+            cancelText="Отменить"
+            onConfirm={handleDelete}>
+            <Icon
+              name="Delete"
+              size={26}
+              className="cursor-pointer text-blue-500 hover:text-red-500 transition-colors min-h-[41px]"
+            />
+          </Popconfirm>
+        )}
+      </div>
 
       <Modal title="Редактирование сотрудника" state={isModalOpen} setState={setModalOpen}>
         <form className="flex flex-col gap-2 mt-4" onSubmit={handleSubmit(handleUpdate)}>

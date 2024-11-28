@@ -3,7 +3,6 @@ import React, { HTMLProps, MemoExoticComponent, useEffect, useMemo, useRef, useS
 import { useQuery } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Dropdown, Switch } from "antd";
-import { MenuProps } from "antd/lib";
 import { clsx } from "clsx";
 import dayjs from "dayjs";
 import { Controller, useForm } from "react-hook-form";
@@ -33,6 +32,7 @@ import { facilityTimesheetSettingType } from "~src/shared/types/facilities";
 import { Button } from "~src/shared/ui/button/button";
 import { Checkbox } from "~src/shared/ui/checkbox/checkbox";
 import { CustomDatePicker } from "~src/shared/ui/custom-datepicker/custom-datepicker";
+import { Icon } from "~src/shared/ui/icon/icon";
 import { Input } from "~src/shared/ui/input/input";
 import { Modal } from "~src/shared/ui/modal/modal";
 import { Select } from "~src/shared/ui/select/select";
@@ -81,21 +81,6 @@ export interface headerType {
     }) => React.JSX.Element
   >;
 }
-
-const items: MenuProps["items"] = [
-  {
-    label: "Сохранить",
-    key: "save"
-  },
-  {
-    label: "Создать нового сотрудника",
-    key: "create employee"
-  },
-  {
-    label: "Скачать excel файл",
-    key: "excel download"
-  }
-];
 
 export type totalVariantType = "letters" | "numbers";
 
@@ -668,43 +653,6 @@ export const TimesheetPage = () => {
     });
   };
 
-  const handleMenuClick: MenuProps["onClick"] = (e) => {
-    const key = e.key;
-    if (key === "save") {
-      apiRequests.saveWorkLogs(innerData, facilityId ? +facilityId : undefined).then(() => {
-        toast.success("Успешно обновлено");
-        setTimeout(() => {
-          // window.location.reload();
-        }, 500);
-      });
-      return;
-    }
-
-    if (key === "create employee") {
-      return setModalOpen(true);
-    }
-
-    if (key === "excel download") {
-      apiRequests
-        .downloadReport(facilityId ? +facilityId : 0, dayjs(currentDate)?.format("MM-YYYY"))
-        .then(async (response) => {
-          const url = window.URL.createObjectURL(new Blob([response.data]));
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = "downloaded_file.xlsx";
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          window.URL.revokeObjectURL(url);
-        });
-    }
-  };
-
-  const menuProps = {
-    items: userRole === "financier" ? items?.filter((el) => el?.key !== '"create employee') : items,
-    onClick: handleMenuClick
-  };
-
   const { data: positionsData, isFetching: isPositionsFetching } = useQuery({
     queryKey: ["facility by id", watch("facilityId")],
     queryFn: () => apiRequests.getPositionsByFacilityId(getValues("facilityId") ?? undefined),
@@ -783,9 +731,54 @@ export const TimesheetPage = () => {
             />
 
             {userRole !== "financier" && (
-              <Dropdown menu={menuProps} trigger={["click"]}>
-                <Button className="max-w-20">Действия</Button>
-              </Dropdown>
+              <div className="flex flex-row gap-2 items-center">
+                <Icon
+                  onClick={() => {
+                    apiRequests
+                      .saveWorkLogs(innerData, facilityId ? +facilityId : undefined)
+                      .then(() => {
+                        toast.success("Успешно обновлено");
+                        setTimeout(() => {
+                          // window.location.reload();
+                        }, 500);
+                      });
+                  }}
+                  name="Save"
+                  width={30}
+                  height={30}
+                  className="cursor-pointer hover:text-blue-700"
+                />
+                <Icon
+                  onClick={() => setModalOpen(true)}
+                  name="Create"
+                  width={30}
+                  height={30}
+                  className="cursor-pointer hover:text-blue-700"
+                />
+                <Icon
+                  onClick={() => {
+                    apiRequests
+                      .downloadReport(
+                        facilityId ? +facilityId : 0,
+                        dayjs(currentDate)?.format("MM-YYYY")
+                      )
+                      .then(async (response) => {
+                        const url = window.URL.createObjectURL(new Blob([response.data]));
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = "downloaded_file.xlsx";
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        window.URL.revokeObjectURL(url);
+                      });
+                  }}
+                  name="Excel"
+                  width={30}
+                  height={30}
+                  className="cursor-pointer hover:text-blue-700"
+                />
+              </div>
             )}
           </div>
         </div>
@@ -880,7 +873,7 @@ export const TimesheetPage = () => {
             <div
               style={{
                 height: `${
-                  rowVirtualizer.getTotalSize() + (totalVariant === "numbers" ? 0 : 50)
+                  rowVirtualizer.getTotalSize() + (totalVariant === "numbers" ? 0 : 95)
                 }px`,
                 width: "100%",
                 position: "relative",
@@ -904,7 +897,7 @@ export const TimesheetPage = () => {
                       left: 0,
                       width: "100%",
                       height: `${
-                        virtualRow.size + (totalVariant === "numbers" ? 0 : isLast ? 30 : 0)
+                        virtualRow.size + (totalVariant === "numbers" ? 0 : isLast ? 95 : 0)
                       }px`,
                       transform: `translateY(${virtualRow.start}px)`,
                       pointerEvents: userRole === "financier" ? "none" : "all"
@@ -1164,7 +1157,7 @@ export const TimesheetPage = () => {
             render={({ field }) => (
               <CustomDatePicker
                 label="Дата трудоустройства"
-                disabledDate={disabledDate}
+                disabledDate={userRole === "admin" ? false : disabledDate}
                 {...field}
               />
             )}

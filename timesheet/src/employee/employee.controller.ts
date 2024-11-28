@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -95,8 +96,10 @@ export class EmployeeController {
     return this.employeeService.updateFromLogs(+id, updateEmployeeDto);
   }
 
-  // @Delete(':id')
-  // remove(@Param('id') id: string) {
-  //   return this.employeeService.remove(+id);
-  // }
+  @Roles('admin')
+  @UseGuards(RolesGuards)
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.employeeService.remove(+id);
+  }
 }

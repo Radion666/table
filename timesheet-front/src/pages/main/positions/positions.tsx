@@ -13,6 +13,7 @@ import { apiRequests } from "~src/shared/api/requests";
 import { useGetAllFacilities } from "~src/shared/hooks/useRequests";
 import { positionType } from "~src/shared/types/positions";
 import { Button } from "~src/shared/ui/button/button";
+import { Icon } from "~src/shared/ui/icon/icon";
 import { Input } from "~src/shared/ui/input/input";
 import { Modal } from "~src/shared/ui/modal/modal";
 import { Select } from "~src/shared/ui/select/select";
@@ -78,7 +79,13 @@ export const PositionsPage = () => {
     <>
       <div className="flex flex-1 flex-col gap-5 justify-center p-5">
         <div className="flex justify-end">
-          <Button onClick={() => setModalOpen(true)}>Создать новую должность</Button>
+          <Icon
+            onClick={() => setModalOpen(true)}
+            name="Create"
+            width={30}
+            height={30}
+            className="cursor-pointer hover:text-blue-700"
+          />
         </div>
         <GridTable
           rowData={positionsData?.data ?? []}

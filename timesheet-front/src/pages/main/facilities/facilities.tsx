@@ -32,6 +32,7 @@ import {
 import { Button } from "~src/shared/ui/button/button";
 import { Checkbox } from "~src/shared/ui/checkbox/checkbox";
 import { CustomDatePicker } from "~src/shared/ui/custom-datepicker/custom-datepicker";
+import { Icon } from "~src/shared/ui/icon/icon";
 import { Input } from "~src/shared/ui/input/input";
 import { Modal } from "~src/shared/ui/modal/modal";
 import { Select } from "~src/shared/ui/select/select";
@@ -209,7 +210,7 @@ export const FacilitiesPage = () => {
   const today = dayjs();
   const firstDayOfCurrentMonth = dayjs().startOf("month");
   // Функция для отключения дней после сегодняшнего дня и до 1 числа месяца
-  const disabledDate = (current) => {
+  const disabledDate = (current: Dayjs) => {
     // Заблокировать все дни после сегодняшнего дня и до первого числа месяца
     return current.isAfter(today, "day") || current.isBefore(firstDayOfCurrentMonth, "day");
   };
@@ -320,13 +321,25 @@ export const FacilitiesPage = () => {
             className="min-w-[300px]"
           />
           {userRole !== "master" && userRole !== "financier" && (
-            <div className="flex justify-end">
-              <Button onClick={() => setModalOpen(true)}>Создать новый объект</Button>
+            <div className="flex items-center justify-end">
+              <Icon
+                onClick={() => setModalOpen(true)}
+                name="Create"
+                width={30}
+                height={30}
+                className="cursor-pointer hover:text-blue-700"
+              />
             </div>
           )}
           {userRole === "master" && (
             <div className="flex justify-end">
-              <Button onClick={() => setCreateModalOpen(true)}>Добавить сотрудника</Button>
+              <Icon
+                onClick={() => setCreateModalOpen(true)}
+                name="Create"
+                width={30}
+                height={30}
+                className="cursor-pointer hover:text-blue-700"
+              />
             </div>
           )}
         </div>
@@ -618,6 +631,7 @@ export const FacilitiesPage = () => {
               name="phoneNumber"
               render={({ field }) => (
                 <Input
+                  isPhone
                   errorMessage={createWorkerErrors.phoneNumber?.message}
                   placeholder="+71111111111 или 81111111111"
                   label="Номер телефона"
@@ -644,7 +658,7 @@ export const FacilitiesPage = () => {
               render={({ field }) => (
                 <CustomDatePicker
                   label="Дата трудоустройства"
-                  disabledDate={disabledDate}
+                  disabledDate={userRole === "admin" ? false : disabledDate}
                   {...field}
                 />
               )}

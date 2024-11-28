@@ -169,6 +169,7 @@ export const CellInput: FC<CellInputProps> = ({
               size={20}
               className="absolute top-0 right-[-2px] bg-white rounded-full shadow-md cursor-pointer z-20 hover:bg-gray-200"
               onClick={() => {
+                if (isDisabled) return;
                 handleUpdatePrev("");
                 handleChange(field, "delete");
               }}
@@ -176,7 +177,10 @@ export const CellInput: FC<CellInputProps> = ({
           )}
           {typeof value === "object" && isWeekend && integers?.allowOverwork ? (
             <input
-              className="w-[95%] rounded-md ml-auto mr-auto  border-[1px] text-center hover:border-blue-200"
+              className={clsx(
+                "w-[95%] rounded-md ml-auto mr-auto  border-[1px] text-center hover:border-blue-200",
+                isDisabled && "cursor-not-allowed opacity-75"
+              )}
               value={value?.overwork}
               onChange={(e) => {
                 const value = e.target.value;
@@ -205,9 +209,13 @@ export const CellInput: FC<CellInputProps> = ({
             Object?.keys?.(value)?.map((key) => {
               return (
                 <input
-                  className="w-[95%] rounded-md ml-auto mr-auto  border-[1px] text-center hover:border-blue-200"
+                  className={clsx(
+                    "w-[95%] rounded-md ml-auto mr-auto  border-[1px] text-center hover:border-blue-200",
+                    isDisabled && "cursor-not-allowed opacity-75 pointer-events-none"
+                  )}
                   value={value[key]}
                   onChange={(e) => {
+                    if (isDisabled) return;
                     const value = e.target.value;
 
                     if (value === "") {
