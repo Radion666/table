@@ -535,7 +535,7 @@ export const TableCell: FC<TableCellProps> = memo(
                         <div
                           className={clsx(
                             "flex flex-row items-center gap-1",
-                            lastIsOutOfTown ? "text-red-800" : "text-green-500"
+                            !lastIsOutOfTown ? "text-red-800" : "text-green-500"
                           )}>
                           <Icon name="House" size={20} />
                         </div>

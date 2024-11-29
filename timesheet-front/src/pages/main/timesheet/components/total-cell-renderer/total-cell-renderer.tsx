@@ -11,10 +11,11 @@ interface TotalCellRenderProps {
   employeeTotal: employeeTotalType;
   facilityTimesheetSetting?: facilityTimesheetSettingType;
   totalVariant: totalVariantType;
+  isLocal: boolean;
 }
 
 export const TotalCellRenderer: FC<TotalCellRenderProps> = memo(
-  ({ employeeTotal, facilityTimesheetSetting, totalVariant }) => {
+  ({ employeeTotal, facilityTimesheetSetting, totalVariant, isLocal }) => {
     const integers = facilityTimesheetSetting?.integers;
 
     // hoursOfDay
@@ -94,7 +95,7 @@ export const TotalCellRenderer: FC<TotalCellRenderProps> = memo(
               {employeeTotal.hoursOfWeekendWorkDays}
             </div>
             <div className="w-[64px] flex items-center justify-center ">
-              {employeeTotal.countOfWeekendWorkDays}
+              {isLocal ? "-" : employeeTotal.countOfWeekendWorkDays}
             </div>
           </>
         ) : (

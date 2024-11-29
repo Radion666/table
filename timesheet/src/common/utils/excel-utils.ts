@@ -1,4 +1,4 @@
-import { Worksheet } from 'exceljs';
+import { Style, Worksheet } from 'exceljs';
 
 export const generateColumns = (
   start: string = 'D',
@@ -104,12 +104,33 @@ export const setSumWithStep = (
   }
 };
 
+function columnLetterToIndex(letter) {
+  let column = 0;
+  for (let i = 0; i < letter?.length; i++) {
+    column = column * 26 + (letter?.charCodeAt(i) - 64); // A=1, B=2, ..., Z=26
+  }
+  return column;
+}
+
+// Функция для парсинга диапазона (например, "Q1:Y1")
+function parseRange(range) {
+  const [start, end] = range.split(':'); // Разделяем "Q1" и "Y1"
+  const startCol = start?.match(/[A-Z]+/)[0]; // Извлекаем "Q"
+  const startRow = parseInt(start?.match(/\d+/)[0], 10); // Извлекаем "1"
+  const endCol = end?.match(/[A-Z]+/)[0]; // Извлекаем "Y"
+  const endRow = parseInt(end?.match(/\d+/)[0], 10); // Извлекаем "1"
+  return { startCol, startRow, endCol, endRow };
+}
+
 export const applyAlignment = (
   worksheet: Worksheet,
   cellRef: string,
   value?: string | number,
   width?: number,
   fill?: boolean,
+  cellStyle?: Partial<Style>,
+  height?: number,
+  rowIndex?: number,
 ) => {
   const cell = worksheet.getCell(cellRef);
 
@@ -123,21 +144,29 @@ export const applyAlignment = (
 
   cell.alignment = { vertical: 'middle', horizontal: 'center' };
 
-  if (fill) {
-    const [startCell, endCell] = cellRef.split(':'); // Разделяем диапазон на начало и конец
-    const startRow = parseInt(startCell.match(/\d+/)[0]); // Извлекаем номер строки
-    const endRow = endCell ? parseInt(endCell.match(/\d+/)[0]) : startRow; // Если есть конец, извлекаем, иначе - стартовая строка
-    const column = startCell.match(/[A-Z]+/)[0]; // Извлекаем буквы колонки
+  if (width) {
+    const column = getColumnFromRange(cellRef);
 
+    if (column) {
+      worksheet.getColumn(column).width = width;
+    }
+  }
+
+  if (height) {
+    if (rowIndex) {
+      worksheet.getRow(rowIndex).height = height;
+    }
+  }
+
+  const { startCol, startRow, endCol, endRow } = parseRange(cellRef);
+
+  const startColIndex = columnLetterToIndex(startCol);
+  const endColIndex = columnLetterToIndex(endCol);
+
+  for (let col = startColIndex; col <= endColIndex; col++) {
     for (let row = startRow; row <= endRow; row++) {
-      const cell = worksheet.getCell(`${column}${row}`);
-
+      const cell = worksheet.getCell(row, col);
       cell.style = {
-        fill: {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'd1d5db' },
-        },
         border: {
           top: { style: 'thin', color: { argb: 'FF000000' } },
           bottom: { style: 'thin', color: { argb: 'FF000000' } },
@@ -148,15 +177,28 @@ export const applyAlignment = (
           vertical: 'middle',
           horizontal: 'center',
         },
+        ...cellStyle,
       };
     }
   }
 
-  if (width) {
-    const column = getColumnFromRange(cellRef);
+  if (fill) {
+    const [startCell, endCell] = cellRef.split(':'); // Разделяем диапазон на начало и конец
+    const startRow = parseInt(startCell.match(/\d+/)[0]); // Извлекаем номер строки
+    const endRow = endCell ? parseInt(endCell.match(/\d+/)[0]) : startRow; // Если есть конец, извлекаем, иначе - стартовая строка
+    const column = startCell.match(/[A-Z]+/)[0]; // Извлекаем буквы колонки
 
-    if (column) {
-      worksheet.getColumn(column).width = width;
+    for (let row = startRow; row <= endRow; row++) {
+      const cell = worksheet.getCell(`${column}${row}`);
+
+      cell.style = {
+        ...cell.style,
+        fill: {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'd1d5db' },
+        },
+      };
     }
   }
 };

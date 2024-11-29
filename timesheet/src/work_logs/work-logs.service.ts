@@ -761,17 +761,112 @@ export class WorkLogsService {
     workbook.created = new Date();
     workbook.modified = new Date();
 
-    worksheet.mergeCells('A1:A4');
-    worksheet.mergeCells('B1:B4');
-    worksheet.mergeCells('C1:C4');
+    const tableNameCell = 'A1:P1';
+    const ordererNameCell = 'A2:P2';
 
-    worksheet.columns = [
-      { header: 'Работник', key: 'id', width: 25 },
-      { header: 'Местный (0) / неместный (1)', key: 'name', width: 35 },
-      { header: '', key: '', width: 10 },
-    ];
+    worksheet.mergeCells(tableNameCell);
+    applyAlignment(
+      worksheet,
+      tableNameCell,
+      // 'Табель учета рабочего времени  ООО " Голд Рекрут"',
+      'Табель учета рабочего времени',
+      undefined,
+      undefined,
+      {
+        alignment: {
+          horizontal: 'center',
+          vertical: 'middle',
+        },
+        font: {
+          bold: true,
+          underline: true,
+        },
+      },
+    );
+    worksheet.mergeCells(ordererNameCell);
+    applyAlignment(
+      worksheet,
+      ordererNameCell,
+      // 'Компания-заказчик: ООО "УАЗ-Автокомпонент"',
+      'Компания-заказчик: ',
+      undefined,
+      undefined,
+      {
+        alignment: {
+          horizontal: 'center',
+          vertical: 'middle',
+        },
+        font: {
+          bold: true,
+          underline: true,
+        },
+      },
+    );
 
-    let startColumn = 'D';
+    const periodNameCell = 'R1:U1';
+    worksheet.mergeCells(periodNameCell);
+    applyAlignment(
+      worksheet,
+      periodNameCell,
+      'Отчетный период',
+      undefined,
+      undefined,
+    );
+    const periodStart = 'R2:S2';
+    const periodEnd = 'T2:U2';
+
+    const dateFillingStart = 'R3:S3';
+    const dateFillingEnd = 'T3:U3';
+
+    worksheet.mergeCells(periodStart);
+    worksheet.mergeCells(periodEnd);
+
+    worksheet.mergeCells(dateFillingStart);
+    worksheet.mergeCells(dateFillingEnd);
+
+    applyAlignment(
+      worksheet,
+      periodStart,
+      `${dates?.[0]?.fullDate}`,
+      10,
+      undefined,
+    );
+
+    applyAlignment(
+      worksheet,
+      periodEnd,
+      `${dates?.[dates?.length - 1]?.fullDate}`,
+      10,
+      undefined,
+    );
+
+    applyAlignment(
+      worksheet,
+      dateFillingStart,
+      'Дата заполнения',
+      undefined,
+      undefined,
+    );
+
+    applyAlignment(
+      worksheet,
+      dateFillingEnd,
+      `${dayjs().format('DD.MM.YYYY')}`,
+      undefined,
+      undefined,
+    );
+
+    worksheet.mergeCells('A5:A8');
+    worksheet.mergeCells('B5:B8');
+    worksheet.mergeCells('C5:C8');
+    worksheet.mergeCells('D5:D8');
+
+    applyAlignment(worksheet, 'A5:A8', '№ п/п', 5);
+    applyAlignment(worksheet, 'B5:B8', 'Работник', 15);
+    applyAlignment(worksheet, 'C5:C8', 'Местный (0) / неместный (1)', 10);
+    applyAlignment(worksheet, 'D5:D8', '', 5);
+
+    let startColumn = 'E';
 
     const allowOnlyTotal = integers?.allowOnlyTotal;
 
@@ -796,8 +891,8 @@ export class WorkLogsService {
       const day = dates[i];
       const isWeekend = day.isWeekend;
 
-      const dayCell = `${startColumn}1:${startColumn}2`;
-      const dayNameCell = `${startColumn}3:${startColumn}4`;
+      const dayCell = `${startColumn}5:${startColumn}6`;
+      const dayNameCell = `${startColumn}7:${startColumn}8`;
 
       worksheet.getCell(dayCell).value = day.date;
       worksheet.getCell(dayNameCell).value = day.dayName;
@@ -809,7 +904,7 @@ export class WorkLogsService {
         worksheet,
         dayCell,
         undefined,
-        undefined,
+        7,
         isWeekend ? true : false,
       );
 
@@ -817,12 +912,12 @@ export class WorkLogsService {
         worksheet,
         dayNameCell,
         undefined,
-        undefined,
+        7,
         isWeekend ? true : false,
       );
 
-      const upperCell = worksheet.getCell(`${startColumn}1:${startColumn}2`);
-      const bottomCell = worksheet.getCell(`${startColumn}3:${startColumn}4`);
+      const upperCell = worksheet.getCell(`${startColumn}5:${startColumn}6`);
+      const bottomCell = worksheet.getCell(`${startColumn}7:${startColumn}8`);
 
       upperCell.alignment = {
         vertical: 'middle',
@@ -853,16 +948,16 @@ export class WorkLogsService {
     // const totalNigthHoursRow = `${startColumn}3:${nextColumn}3`;
     // const totalFirstTwoHoursRow = `${startColumn}4`;
     // const totalSecondTwoHoursRow = `${nextColumn}4`;
-    const totalSmensRow = `${totalSmens}1:${totalSmens}4`;
-    const totalHoursSecondRow = `${totalHours}1:${totalHours}4`;
-    const totalSmensWeekendsRow = `${totalSmensWeekends}1:${totalSmensWeekends}4`;
+    const totalSmensRow = `${totalSmens}5:${totalSmens}8`;
+    const totalHoursSecondRow = `${totalHours}5:${totalHours}8`;
+    const totalSmensWeekendsRow = `${totalSmensWeekends}5:${totalSmensWeekends}8`;
 
-    const progulRow = `${progulColumn}1:${progulColumn}4`;
-    const bolichniyRow = `${bolnichColumn}1:${bolnichColumn}4`;
-    const vihodRow = `${vihodColumn}1:${vihodColumn}4`;
-    const otpuskRow = `${otpuskColumn}1:${otpuskColumn}4`;
-    const mejVahtRow = `${mejVahOtpuskColumn}1:${mejVahOtpuskColumn}4`;
-    const adminOtpushRow = `${adminOtpuskColumn}1:${adminOtpuskColumn}4`;
+    const progulRow = `${progulColumn}5:${progulColumn}8`;
+    const bolichniyRow = `${bolnichColumn}5:${bolnichColumn}8`;
+    const vihodRow = `${vihodColumn}5:${vihodColumn}8`;
+    const otpuskRow = `${otpuskColumn}5:${otpuskColumn}8`;
+    const mejVahtRow = `${mejVahOtpuskColumn}5:${mejVahOtpuskColumn}8`;
+    const adminOtpushRow = `${adminOtpuskColumn}5:${adminOtpuskColumn}8`;
 
     // worksheet.mergeCells(totalHoursRow);
     // worksheet.mergeCells(totalDayHoursRow);
@@ -878,26 +973,26 @@ export class WorkLogsService {
     worksheet.mergeCells(adminOtpushRow);
 
     if (integers?.allowOnlyTotal) {
-      const totalHoursRow = `${startColumn}1:${nextColumn}4`;
+      const totalHoursRow = `${startColumn}5:${nextColumn}8`;
       worksheet.mergeCells(totalHoursRow);
-      applyAlignment(worksheet, totalHoursRow, 'Итого часов');
+      applyAlignment(worksheet, totalHoursRow, 'Итого часов', 5);
     } else {
       if (integers.allowDay && integers.allowNight && integers.allowOverwork) {
-        const totalHoursRow = `${startColumn}1:${nextColumn}1`;
-        const totalDayHoursRow = `${startColumn}2:${nextColumn}2`;
-        const totalNigthHoursRow = `${startColumn}3:${nextColumn}3`;
-        const totalFirstTwoHoursRow = `${startColumn}4`;
-        const totalSecondTwoHoursRow = `${nextColumn}4`;
+        const totalHoursRow = `${startColumn}5:${nextColumn}5`;
+        const totalDayHoursRow = `${startColumn}6:${nextColumn}6`;
+        const totalNigthHoursRow = `${startColumn}7:${nextColumn}7`;
+        const totalFirstTwoHoursRow = `${startColumn}8`;
+        const totalSecondTwoHoursRow = `${nextColumn}8`;
 
         worksheet.mergeCells(totalHoursRow);
         worksheet.mergeCells(totalDayHoursRow);
         worksheet.mergeCells(totalNigthHoursRow);
 
-        applyAlignment(worksheet, totalHoursRow, 'Итого часов'); // 1
-        applyAlignment(worksheet, totalDayHoursRow, 'Дневные'); // 2
-        applyAlignment(worksheet, totalNigthHoursRow, 'Ночные'); // 3
-        applyAlignment(worksheet, totalFirstTwoHoursRow, 'Перв. 2 ч'); // 4
-        applyAlignment(worksheet, totalSecondTwoHoursRow, 'Более 2 ч'); // 5
+        applyAlignment(worksheet, totalHoursRow, 'Итого часов', 5); // 1
+        applyAlignment(worksheet, totalDayHoursRow, 'Дневные', 5); // 2
+        applyAlignment(worksheet, totalNigthHoursRow, 'Ночные', 5); // 3
+        applyAlignment(worksheet, totalFirstTwoHoursRow, 'Перв. 2 ч', 5); // 4
+        applyAlignment(worksheet, totalSecondTwoHoursRow, 'Более 2 ч', 5); // 5
       } else if (
         integers.allowDay &&
         integers.allowNight &&
@@ -911,99 +1006,99 @@ export class WorkLogsService {
         worksheet.mergeCells(totalDayHoursRow);
         worksheet.mergeCells(totalNigthHoursRow);
 
-        applyAlignment(worksheet, totalHoursRow, 'Итого часов'); // 1
-        applyAlignment(worksheet, totalDayHoursRow, 'Дневные'); // 2
-        applyAlignment(worksheet, totalNigthHoursRow, 'Ночные'); // 3
+        applyAlignment(worksheet, totalHoursRow, 'Итого часов', 5); // 1
+        applyAlignment(worksheet, totalDayHoursRow, 'Дневные', 5); // 2
+        applyAlignment(worksheet, totalNigthHoursRow, 'Ночные', 5); // 3
       } else if (
         integers.allowDay &&
         !integers.allowNight &&
         integers.allowOverwork
       ) {
-        const totalHoursRow = `${startColumn}1:${nextColumn}1`;
-        const totalDayHoursRow = `${startColumn}2:${nextColumn}3`;
-        const totalFirstTwoHoursRow = `${startColumn}4`;
-        const totalSecondTwoHoursRow = `${nextColumn}4`;
+        const totalHoursRow = `${startColumn}5:${nextColumn}5`;
+        const totalDayHoursRow = `${startColumn}6:${nextColumn}7`;
+        const totalFirstTwoHoursRow = `${startColumn}8`;
+        const totalSecondTwoHoursRow = `${nextColumn}8`;
 
         worksheet.mergeCells(totalHoursRow);
         worksheet.mergeCells(totalDayHoursRow);
 
-        applyAlignment(worksheet, totalHoursRow, 'Итого часов'); // 1
-        applyAlignment(worksheet, totalDayHoursRow, 'Дневные'); // 2
-        applyAlignment(worksheet, totalFirstTwoHoursRow, 'Перв. 2 ч'); // 3
-        applyAlignment(worksheet, totalSecondTwoHoursRow, 'Более 2 ч'); // 4
+        applyAlignment(worksheet, totalHoursRow, 'Итого часов', 5); // 1
+        applyAlignment(worksheet, totalDayHoursRow, 'Дневные', 5); // 2
+        applyAlignment(worksheet, totalFirstTwoHoursRow, 'Перв. 2 ч', 5); // 3
+        applyAlignment(worksheet, totalSecondTwoHoursRow, 'Более 2 ч', 5); // 4
       } else if (
         !integers.allowDay &&
         integers.allowNight &&
         integers.allowOverwork
       ) {
-        const totalHoursRow = `${startColumn}1:${nextColumn}1`;
-        const totalNigthHoursRow = `${startColumn}2:${nextColumn}3`;
-        const totalFirstTwoHoursRow = `${startColumn}4`;
-        const totalSecondTwoHoursRow = `${nextColumn}4`;
+        const totalHoursRow = `${startColumn}5:${nextColumn}5`;
+        const totalNigthHoursRow = `${startColumn}6:${nextColumn}7`;
+        const totalFirstTwoHoursRow = `${startColumn}8`;
+        const totalSecondTwoHoursRow = `${nextColumn}8`;
 
         worksheet.mergeCells(totalHoursRow);
         worksheet.mergeCells(totalNigthHoursRow);
 
-        applyAlignment(worksheet, totalHoursRow, 'Итого часов'); // 1
-        applyAlignment(worksheet, totalNigthHoursRow, 'Ночные'); // 2
-        applyAlignment(worksheet, totalFirstTwoHoursRow, 'Перв. 2 ч'); // 3
-        applyAlignment(worksheet, totalSecondTwoHoursRow, 'Более 2 ч'); // 4
+        applyAlignment(worksheet, totalHoursRow, 'Итого часов', 5); // 1
+        applyAlignment(worksheet, totalNigthHoursRow, 'Ночные', 5); // 2
+        applyAlignment(worksheet, totalFirstTwoHoursRow, 'Перв. 2 ч', 5); // 3
+        applyAlignment(worksheet, totalSecondTwoHoursRow, 'Более 2 ч', 5); // 4
       } else if (
         integers.allowDay &&
         !integers.allowNight &&
         !integers.allowOverwork
       ) {
-        const totalHoursRow = `${startColumn}1:${nextColumn}2`;
-        const totalDayHoursRow = `${startColumn}3:${nextColumn}4`;
+        const totalHoursRow = `${startColumn}5:${nextColumn}6`;
+        const totalDayHoursRow = `${startColumn}7:${nextColumn}8`;
 
         worksheet.mergeCells(totalHoursRow);
         worksheet.mergeCells(totalDayHoursRow);
 
-        applyAlignment(worksheet, totalHoursRow, 'Итого часов'); // 1
-        applyAlignment(worksheet, totalDayHoursRow, 'Дневные'); // 2
+        applyAlignment(worksheet, totalHoursRow, 'Итого часов', 5); // 1
+        applyAlignment(worksheet, totalDayHoursRow, 'Дневные', 5); // 2
       } else if (
         !integers.allowDay &&
         integers.allowNight &&
         !integers.allowOverwork
       ) {
-        const totalHoursRow = `${startColumn}1:${nextColumn}2`;
-        const totalNigthHoursRow = `${startColumn}3:${nextColumn}4`;
+        const totalHoursRow = `${startColumn}5:${nextColumn}6`;
+        const totalNigthHoursRow = `${startColumn}7:${nextColumn}8`;
 
         worksheet.mergeCells(totalHoursRow);
         worksheet.mergeCells(totalNigthHoursRow);
 
-        applyAlignment(worksheet, totalHoursRow, 'Итого часов'); // 1
-        applyAlignment(worksheet, totalNigthHoursRow, 'Ночные'); // 2
+        applyAlignment(worksheet, totalHoursRow, 'Итого часов', 5); // 1
+        applyAlignment(worksheet, totalNigthHoursRow, 'Ночные', 5); // 2
       } else if (
         !integers.allowDay &&
         !integers.allowNight &&
         integers.allowOverwork
       ) {
-        const totalHoursRow = `${startColumn}1:${nextColumn}3`;
-        const totalFirstTwoHoursRow = `${startColumn}4`;
-        const totalSecondTwoHoursRow = `${nextColumn}4`;
+        const totalHoursRow = `${startColumn}5:${nextColumn}7`;
+        const totalFirstTwoHoursRow = `${startColumn}8`;
+        const totalSecondTwoHoursRow = `${nextColumn}8`;
 
         worksheet.mergeCells(totalHoursRow);
 
-        applyAlignment(worksheet, totalHoursRow, 'Итого часов'); // 1
-        applyAlignment(worksheet, totalFirstTwoHoursRow, 'Перв. 2 ч'); // 2
-        applyAlignment(worksheet, totalSecondTwoHoursRow, 'Более 2 ч'); // 3
+        applyAlignment(worksheet, totalHoursRow, 'Итого часов', 5); // 1
+        applyAlignment(worksheet, totalFirstTwoHoursRow, 'Перв. 2 ч', 5); // 2
+        applyAlignment(worksheet, totalSecondTwoHoursRow, 'Более 2 ч', 5); // 3
       }
     }
 
-    applyAlignment(worksheet, totalSmensRow, 'Итого смен', 20);
-    applyAlignment(worksheet, totalHoursSecondRow, 'Итого часов (вых)', 20);
-    applyAlignment(worksheet, totalSmensWeekendsRow, 'Итого смен (вых)', 20);
+    applyAlignment(worksheet, totalSmensRow, 'Итого смен', 15);
+    applyAlignment(worksheet, totalHoursSecondRow, 'Итого часов (вых)', 15);
+    applyAlignment(worksheet, totalSmensWeekendsRow, 'Итого смен (вых)', 15);
 
-    applyAlignment(worksheet, progulRow, 'П');
-    applyAlignment(worksheet, bolichniyRow, 'Б');
-    applyAlignment(worksheet, vihodRow, 'В');
-    applyAlignment(worksheet, otpuskRow, 'О');
-    applyAlignment(worksheet, mejVahtRow, 'МО');
-    applyAlignment(worksheet, adminOtpushRow, 'А');
+    applyAlignment(worksheet, progulRow, 'П', 5);
+    applyAlignment(worksheet, bolichniyRow, 'Б', 5);
+    applyAlignment(worksheet, vihodRow, 'В', 5);
+    applyAlignment(worksheet, otpuskRow, 'О', 5);
+    applyAlignment(worksheet, mejVahtRow, 'МО', 5);
+    applyAlignment(worksheet, adminOtpushRow, 'А', 5);
 
-    const a1a2Cell = worksheet.getCell('A1:A2');
-    const b1b2Cell = worksheet.getCell('B1:B2');
+    const a1a2Cell = worksheet.getCell('A5:A6');
+    const b1b2Cell = worksheet.getCell('B5:B6');
 
     a1a2Cell.alignment = {
       vertical: 'middle',
@@ -1014,30 +1109,61 @@ export class WorkLogsService {
       horizontal: 'center',
     };
 
-    let employeeStart = 5;
+    let employeeStart = 9;
     let employeeEnd = integers?.allowOnlyTotal
-      ? 6
+      ? 10
       : integers?.allowDay && integers?.allowNight && integers?.allowOverwork
-        ? 7
-        : 6;
+        ? 11
+        : 10;
 
     for (let i = 0; i < allowedEmployees?.length; i++) {
       const employee = allowedEmployees[i];
 
-      const fioCell = `A${employeeStart}:A${employeeEnd}`;
-      const isLocalCell = `B${employeeStart}:B${employeeEnd}`;
+      const indexCell = `A${employeeStart}:A${employeeEnd}`;
 
+      const fioCell = `B${employeeStart}:B${employeeEnd}`;
+      const isLocalCell = `C${employeeStart}:C${employeeEnd}`;
+
+      const isLocal = !employee?.lastIsOutOfTown;
+
+      worksheet.getCell(indexCell).value = i + 1;
       worksheet.getCell(fioCell).value = `${getShortUserFio(employee)}`;
       worksheet.getCell(isLocalCell).value = employee.lastIsOutOfTown ? 1 : 0;
 
+      worksheet.mergeCells(indexCell);
       worksheet.mergeCells(fioCell);
       worksheet.mergeCells(isLocalCell);
 
-      applyAlignment(worksheet, fioCell);
-      applyAlignment(worksheet, isLocalCell);
+      applyAlignment(worksheet, indexCell, undefined, undefined, undefined, {
+        alignment: {
+          horizontal: 'left',
+          vertical: 'middle',
+        },
+        font: {
+          bold: true,
+        },
+      });
+      applyAlignment(worksheet, fioCell, undefined, undefined, undefined, {
+        alignment: {
+          horizontal: 'left',
+          vertical: 'middle',
+        },
+        font: {
+          bold: true,
+        },
+      });
+      applyAlignment(worksheet, isLocalCell, undefined, undefined, undefined, {
+        alignment: {
+          horizontal: 'left',
+          vertical: 'middle',
+        },
+        font: {
+          bold: true,
+        },
+      });
 
       if (integers.allowOnlyTotal) {
-        const cell = `C${employeeStart}:C${employeeStart + 1}`;
+        const cell = `D${employeeStart}:D${employeeStart + 1}`;
         worksheet.getCell(cell).value = 'Часы';
         worksheet.mergeCells(cell);
         applyAlignment(worksheet, cell);
@@ -1047,9 +1173,9 @@ export class WorkLogsService {
           integers.allowNight &&
           integers.allowOverwork
         ) {
-          const dayCell = `C${employeeStart}`;
-          const nightCell = `C${employeeStart + 1}`;
-          const overworkCell = `C${employeeStart + 2}`;
+          const dayCell = `D${employeeStart}`;
+          const nightCell = `D${employeeStart + 1}`;
+          const overworkCell = `D${employeeStart + 2}`;
 
           worksheet.getCell(dayCell).value = 'д';
           worksheet.getCell(nightCell).value = 'н';
@@ -1063,8 +1189,8 @@ export class WorkLogsService {
           integers.allowNight &&
           !integers.allowOverwork
         ) {
-          const dayCell = `C${employeeStart}`;
-          const nightCell = `C${employeeStart + 1}`;
+          const dayCell = `D${employeeStart}`;
+          const nightCell = `D${employeeStart + 1}`;
 
           worksheet.getCell(dayCell).value = 'д';
           worksheet.getCell(nightCell).value = 'н'; // Указываем начальную ячейку
@@ -1078,8 +1204,8 @@ export class WorkLogsService {
           !integers.allowNight &&
           integers.allowOverwork
         ) {
-          const dayCell = `C${employeeStart}`;
-          const overworkCell = `C${employeeStart + 1}`;
+          const dayCell = `D${employeeStart}`;
+          const overworkCell = `D${employeeStart + 1}`;
 
           worksheet.getCell(dayCell).value = 'д';
           worksheet.getCell(overworkCell).value = 'п'; // Указываем начальную ячейку
@@ -1093,8 +1219,8 @@ export class WorkLogsService {
           integers.allowNight &&
           integers.allowOverwork
         ) {
-          const nightCell = `C${employeeStart}`;
-          const overworkCell = `C${employeeStart + 1}`;
+          const nightCell = `D${employeeStart}`;
+          const overworkCell = `D${employeeStart + 1}`;
 
           worksheet.getCell(nightCell).value = 'н';
           worksheet.getCell(overworkCell).value = 'п'; // Указываем начальную ячейку
@@ -1108,7 +1234,7 @@ export class WorkLogsService {
           !integers.allowNight &&
           !integers.allowOverwork
         ) {
-          const dayCell = `C${employeeStart}:C${employeeStart + 1}`;
+          const dayCell = `D${employeeStart}:D${employeeStart + 1}`;
 
           worksheet.getCell(dayCell).value = 'д';
 
@@ -1120,7 +1246,7 @@ export class WorkLogsService {
           integers.allowNight &&
           !integers.allowOverwork
         ) {
-          const nightCell = `C${employeeStart}:C${employeeStart + 1}`;
+          const nightCell = `D${employeeStart}:D${employeeStart + 1}`;
 
           worksheet.getCell(nightCell).value = 'н';
 
@@ -1132,7 +1258,7 @@ export class WorkLogsService {
           !integers.allowNight &&
           integers.allowOverwork
         ) {
-          const overworkCell = `C${employeeStart}:C${employeeStart + 1}`;
+          const overworkCell = `D${employeeStart}:D${employeeStart + 1}`;
 
           worksheet.getCell(overworkCell).value = 'п';
 
@@ -1146,7 +1272,7 @@ export class WorkLogsService {
         (el) => el.employee?.id === employee?.id,
       );
 
-      let startColumn = 'D';
+      let startColumn = 'E';
 
       for (let j = 0; j < dates?.length; j++) {
         const day = dates[j];
@@ -1312,6 +1438,8 @@ export class WorkLogsService {
         }
 
         if (typeof cellData === 'string') {
+          if (cellData?.toLowerCase() === 'В'.toLowerCase()) {
+          }
           // const cellId = `${startColumn}${employeeStart}:${startColumn}${employeeEnd}`;
           //
           const cellId = `${startColumn}${employeeStart}:${startColumn}${employeeEnd}`;
@@ -1661,7 +1789,7 @@ export class WorkLogsService {
       let hoursOfOverworkTwoHours: number = 0;
       let hoursOfOverworkMoreTwoHours: number = 0;
 
-      let newStartColumn = 'D';
+      let newStartColumn = 'E';
 
       const lettersSum: Omit<lettersSumType, 'Я'> = {
         А: 0,
@@ -1725,17 +1853,32 @@ export class WorkLogsService {
             totalWeekendSum += cellData.total;
           } else {
             if (integers?.allowDay && integers?.allowNight) {
-              totalWeekendSum += cellData.day;
-              totalWeekendSum += cellData.night;
+              totalWeekendSum += cellData?.day;
+              totalWeekendSum += cellData?.night;
             } else if (integers?.allowDay && !integers?.allowNight) {
-              totalWeekendSum += cellData.day;
+              totalWeekendSum += cellData?.day;
             } else if (!integers?.allowDay && integers?.allowNight) {
-              totalWeekendSum += cellData.night;
+              totalWeekendSum += cellData?.night;
             }
           }
 
-          if (+cellData?.day || +cellData?.night || +cellData?.total) {
-            countOfWeekendWorkDays += 1;
+          if (!isLocal) {
+            if (+cellData?.day || +cellData?.night || +cellData?.total) {
+              countOfWeekendWorkDays += 1;
+            }
+          } else {
+            if (+cellData.day || +cellData.night || +cellData?.total) {
+              countOfWorkDays += 1;
+            }
+          }
+        }
+
+        if (typeof cellData === 'string' && isWeekend) {
+          if (
+            (cellData as string)?.toLowerCase() === 'В'.toLowerCase() &&
+            isLocal
+          ) {
+            countOfWorkDays += 1;
           }
         }
 
@@ -1812,7 +1955,9 @@ export class WorkLogsService {
       worksheet.getCell(totalWeekendsHoursCell).value = isNaN(totalWeekendSum)
         ? 0
         : totalWeekendSum;
-      worksheet.getCell(totalWeekendsSmensCell).value = countOfWeekendWorkDays;
+      worksheet.getCell(totalWeekendsSmensCell).value = isLocal
+        ? '-'
+        : countOfWeekendWorkDays;
 
       applyAlignment(worksheet, totalDayHoursCell);
       applyAlignment(worksheet, totalNightHoursCell);
@@ -1849,26 +1994,26 @@ export class WorkLogsService {
             : 2);
     }
 
-    const totalSingleCell = `A${employeeStart}`;
+    const totalSingleCell = `B${employeeStart}`;
 
     if (integers?.allowOnlyTotal) {
-      const totalCell = `A${employeeStart}:A${employeeEnd}}`;
+      const totalCell = `B${employeeStart}:B${employeeEnd}}`;
       worksheet.getCell(totalCell).value = 'Итого: часов';
 
       worksheet.mergeCells(totalCell);
 
       applyAlignment(worksheet, totalCell);
-      applyAlignment(worksheet, `A${employeeStart + 2}`, 'П');
-      applyAlignment(worksheet, `A${employeeStart + 3}`, 'Б');
-      applyAlignment(worksheet, `A${employeeStart + 4}`, 'В');
-      applyAlignment(worksheet, `A${employeeStart + 5}`, 'О');
-      applyAlignment(worksheet, `A${employeeStart + 6}`, 'МО');
-      applyAlignment(worksheet, `A${employeeStart + 7}`, 'А');
+      applyAlignment(worksheet, `B${employeeStart + 2}`, 'П');
+      applyAlignment(worksheet, `B${employeeStart + 3}`, 'Б');
+      applyAlignment(worksheet, `B${employeeStart + 4}`, 'В');
+      applyAlignment(worksheet, `B${employeeStart + 5}`, 'О');
+      applyAlignment(worksheet, `B${employeeStart + 6}`, 'МО');
+      applyAlignment(worksheet, `B${employeeStart + 7}`, 'А');
     } else {
       if (allowAllTypes) {
-        const totalDayCell = `A${employeeStart}`;
-        const totalNightCell = `A${employeeStart + 1}`;
-        const totalOverworkCell = `A${employeeEnd}`;
+        const totalDayCell = `B${employeeStart}`;
+        const totalNightCell = `B${employeeStart + 1}`;
+        const totalOverworkCell = `B${employeeEnd}`;
 
         worksheet.getCell(totalDayCell).value = 'Итого: дневных';
         worksheet.getCell(totalNightCell).value = 'Итого: ночных';
@@ -1878,30 +2023,30 @@ export class WorkLogsService {
         applyAlignment(worksheet, totalNightCell);
         applyAlignment(worksheet, totalOverworkCell);
 
-        applyAlignment(worksheet, `A${employeeEnd + 1}`, 'П');
-        applyAlignment(worksheet, `A${employeeEnd + 2}`, 'Б');
-        applyAlignment(worksheet, `A${employeeEnd + 3}`, 'В');
-        applyAlignment(worksheet, `A${employeeEnd + 4}`, 'О');
-        applyAlignment(worksheet, `A${employeeEnd + 5}`, 'МО');
-        applyAlignment(worksheet, `A${employeeEnd + 6}`, 'А');
+        applyAlignment(worksheet, `B${employeeEnd + 1}`, 'П');
+        applyAlignment(worksheet, `B${employeeEnd + 2}`, 'Б');
+        applyAlignment(worksheet, `B${employeeEnd + 3}`, 'В');
+        applyAlignment(worksheet, `B${employeeEnd + 4}`, 'О');
+        applyAlignment(worksheet, `B${employeeEnd + 5}`, 'МО');
+        applyAlignment(worksheet, `B${employeeEnd + 6}`, 'А');
       } else if (allowDayNight) {
-        const totalDayCell = `A${employeeStart}`;
-        const totalNightCell = `A${employeeStart + 1}`;
+        const totalDayCell = `B${employeeStart}`;
+        const totalNightCell = `B${employeeStart + 1}`;
 
         worksheet.getCell(totalDayCell).value = 'Итого: дневных';
         worksheet.getCell(totalNightCell).value = 'Итого: ночных';
         applyAlignment(worksheet, totalDayCell);
         applyAlignment(worksheet, totalNightCell);
 
-        applyAlignment(worksheet, `A${employeeStart + 2}`, 'П');
-        applyAlignment(worksheet, `A${employeeStart + 3}`, 'Б');
-        applyAlignment(worksheet, `A${employeeStart + 4}`, 'В');
-        applyAlignment(worksheet, `A${employeeStart + 5}`, 'О');
-        applyAlignment(worksheet, `A${employeeStart + 6}`, 'МО');
-        applyAlignment(worksheet, `A${employeeStart + 7}`, 'А');
+        applyAlignment(worksheet, `B${employeeStart + 2}`, 'П');
+        applyAlignment(worksheet, `B${employeeStart + 3}`, 'Б');
+        applyAlignment(worksheet, `B${employeeStart + 4}`, 'В');
+        applyAlignment(worksheet, `B${employeeStart + 5}`, 'О');
+        applyAlignment(worksheet, `B${employeeStart + 6}`, 'МО');
+        applyAlignment(worksheet, `B${employeeStart + 7}`, 'А');
       } else if (allowNightOverwork) {
-        const totalNightCell = `A${employeeStart}`;
-        const totalOverworkCell = `A${employeeStart + 1}`;
+        const totalNightCell = `B${employeeStart}`;
+        const totalOverworkCell = `B${employeeStart + 1}`;
 
         worksheet.getCell(totalNightCell).value = 'Итого: ночных';
         worksheet.getCell(totalOverworkCell).value = 'Итого: переработка';
@@ -1909,15 +2054,15 @@ export class WorkLogsService {
         applyAlignment(worksheet, totalNightCell);
         applyAlignment(worksheet, totalOverworkCell);
 
-        applyAlignment(worksheet, `A${employeeStart + 2}`, 'П');
-        applyAlignment(worksheet, `A${employeeStart + 3}`, 'Б');
-        applyAlignment(worksheet, `A${employeeStart + 4}`, 'В');
-        applyAlignment(worksheet, `A${employeeStart + 5}`, 'О');
-        applyAlignment(worksheet, `A${employeeStart + 6}`, 'МО');
-        applyAlignment(worksheet, `A${employeeStart + 7}`, 'А');
+        applyAlignment(worksheet, `B${employeeStart + 2}`, 'П');
+        applyAlignment(worksheet, `B${employeeStart + 3}`, 'Б');
+        applyAlignment(worksheet, `B${employeeStart + 4}`, 'В');
+        applyAlignment(worksheet, `B${employeeStart + 5}`, 'О');
+        applyAlignment(worksheet, `B${employeeStart + 6}`, 'МО');
+        applyAlignment(worksheet, `B${employeeStart + 7}`, 'А');
       } else if (allowDayOverwork) {
-        const totalDayCell = `A${employeeStart}`;
-        const totalOverworkCell = `A${employeeStart + 1}`;
+        const totalDayCell = `B${employeeStart}`;
+        const totalOverworkCell = `B${employeeStart + 1}`;
 
         worksheet.getCell(totalDayCell).value = 'Итого: дневных';
         worksheet.getCell(totalOverworkCell).value = 'Итого: переработка';
@@ -1925,46 +2070,46 @@ export class WorkLogsService {
         applyAlignment(worksheet, totalDayCell);
         applyAlignment(worksheet, totalOverworkCell);
 
-        applyAlignment(worksheet, `A${employeeStart + 2}`, 'П');
-        applyAlignment(worksheet, `A${employeeStart + 3}`, 'Б');
-        applyAlignment(worksheet, `A${employeeStart + 4}`, 'В');
-        applyAlignment(worksheet, `A${employeeStart + 5}`, 'О');
-        applyAlignment(worksheet, `A${employeeStart + 6}`, 'МО');
-        applyAlignment(worksheet, `A${employeeStart + 7}`, 'А');
+        applyAlignment(worksheet, `B${employeeStart + 2}`, 'П');
+        applyAlignment(worksheet, `B${employeeStart + 3}`, 'Б');
+        applyAlignment(worksheet, `B${employeeStart + 4}`, 'В');
+        applyAlignment(worksheet, `B${employeeStart + 5}`, 'О');
+        applyAlignment(worksheet, `B${employeeStart + 6}`, 'МО');
+        applyAlignment(worksheet, `B${employeeStart + 7}`, 'А');
       } else if (allowOnlyOverwork) {
         worksheet.getCell(totalSingleCell).value = 'Итого: переработка';
         applyAlignment(worksheet, totalSingleCell);
 
-        applyAlignment(worksheet, `A${employeeStart + 1}`, 'П');
-        applyAlignment(worksheet, `A${employeeStart + 2}`, 'Б');
-        applyAlignment(worksheet, `A${employeeStart + 3}`, 'В');
-        applyAlignment(worksheet, `A${employeeStart + 4}`, 'О');
-        applyAlignment(worksheet, `A${employeeStart + 5}`, 'МО');
-        applyAlignment(worksheet, `A${employeeStart + 6}`, 'А');
+        applyAlignment(worksheet, `B${employeeStart + 1}`, 'П');
+        applyAlignment(worksheet, `B${employeeStart + 2}`, 'Б');
+        applyAlignment(worksheet, `B${employeeStart + 3}`, 'В');
+        applyAlignment(worksheet, `B${employeeStart + 4}`, 'О');
+        applyAlignment(worksheet, `B${employeeStart + 5}`, 'МО');
+        applyAlignment(worksheet, `B${employeeStart + 6}`, 'А');
       } else if (allowOnlyDay) {
         worksheet.getCell(totalSingleCell).value = 'Итого: дневных';
         applyAlignment(worksheet, totalSingleCell);
 
-        applyAlignment(worksheet, `A${employeeStart + 1}`, 'П');
-        applyAlignment(worksheet, `A${employeeStart + 2}`, 'Б');
-        applyAlignment(worksheet, `A${employeeStart + 3}`, 'В');
-        applyAlignment(worksheet, `A${employeeStart + 4}`, 'О');
-        applyAlignment(worksheet, `A${employeeStart + 5}`, 'МО');
-        applyAlignment(worksheet, `A${employeeStart + 6}`, 'А');
+        applyAlignment(worksheet, `B${employeeStart + 1}`, 'П');
+        applyAlignment(worksheet, `B${employeeStart + 2}`, 'Б');
+        applyAlignment(worksheet, `B${employeeStart + 3}`, 'В');
+        applyAlignment(worksheet, `B${employeeStart + 4}`, 'О');
+        applyAlignment(worksheet, `B${employeeStart + 5}`, 'МО');
+        applyAlignment(worksheet, `B${employeeStart + 6}`, 'А');
       } else if (allowOnlyNight) {
         worksheet.getCell(totalSingleCell).value = 'Итого: ночных';
         applyAlignment(worksheet, totalSingleCell);
 
-        applyAlignment(worksheet, `A${employeeStart + 1}`, 'П');
-        applyAlignment(worksheet, `A${employeeStart + 2}`, 'Б');
-        applyAlignment(worksheet, `A${employeeStart + 3}`, 'В');
-        applyAlignment(worksheet, `A${employeeStart + 4}`, 'О');
-        applyAlignment(worksheet, `A${employeeStart + 5}`, 'МО');
-        applyAlignment(worksheet, `A${employeeStart + 6}`, 'А');
+        applyAlignment(worksheet, `B${employeeStart + 1}`, 'П');
+        applyAlignment(worksheet, `B${employeeStart + 2}`, 'Б');
+        applyAlignment(worksheet, `B${employeeStart + 3}`, 'В');
+        applyAlignment(worksheet, `B${employeeStart + 4}`, 'О');
+        applyAlignment(worksheet, `B${employeeStart + 5}`, 'МО');
+        applyAlignment(worksheet, `B${employeeStart + 6}`, 'А');
       }
     }
 
-    let totalStartColumn = 'D';
+    let totalStartColumn = 'E';
 
     const totalOfTotalLetters: Omit<lettersSumType, 'Я'> = {
       А: 0,
@@ -2154,21 +2299,21 @@ export class WorkLogsService {
             }
 
             if (typeof newWorkLogs === 'object') {
-              totalDayHoursSum += newWorkLogs.day;
-              totalNightHoursSum = newWorkLogs.night;
-              totalOverworkHoursSum = newWorkLogs.overwork;
+              totalDayHoursSum += newWorkLogs?.day;
+              totalNightHoursSum = newWorkLogs?.night;
+              totalOverworkHoursSum = newWorkLogs?.overwork;
 
               firstCellValue +=
                 allowDayNight || allowDayOverwork
-                  ? newWorkLogs.day
+                  ? newWorkLogs?.day
                   : allowDayNight
-                    ? newWorkLogs.night
+                    ? newWorkLogs?.night
                     : 0;
               secondCellValue +=
                 allowDayOverwork || allowNightOverwork
-                  ? +newWorkLogs.overwork
+                  ? +newWorkLogs?.overwork
                   : allowDayNight
-                    ? +newWorkLogs.night
+                    ? +newWorkLogs?.night
                     : 0;
 
               // newWorkLogs.overwork;
@@ -2470,7 +2615,100 @@ export class WorkLogsService {
     applyAlignment(worksheet, total5, totalOfTotalLetters.МО);
     applyAlignment(worksheet, total6, totalOfTotalLetters.А);
 
-    const startCell = 'A1';
+    //                                                                                                                                               Латыпова Н.В.
+    const agreedCell = `A${employeeEnd + 8}:U${employeeEnd + 8}`;
+    worksheet.mergeCells(agreedCell);
+    applyAlignment(
+      worksheet,
+      agreedCell,
+      // '  Согласовано генеральный директор ООО "Голд Рекрут"                                                                     /Гаязов И.Ш./',
+      'Согласовано генеральный директор',
+      undefined,
+      undefined,
+      {
+        alignment: {
+          horizontal: 'left',
+          vertical: 'middle',
+        },
+        font: {
+          bold: true,
+          underline: true,
+        },
+      },
+      40,
+      employeeEnd + 8,
+    );
+
+    const leadingEmployee = `A${employeeEnd + 9}:U${employeeEnd + 9}`;
+    worksheet.mergeCells(leadingEmployee);
+    applyAlignment(
+      worksheet,
+      leadingEmployee,
+      // '  Ведущий специалист  БОТИЗ                                                                                                                                                   Латыпова Н.В.',
+      '  Ведущий специалист  БОТИЗ',
+      undefined,
+      undefined,
+      {
+        alignment: {
+          horizontal: 'left',
+          vertical: 'middle',
+        },
+        font: {
+          bold: true,
+          underline: true,
+        },
+      },
+      40,
+      employeeEnd + 9,
+    );
+
+    const directorCell = `A${employeeEnd + 10}:U${employeeEnd + 10}`;
+    worksheet.mergeCells(directorCell);
+    applyAlignment(
+      worksheet,
+      directorCell,
+      // '  Руководитель                                                                                         /Мидонов А.Ю/',
+      '  Руководитель',
+      undefined,
+      undefined,
+      {
+        alignment: {
+          horizontal: 'left',
+          vertical: 'middle',
+        },
+        font: {
+          bold: true,
+          underline: true,
+        },
+      },
+      40,
+      employeeEnd + 10,
+    );
+
+    const nachanlnikCell = `A${employeeEnd + 11}:U${employeeEnd + 11}`;
+    worksheet.mergeCells(nachanlnikCell);
+    applyAlignment(
+      worksheet,
+      nachanlnikCell,
+      // '  Начальник ОК                                                                                          /Пахалина Ю.А./',
+      '  Начальник ОК',
+      undefined,
+      undefined,
+      {
+        alignment: {
+          horizontal: 'left',
+          vertical: 'middle',
+        },
+        font: {
+          bold: true,
+          underline: true,
+        },
+      },
+      40,
+      employeeEnd + 11,
+    );
+
+    const startCell = 'A5';
 
     const endRow = worksheet.rowCount;
     const endColumn = worksheet.columns.length;

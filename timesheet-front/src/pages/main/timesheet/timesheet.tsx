@@ -73,11 +73,13 @@ export interface headerType {
     ({
       employeeTotal,
       facilityTimesheetSetting,
-      totalVariant
+      totalVariant,
+      isLocal
     }: {
       employeeTotal: employeeTotalType;
       facilityTimesheetSetting?: facilityTimesheetSettingType;
       totalVariant: totalVariantType;
+      isLocal: boolean;
     }) => React.JSX.Element
   >;
 }
@@ -317,7 +319,7 @@ export const TimesheetPage = () => {
             facilityId: +facilityId,
             employmentPeriods: el.employmentPeriods,
             facilityPeriods: el.facilityPeriods,
-            lastIsOutOfTown: el.lastIsOutOfTown,
+            lastIsOutOfTown: !el.lastIsOutOfTown,
             phoneNumber: el.phoneNumber,
             lastName: el.lastName,
             firstName: el.firstName,
@@ -495,6 +497,9 @@ export const TimesheetPage = () => {
 
       for (const i in copyOfPrev[indexOfCurrentId].dates) {
         const element = copyOfPrev[indexOfCurrentId].dates[i];
+
+        const isLocal = copyOfPrev[indexOfCurrentId]?.lastIsOutOfTown;
+
         const isWeekend = daysInMonth.find((day) => day.date === i)?.isWeekend;
 
         if (typeof element === "string" && element) {
@@ -530,8 +535,18 @@ export const TimesheetPage = () => {
             ? +element?.total
             : (+element?.day || 0) + (+element.night || 0);
 
-          if (+element.day || +element.night || +element?.total) {
-            countOfWeekendWorkDays += 1;
+          if (!isLocal) {
+            if (+element.day || +element.night || +element?.total) {
+              countOfWeekendWorkDays += 1;
+            }
+          } else {
+            if (+element.day || +element.night || +element?.total) {
+              countOfWorkDays += 1;
+            }
+          }
+        } else if (typeof element === "string" && isWeekend) {
+          if (element?.toLowerCase() === "В".toLowerCase() && isLocal) {
+            countOfWorkDays += 1;
           }
         }
       }
@@ -919,6 +934,7 @@ export const TimesheetPage = () => {
                                 employeeTotal={ppl.total}
                                 facilityTimesheetSetting={facilitySettings}
                                 totalVariant={totalVariant}
+                                isLocal={ppl.lastIsOutOfTown}
                               />
                             ) : (
                               <TableCell
