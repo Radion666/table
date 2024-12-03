@@ -768,8 +768,8 @@ export class WorkLogsService {
     applyAlignment(
       worksheet,
       tableNameCell,
-      // 'Табель учета рабочего времени  ООО " Голд Рекрут"',
-      'Табель учета рабочего времени',
+      'Табель учета рабочего времени  ООО " Голд Рекрут"',
+      // 'Табель учета рабочего времени',
       undefined,
       undefined,
       {
@@ -2623,8 +2623,8 @@ export class WorkLogsService {
     applyAlignment(
       worksheet,
       agreedCell,
-      // '  Согласовано генеральный директор ООО "Голд Рекрут"                                                                     /Гаязов И.Ш./',
-      'Согласовано генеральный директор',
+      '  Согласовано генеральный директор ООО "Голд Рекрут"                                                                     /Гаязов И.Ш./',
+      // 'Согласовано генеральный директор',
       undefined,
       undefined,
       {
@@ -2646,8 +2646,8 @@ export class WorkLogsService {
     applyAlignment(
       worksheet,
       leadingEmployee,
-      // '  Ведущий специалист  БОТИЗ                                                                                                                                                   Латыпова Н.В.',
-      '  Ведущий специалист  БОТИЗ',
+      '  Ведущий специалист  БОТИЗ                                                                                                                                                   Латыпова Н.В.',
+      // '  Ведущий специалист  БОТИЗ',
       undefined,
       undefined,
       {
@@ -2669,8 +2669,8 @@ export class WorkLogsService {
     applyAlignment(
       worksheet,
       directorCell,
-      // '  Руководитель                                                                                         /Мидонов А.Ю/',
-      '  Руководитель',
+      '  Руководитель                                                                                         /Мидонов А.Ю/',
+      // '  Руководитель',
       undefined,
       undefined,
       {
@@ -2692,8 +2692,8 @@ export class WorkLogsService {
     applyAlignment(
       worksheet,
       nachanlnikCell,
-      // '  Начальник ОК                                                                                          /Пахалина Ю.А./',
-      '  Начальник ОК',
+      '  Начальник ОК                                                                                          /Пахалина Ю.А./',
+      // '  Начальник ОК',
       undefined,
       undefined,
       {
