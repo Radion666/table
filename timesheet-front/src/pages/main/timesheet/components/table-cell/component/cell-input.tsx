@@ -206,6 +206,7 @@ export const CellInput: FC<CellInputProps> = ({
               }}
             />
           ) : (
+            !!value &&
             Object?.keys?.(value)?.map((key) => {
               return (
                 <input

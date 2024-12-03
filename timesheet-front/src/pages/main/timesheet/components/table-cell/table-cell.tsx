@@ -404,7 +404,14 @@ export const TableCell: FC<TableCellProps> = memo(
     const handleUpdate = async (data: CreateEmployeeType) => {
       if (data) {
         await apiRequests
-          .updateWorkerFromLogs({ ...(data as any), facilityId: +facilityId }, employeeId)
+          .updateWorkerFromLogs(
+            {
+              ...(data as any),
+              facilityId: +facilityId,
+              isOutOfTown: !(data as any)?.isOutOfTown
+            },
+            employeeId
+          )
           .then(() => {
             toast.success("Сотрудник успешно обновлен");
             setModalOpen(false);

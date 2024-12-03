@@ -536,12 +536,14 @@ export const TimesheetPage = () => {
             : (+element?.day || 0) + (+element.night || 0);
 
           if (!isLocal) {
-            if (+element.day || +element.night || +element?.total) {
+            if (+element?.overwork) {
               countOfWeekendWorkDays += 1;
+              hoursOfWeekendWorkDays += +element?.overwork;
             }
           } else {
-            if (+element.day || +element.night || +element?.total) {
+            if (+element?.overwork) {
               countOfWorkDays += 1;
+              hoursOfWeekendWorkDays += +element?.overwork;
             }
           }
         } else if (typeof element === "string" && isWeekend) {
@@ -746,23 +748,7 @@ export const TimesheetPage = () => {
             />
 
             {userRole !== "financier" && (
-              <div className="flex flex-row gap-2 items-center">
-                <Icon
-                  onClick={() => {
-                    apiRequests
-                      .saveWorkLogs(innerData, facilityId ? +facilityId : undefined)
-                      .then(() => {
-                        toast.success("Успешно обновлено");
-                        setTimeout(() => {
-                          // window.location.reload();
-                        }, 500);
-                      });
-                  }}
-                  name="Save"
-                  width={30}
-                  height={30}
-                  className="cursor-pointer hover:text-blue-700"
-                />
+              <div className="flex flex-row gap-4 items-center">
                 <Icon
                   onClick={() => setModalOpen(true)}
                   name="Create"
@@ -789,6 +775,22 @@ export const TimesheetPage = () => {
                       });
                   }}
                   name="Excel"
+                  width={30}
+                  height={30}
+                  className="cursor-pointer hover:text-blue-700"
+                />
+                <Icon
+                  onClick={() => {
+                    apiRequests
+                      .saveWorkLogs(innerData, facilityId ? +facilityId : undefined)
+                      .then(() => {
+                        toast.success("Успешно обновлено");
+                        setTimeout(() => {
+                          // window.location.reload();
+                        }, 500);
+                      });
+                  }}
+                  name="Save"
                   width={30}
                   height={30}
                   className="cursor-pointer hover:text-blue-700"

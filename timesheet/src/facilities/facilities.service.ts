@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
+import { ChangeLog } from 'src/change_logs/change-logs.model';
 import {
   transformDatesToMonthsArray,
   validateWorkDays,
@@ -480,11 +481,14 @@ export class FacilitiesService {
         }),
         FacilityPeriod.destroy({ where: { facilityId } }),
         ProductionCalendar.destroy({ where: { facilityId } }),
+        ChangeLog.destroy({
+          where: { facilityId },
+        }),
       ]);
 
       await employee.destroy();
     } catch (error) {
-      console.error(`Error removing employee with ID ${facilityId}:`, error);
+      // console.error(`Error removing employee with ID ${facilityId}:`, error);
       throw new Error('Error removing employee');
     }
   }

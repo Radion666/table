@@ -34,6 +34,7 @@ import { WorkLogsModule } from './work_logs/work-logs.module';
       password: process.env.PG_PASSWORD,
       database: process.env.PG_DATABASE,
       autoLoadModels: true,
+      logging: console.log,
       // logging: console.log,
     }),
     TelegrafModule.forRoot({

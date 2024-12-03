@@ -1850,25 +1850,28 @@ export class WorkLogsService {
         }
         if (typeof cellData === 'object' && isWeekend) {
           if (integers?.allowOnlyTotal) {
-            totalWeekendSum += cellData.total;
+            totalWeekendSum += cellData.total || 0;
           } else {
             if (integers?.allowDay && integers?.allowNight) {
-              totalWeekendSum += cellData?.day;
-              totalWeekendSum += cellData?.night;
+              totalWeekendSum += cellData?.day || 0;
+              totalWeekendSum += cellData?.night || 0;
             } else if (integers?.allowDay && !integers?.allowNight) {
-              totalWeekendSum += cellData?.day;
+              totalWeekendSum += cellData?.day || 0;
             } else if (!integers?.allowDay && integers?.allowNight) {
-              totalWeekendSum += cellData?.night;
+              totalWeekendSum += cellData?.night || 0;
             }
           }
 
           if (!isLocal) {
-            if (+cellData?.day || +cellData?.night || +cellData?.total) {
+            if (+cellData?.overwork) {
               countOfWeekendWorkDays += 1;
+
+              totalWeekendSum += cellData?.overwork || 0;
             }
           } else {
-            if (+cellData.day || +cellData.night || +cellData?.total) {
+            if (cellData?.overwork) {
               countOfWorkDays += 1;
+              totalWeekendSum += cellData?.overwork || 0;
             }
           }
         }
@@ -1950,7 +1953,6 @@ export class WorkLogsService {
           worksheet.getCell(singleCell).value = nightHoursSum;
         }
       }
-
       worksheet.getCell(totalSmensCell).value = countOfWorkDays;
       worksheet.getCell(totalWeekendsHoursCell).value = isNaN(totalWeekendSum)
         ? 0
