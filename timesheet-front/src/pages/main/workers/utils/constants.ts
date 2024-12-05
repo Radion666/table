@@ -47,13 +47,13 @@ export const workersColumns: GridColumnsType<actualWorkersResponseType> = [
     field: "phoneNumber"
   },
   {
-    headerName: "Местный или нет",
+    headerName: "Вахтовик или нет",
     minWidth: 170,
     flex: 1,
     valueGetter: (props) => {
       const isOutOfTown = props?.data?.lastIsOutOfTown;
       if (isOutOfTown === undefined) return "";
-      return isOutOfTown ? "Иногородний" : "Местный";
+      return isOutOfTown ? "Местный" : "Вахтовик";
     }
   },
   {

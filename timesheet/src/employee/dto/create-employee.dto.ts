@@ -74,9 +74,6 @@ export class CreateEmployeeDto {
     description: 'Отчество пользователя',
   })
   @IsString()
-  @MinLength(1, {
-    message: 'Минимальная длина отчества - 1 символ',
-  })
   readonly middleName: string;
 
   @ApiProperty({

@@ -325,7 +325,7 @@ export const ActionsRenderer = (params: CustomCellRendererProps<actualWorkersRes
               render={({ field }) => (
                 <Checkbox
                   containerClassName="w-5/6"
-                  label="Местный"
+                  label="Вахтовик"
                   {...field}
                   checked={field.value}
                 />

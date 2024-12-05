@@ -863,7 +863,7 @@ export class WorkLogsService {
 
     applyAlignment(worksheet, 'A5:A8', '№ п/п', 5);
     applyAlignment(worksheet, 'B5:B8', 'Работник', 15);
-    applyAlignment(worksheet, 'C5:C8', 'Местный (0) / неместный (1)', 10);
+    applyAlignment(worksheet, 'C5:C8', 'Вахтовик (0) / местный (1)', 10);
     applyAlignment(worksheet, 'D5:D8', '', 5);
 
     let startColumn = 'E';

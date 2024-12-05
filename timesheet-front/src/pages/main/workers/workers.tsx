@@ -200,9 +200,6 @@ export const WorkersPage = () => {
           />
 
           <Controller
-            rules={{
-              required: "Отчество обязательно"
-            }}
             control={control}
             name="middleName"
             render={({ field }) => (
@@ -319,7 +316,7 @@ export const WorkersPage = () => {
             }}
             control={control}
             name="isOutOfTown"
-            render={({ field }) => <Checkbox label="Местный" {...field} />}
+            render={({ field }) => <Checkbox label="Вахтовик" {...field} />}
           />
 
           <Controller

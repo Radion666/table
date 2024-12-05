@@ -646,7 +646,7 @@ export const FacilitiesPage = () => {
               }}
               control={createWorkerControl}
               name="isOutOfTown"
-              render={({ field }) => <Checkbox label="Местный" {...field} />}
+              render={({ field }) => <Checkbox label="Вахтовик" {...field} />}
             />
 
             <Controller

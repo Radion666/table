@@ -191,11 +191,15 @@ export const CellInput: FC<CellInputProps> = ({
                   return handleChange(field, "", "overwork");
                 }
 
-                const regex = /^(0|[1-9]|1[0-9]|2[0-4])$/;
+                const regex = /^(?:0|0\.5|[1-9](?:\.5)?|1[0-9](?:\.5)?|2[0-4](?:\.5)?)$/;
+                const isPrevValueIsDot =
+                  value[value?.length - 1] === "." &&
+                  value[value?.length - 2] !== "." &&
+                  +value < 24;
 
-                const isValid = regex.test(value);
+                const isValid = isPrevValueIsDot ? true : regex.test(value);
 
-                if (isValid) {
+                if (isValid && +value <= 24) {
                   handleUpdatePrev(value);
 
                   handleChange(field, value, "overwork");
@@ -225,28 +229,46 @@ export const CellInput: FC<CellInputProps> = ({
                       return handleChange(field, "", key);
                     }
 
-                    const regex = /^[0-8]?$/;
-                    const overworkRegex = /^(0|[1-9]|1[0-2])$/;
-                    const totalRegex = /^(0|[1-9]|1[0-9]|2[0-4])$/;
-
+                    const regex = /^(?:0|[1-8](?:\.5)?|0?\.[5])$/;
+                    const overworkRegex = /^(?:0|[1-9](?:\.5)?|1[0-2](?:\.5)?)$/;
+                    const totalRegex = /^(?:0|0\.5|[1-9](?:\.5)?|1[0-9](?:\.5)?|2[0-4](?:\.5)?)$/;
                     let isValid = false;
 
                     if (integers?.allowOnlyTotal) {
-                      isValid = totalRegex.test(value);
+                      const isPrevValueIsDot =
+                        value[value?.length - 1] === "." &&
+                        value[value?.length - 2] !== "." &&
+                        +value < 24;
+
+                      isValid = isPrevValueIsDot ? true : totalRegex.test(value);
                     } else if (
                       integers?.allowDay &&
                       integers?.allowNight &&
                       integers?.allowOverwork
                     ) {
-                      isValid = regex.test(value);
+                      const isPrevValueIsDot =
+                        value[value?.length - 1] === "." &&
+                        value[value?.length - 2] !== "." &&
+                        +value < 8;
+
+                      isValid = isPrevValueIsDot ? true : regex.test(value);
                     } else if (
                       (integers?.allowDay && integers?.allowNight) ||
                       (integers?.allowNight && integers?.allowOverwork) ||
                       (integers?.allowDay && integers?.allowOverwork)
                     ) {
-                      isValid = overworkRegex.test(value);
+                      const isPrevValueIsDot =
+                        value[value?.length - 1] === "." &&
+                        value[value?.length - 2] !== "." &&
+                        +value < 12;
+                      isValid = isPrevValueIsDot ? true : overworkRegex.test(value);
                     } else {
-                      isValid = totalRegex.test(value);
+                      const isPrevValueIsDot =
+                        value[value?.length - 1] === "." &&
+                        value[value?.length - 2] !== "." &&
+                        +value < 24;
+
+                      isValid = isPrevValueIsDot ? true : totalRegex.test(value);
                     }
 
                     if (isValid) {

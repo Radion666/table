@@ -542,9 +542,9 @@ export const TableCell: FC<TableCellProps> = memo(
                         <div
                           className={clsx(
                             "flex flex-row items-center gap-1",
-                            !lastIsOutOfTown ? "text-red-800" : "text-green-500"
+                            !lastIsOutOfTown ? "text-gray-200" : "text-green-500"
                           )}>
-                          <Icon name="House" size={20} />
+                          <Icon name="CheckMark" size={20} />
                         </div>
                       </>
                     ) : (
@@ -671,7 +671,7 @@ export const TableCell: FC<TableCellProps> = memo(
               control={control}
               name="isOutOfTown"
               render={({ field }) => (
-                <Checkbox label="Местный" {...field} checked={getValues("isOutOfTown")} />
+                <Checkbox label="Вахтовик" {...field} checked={getValues("isOutOfTown")} />
               )}
             />
 

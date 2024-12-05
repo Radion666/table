@@ -111,6 +111,8 @@ export const TimesheetPage = () => {
 
   const [selectedFilter, setSelectedFilter] = useState<"red" | "green" | null>(null);
 
+  const [sortValue, setSortValue] = useState<"asc" | "desc">("asc");
+
   const {
     getValues,
     control,
@@ -419,7 +421,7 @@ export const TimesheetPage = () => {
           }
         }
 
-        setInnerData(copyOfPrev);
+        setInnerData(sortByFullName(sortValue, copyOfPrev as any));
         setCopyOfInnerData(copyOfPrev);
 
         for (let i = 0; i < copyOfPrev?.length; i++) {
@@ -429,7 +431,7 @@ export const TimesheetPage = () => {
         }
         updateTotalOfAll();
       } else {
-        setInnerData(newInnerData);
+        setInnerData(sortByFullName(sortValue, newInnerData as any));
         setCopyOfInnerData(newInnerData);
       }
     } else {
@@ -682,6 +684,30 @@ export const TimesheetPage = () => {
   const disabledDate = (current) => {
     return current.isAfter(today, "day") || current.isBefore(firstDayOfCurrentMonth, "day");
   };
+  const sortByFullName = (order: "asc" | "desc", arr?: typeof innerData) => {
+    const copyOfCopy = structuredClone(arr ?? innerData);
+
+    const lastElement = copyOfCopy.pop(); // Извлекаем последний элемент
+    const sortedArr = copyOfCopy.sort((a, b) => {
+      const nameA = a.fullName.toLowerCase();
+      const nameB = b.fullName.toLowerCase();
+
+      if (order === "asc") {
+        if (nameA < nameB) return -1;
+        if (nameA > nameB) return 1;
+        return 0;
+      } else if (order === "desc") {
+        if (nameA > nameB) return -1;
+        if (nameA < nameB) return 1;
+        return 0;
+      }
+      return 0;
+    });
+    if (lastElement) {
+      sortedArr.push(lastElement);
+    }
+    return sortedArr;
+  };
 
   return (
     <>
@@ -809,7 +835,7 @@ export const TimesheetPage = () => {
                 key={index}
                 className={clsx(
                   day.className && day.className,
-                  "min-w-12 max-w-12 border-b-[1px] border-b-black flex-1 border-r-[1px] border-r-gray-400 bg-[#fafafa]  shadow-md flex items-center justify-center text-center ",
+                  " min-w-12 max-w-12 border-b-[1px] border-b-black flex-1 border-r-[1px] border-r-gray-400 bg-[#fafafa]  shadow-md flex items-center justify-center text-center ",
                   day.isWeekend && "bg-gray-300",
                   day.dayName && "flex flex-col",
                   day.type === "location" && "shadow-right-custom"
@@ -825,49 +851,81 @@ export const TimesheetPage = () => {
                   <div className="w-full h-full">
                     <div
                       className={clsx(
-                        "flex items-center justify-center",
+                        "flex items-center justify-center relative",
                         day.dayName &&
                           "border-b-[1px] flex items-center justify-center h-1/2 w-full",
                         !day.dayName && "h-full"
                       )}>
-                      {typeof day.label === "string"
-                        ? day.label
-                        : day.label({
-                            positionColumn: positionColumn,
-                            onSelect: (type) => {
-                              setSelectedFilter(type);
+                      {typeof day.label === "string" ? (
+                        <span className="relative">
+                          {day.label}
+                          {typeof day?.label === "string" && day.label === "Работник" && (
+                            <>
+                              <Icon
+                                name="ArrowUp"
+                                size={20}
+                                className={clsx(
+                                  "absolute -top-2 -right-6 cursor-pointer",
+                                  sortValue === "desc" ? "text-green-500" : "text-gray-200"
+                                )}
+                                onClick={() => {
+                                  setSortValue("desc");
+                                  setInnerData(sortByFullName("desc"));
+                                }}
+                              />
+                              <Icon
+                                name="ArrowUp"
+                                size={20}
+                                className={clsx(
+                                  "absolute top-2 -right-6 rotate-180 cursor-pointer",
+                                  sortValue === "asc" ? "text-green-500" : "text-gray-200"
+                                )}
+                                onClick={() => {
+                                  setSortValue("asc");
+                                  setInnerData(sortByFullName("asc"));
+                                }}
+                              />
+                            </>
+                          )}
+                        </span>
+                      ) : (
+                        day.label({
+                          positionColumn: positionColumn,
+                          onSelect: (type) => {
+                            setSelectedFilter(type);
 
-                              if (type === null) {
-                                setInnerData(copyOfInnerData);
+                            if (type === null) {
+                              setInnerData(copyOfInnerData);
 
-                                for (let i = 0; i < copyOfInnerData?.length; i++) {
-                                  const id = copyOfInnerData[i].employeeId;
+                              for (let i = 0; i < copyOfInnerData?.length; i++) {
+                                const id = copyOfInnerData[i].employeeId;
 
-                                  updateTotalOfCurrentEditing(id);
-                                }
-                                updateTotalOfAll();
-                              } else {
-                                const newData = copyOfInnerData.filter((el, index) => {
-                                  if (index === copyOfInnerData?.length - 1) {
-                                    return true;
-                                  }
-
-                                  return type === "green"
-                                    ? el?.lastIsOutOfTown === false
-                                    : el?.lastIsOutOfTown === true;
-                                });
-                                setInnerData(newData);
-                                for (let i = 0; i < newData?.length; i++) {
-                                  const id = newData[i].employeeId;
-
-                                  updateTotalOfCurrentEditing(id);
-                                }
-                                updateTotalOfAll();
-                                rowVirtualizer?.measure();
+                                updateTotalOfCurrentEditing(id);
                               }
-                            },
-                            selectedFilter: selectedFilter
-                          })}
+                              updateTotalOfAll();
+                            } else {
+                              const newData = copyOfInnerData.filter((el, index) => {
+                                if (index === copyOfInnerData?.length - 1) {
+                                  return true;
+                                }
+
+                                return type === "green"
+                                  ? el?.lastIsOutOfTown === false
+                                  : el?.lastIsOutOfTown === true;
+                              });
+                              setInnerData(newData);
+                              for (let i = 0; i < newData?.length; i++) {
+                                const id = newData[i].employeeId;
+
+                                updateTotalOfCurrentEditing(id);
+                              }
+                              updateTotalOfAll();
+                              rowVirtualizer?.measure();
+                            }
+                          },
+                          selectedFilter: selectedFilter
+                        })
+                      )}
                     </div>
                     {day.dayName && (
                       <div className="uppercase h-1/2 items-center justify-center flex">
@@ -1063,9 +1121,6 @@ export const TimesheetPage = () => {
           />
 
           <Controller
-            rules={{
-              required: "Отчество обязательно"
-            }}
             control={control}
             name="middleName"
             render={({ field }) => (
@@ -1163,7 +1218,7 @@ export const TimesheetPage = () => {
             }}
             control={control}
             name="isOutOfTown"
-            render={({ field }) => <Checkbox label="Местный" {...field} />}
+            render={({ field }) => <Checkbox label="Вахтовик" {...field} />}
           />
 
           <Controller

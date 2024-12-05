@@ -122,9 +122,6 @@ export const EmployeesPage = () => {
           />
 
           <Controller
-            rules={{
-              required: "Отчество обязательно"
-            }}
             control={control}
             name="middleName"
             render={({ field }) => (

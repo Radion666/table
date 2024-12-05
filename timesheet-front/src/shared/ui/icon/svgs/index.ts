@@ -1,3 +1,5 @@
+import ArrowUp from "./icons/arrow-up.svg";
+import CheckMark from "./icons/check-mark.svg";
 import Create from "./icons/create.svg";
 import Cross from "./icons/cross.svg";
 import Delete from "./icons/delete.svg";
@@ -7,6 +9,7 @@ import Excel from "./icons/excel.svg";
 import EyeFilled from "./icons/eyeFilled.svg";
 import EyeSlash from "./icons/eyeSlash.svg";
 import Facilities from "./icons/facilities.svg";
+import Filters from "./icons/filters.svg";
 import Frog from "./icons/frong.svg";
 import House from "./icons/house.svg";
 import Logout from "./icons/logout.svg";
@@ -20,6 +23,8 @@ import User from "./icons/user.svg";
 import Worker from "./icons/worker.svg";
 
 export {
+  ArrowUp,
+  CheckMark,
   Create,
   Cross,
   Delete,
@@ -29,6 +34,7 @@ export {
   EyeFilled,
   EyeSlash,
   Facilities,
+  Filters,
   Frog,
   House,
   Logout,
