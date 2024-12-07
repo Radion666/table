@@ -59,7 +59,7 @@ export class CreateUserDto {
     example: 'Петрович',
     description: 'Отчество пользователя',
   })
-  @IsNotEmpty()
+  // @IsNotEmpty()
   @IsString({
     message: 'Отчество должно быть строкой',
   })
