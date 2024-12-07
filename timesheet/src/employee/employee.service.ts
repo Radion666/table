@@ -602,13 +602,15 @@ export class EmployeeService {
         ],
       });
 
-      await this.cacheManager.set(
-        EMPLOYEES_CACHE_KEY,
-        {
-          [status]: newEmployees,
-        },
-        0,
-      );
+      if (!searchName) {
+        await this.cacheManager.set(
+          EMPLOYEES_CACHE_KEY,
+          {
+            [status]: newEmployees,
+          },
+          0,
+        );
+      }
 
       employees = newEmployees;
     }
