@@ -2293,7 +2293,6 @@ export class WorkLogsService {
 
     for (let i = 0; i < dates?.length; i++) {
       const day = dates[i];
-      const isWeekend = day.isWeekend;
 
       if (integers?.allowOnlyTotal) {
         let totalOfTotalCell = 0;
@@ -2623,7 +2622,7 @@ export class WorkLogsService {
         setSumWithStep(
           worksheet,
           totalDayHoursCell,
-          5,
+          allowAllTypes ? 3 : 5,
           employeeStart,
           false,
           3,
@@ -2631,7 +2630,8 @@ export class WorkLogsService {
         setSumWithStep(
           worksheet,
           totalNightHoursCell,
-          6,
+          allowAllTypes ? 4 : 6,
+
           employeeStart,
           false,
           3,
@@ -2639,7 +2639,8 @@ export class WorkLogsService {
         setSumWithStep(
           worksheet,
           totalOverworkFirstHoursCell,
-          7,
+          allowAllTypes ? 5 : 7,
+
           employeeStart,
           false,
           3,
@@ -2647,7 +2648,8 @@ export class WorkLogsService {
         setSumWithStep(
           worksheet,
           totalOverworkSecondHoursCell,
-          7,
+          allowAllTypes ? 5 : 7,
+
           employeeStart,
           false,
           3,
@@ -2751,7 +2753,7 @@ export class WorkLogsService {
     setSumWithStep(
       worksheet,
       totalSmensCell,
-      5,
+      allowAllTypes ? 3 : 5,
       employeeStart,
       false,
       allowAllTypes ? 3 : 2,
@@ -2759,7 +2761,7 @@ export class WorkLogsService {
     setSumWithStep(
       worksheet,
       totalWeekendsHoursCell,
-      5,
+      allowAllTypes ? 3 : 5,
       employeeStart,
       false,
       allowAllTypes ? 3 : 2,
@@ -2767,7 +2769,7 @@ export class WorkLogsService {
     setSumWithStep(
       worksheet,
       totalWeekendsSmensCell,
-      5,
+      allowAllTypes ? 3 : 5,
       employeeStart,
       false,
       allowAllTypes ? 3 : 2,
