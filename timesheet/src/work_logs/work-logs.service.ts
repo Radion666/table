@@ -36,6 +36,7 @@ import {
 import { getDaysInMonth } from 'src/common/utils/date-utils';
 import {
   applyAlignment,
+  dateRegex,
   getExcelColumnName,
   incrementColumn,
   setSumWithStep,
@@ -347,10 +348,10 @@ export class WorkLogsService {
       }
 
       if (typeof dateValue === 'object') {
-        const day = dateValue?.day ?? 0;
-        const night = dateValue?.night ?? 0;
-        const overwork = dateValue?.overwork ?? 0;
-        const total = dateValue?.total ?? 0;
+        const day = dateValue?.day || 0;
+        const night = dateValue?.night || 0;
+        const overwork = dateValue?.overwork || 0;
+        const total = dateValue?.total || 0;
 
         if (integers?.allowOnlyTotal) {
           if (day || night || overwork) {
@@ -531,13 +532,6 @@ export class WorkLogsService {
       (employee) => employee.id === employeeId,
     );
 
-    const foundFacilityById = await this.findFacilityById(
-      facilityId,
-      +year,
-      +month,
-    );
-
-    const productionCalendar = (foundFacilityById as any)?.productionCalendar;
     // const foundFacilityById = await facility
 
     for (let i = 0; i < allDaysInMonth?.length; i++) {
@@ -548,47 +542,47 @@ export class WorkLogsService {
       const cellDay = cellDate.date();
 
       if (dates[fullDate]) {
-        if (productionCalendar?.length) {
-          for (let i = 0; i < productionCalendar?.length; i++) {
-            const calendarDay = productionCalendar?.[i];
+        // if (productionCalendar?.length) {
+        //   for (let i = 0; i < productionCalendar?.length; i++) {
+        //     const calendarDay = productionCalendar?.[i];
 
-            const startDate = calendarDay?.startDate;
-            const endDate = calendarDay?.endDate;
+        //     const startDate = calendarDay?.startDate;
+        //     const endDate = calendarDay?.endDate;
 
-            if (startDate && (endDate || endDate === null)) {
-              const start = dayjs(startDate);
-              const end = endDate === null ? null : dayjs(endDate);
+        //     if (startDate && (endDate || endDate === null)) {
+        //       const start = dayjs(startDate);
+        //       const end = endDate === null ? null : dayjs(endDate);
 
-              if (
-                (cellDate.isSame(start, 'day') ||
-                  cellDate.isAfter(start, 'date')) &&
-                end === null
-              ) {
-                if (calendarDay.months.month === cellDate.month() + 1) {
-                  if (calendarDay.months.days.includes(cellDay)) {
-                    throw new BadRequestException(
-                      `Нельзя сохранить значение сотрудника - ${employeeShortName} на число на число - ${fullDate}, так как день является выходным`,
-                    );
-                  }
-                }
-              } else if (start && end) {
-                if (
-                  (start?.isBefore(cellDate, 'day') ||
-                    (start?.isSame(cellDate, 'day') &&
-                      start.diff(end, 'hour') > 1)) &&
-                  (end?.isAfter(cellDate, 'day') ||
-                    end?.isSame(cellDate, 'day'))
-                ) {
-                  if (calendarDay?.months?.days?.includes(cellDay)) {
-                    throw new BadRequestException(
-                      `Нельзя сохранить значение сотрудника - ${employeeShortName} на число на число - ${fullDate}, так как день является выходным`,
-                    );
-                  }
-                }
-              }
-            }
-          }
-        }
+        //       if (
+        //         (cellDate.isSame(start, 'day') ||
+        //           cellDate.isAfter(start, 'date')) &&
+        //         end === null
+        //       ) {
+        //         if (calendarDay.months.month === cellDate.month() + 1) {
+        //           if (calendarDay.months.days.includes(cellDay)) {
+        //             throw new BadRequestException(
+        //               `Нельзя сохранить значение сотрудника - ${employeeShortName} на число на число - ${fullDate}, так как день является выходным`,
+        //             );
+        //           }
+        //         }
+        //       } else if (start && end) {
+        //         if (
+        //           (start?.isBefore(cellDate, 'day') ||
+        //             (start?.isSame(cellDate, 'day') &&
+        //               start.diff(end, 'hour') > 1)) &&
+        //           (end?.isAfter(cellDate, 'day') ||
+        //             end?.isSame(cellDate, 'day'))
+        //         ) {
+        //           if (calendarDay?.months?.days?.includes(cellDay)) {
+        //             throw new BadRequestException(
+        //               `Нельзя сохранить значение сотрудника - ${employeeShortName} на число на число - ${fullDate}, так как день является выходным`,
+        //             );
+        //           }
+        //         }
+        //       }
+        //     }
+        //   }
+        // }
 
         for (let j = 0; j < foundEmployeeById?.facilityPeriods?.length; j++) {
           const facilityPeriod = foundEmployeeById?.facilityPeriods?.[j];
@@ -748,6 +742,15 @@ export class WorkLogsService {
       facilityId,
       date,
     );
+    const [month, year] = date.split('-');
+
+    const foundFacilityById = await this.findFacilityById(
+      facilityId,
+      +year,
+      +month,
+    );
+
+    const productionCalendar = (foundFacilityById as any)?.productionCalendar;
 
     const workLogsData = await this.findByDate(date, facilityId);
 
@@ -890,6 +893,53 @@ export class WorkLogsService {
     for (let i = 0; i < dates?.length; i++) {
       const day = dates[i];
       const isWeekend = day.isWeekend;
+      let isInnerWeekend = false;
+
+      const dayValue = day?.fullDate;
+
+      if (dayValue && dateRegex.test(dayValue)) {
+        if (productionCalendar?.length) {
+          const cellDate = dayjs(parseDate(dayValue));
+          const cellDay = cellDate.date();
+
+          for (let i = 0; i < productionCalendar?.length; i++) {
+            const calendarDay = productionCalendar?.[i];
+
+            const startDate = calendarDay?.startDate;
+            const endDate = calendarDay?.endDate;
+
+            if (startDate && (endDate || endDate === null)) {
+              const start = dayjs(startDate);
+              const end = endDate === null ? null : dayjs(endDate);
+
+              if (
+                (cellDate.isSame(start, 'day') ||
+                  cellDate.isAfter(start, 'date')) &&
+                end === null
+              ) {
+                if (calendarDay.months.month === cellDate.month() + 1) {
+                  if (calendarDay.months.days.includes(cellDay)) {
+                    isInnerWeekend = true;
+                  }
+                }
+              } else if (start && end) {
+                if (
+                  (start?.isBefore(cellDate, 'day') ||
+                    (start?.isSame(cellDate, 'day') &&
+                      start.diff(end, 'hour') > 1)) &&
+                  (end?.isAfter(cellDate, 'day') ||
+                    end?.isSame(cellDate, 'day'))
+                ) {
+                  if (calendarDay?.months?.days?.includes(cellDay)) {
+                    isInnerWeekend = true;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      isInnerWeekend = isInnerWeekend ? isInnerWeekend : isWeekend;
 
       const dayCell = `${startColumn}5:${startColumn}6`;
       const dayNameCell = `${startColumn}7:${startColumn}8`;
@@ -905,7 +955,7 @@ export class WorkLogsService {
         dayCell,
         undefined,
         7,
-        isWeekend ? true : false,
+        isInnerWeekend ? true : false,
       );
 
       applyAlignment(
@@ -913,7 +963,7 @@ export class WorkLogsService {
         dayNameCell,
         undefined,
         7,
-        isWeekend ? true : false,
+        isInnerWeekend ? true : false,
       );
 
       const upperCell = worksheet.getCell(`${startColumn}5:${startColumn}6`);
@@ -1278,6 +1328,55 @@ export class WorkLogsService {
         const day = dates[j];
         const isWeekend = day.isWeekend;
 
+        const dayValue = day?.fullDate;
+
+        let isInnerWeekend = false;
+
+        if (dayValue && dateRegex.test(dayValue)) {
+          if (productionCalendar?.length) {
+            const cellDate = dayjs(parseDate(dayValue));
+            const cellDay = cellDate.date();
+
+            for (let i = 0; i < productionCalendar?.length; i++) {
+              const calendarDay = productionCalendar?.[i];
+
+              const startDate = calendarDay?.startDate;
+              const endDate = calendarDay?.endDate;
+
+              if (startDate && (endDate || endDate === null)) {
+                const start = dayjs(startDate);
+                const end = endDate === null ? null : dayjs(endDate);
+
+                if (
+                  (cellDate.isSame(start, 'day') ||
+                    cellDate.isAfter(start, 'date')) &&
+                  end === null
+                ) {
+                  if (calendarDay.months.month === cellDate.month() + 1) {
+                    if (calendarDay.months.days.includes(cellDay)) {
+                      isInnerWeekend = true;
+                    }
+                  }
+                } else if (start && end) {
+                  if (
+                    (start?.isBefore(cellDate, 'day') ||
+                      (start?.isSame(cellDate, 'day') &&
+                        start.diff(end, 'hour') > 1)) &&
+                    (end?.isAfter(cellDate, 'day') ||
+                      end?.isSame(cellDate, 'day'))
+                  ) {
+                    if (calendarDay?.months?.days?.includes(cellDay)) {
+                      isInnerWeekend = true;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        isInnerWeekend = isInnerWeekend ? isInnerWeekend : isWeekend;
+
         const cellDate = dayjs(parseDate(day.fullDate));
 
         const cellData = foundEmployee?.workDays?.[day.fullDate];
@@ -1327,7 +1426,7 @@ export class WorkLogsService {
                 cellId,
                 undefined,
                 undefined,
-                isWeekend ? true : undefined,
+                isInnerWeekend ? true : undefined,
               );
               break;
             }
@@ -1343,7 +1442,7 @@ export class WorkLogsService {
               cellId,
               undefined,
               undefined,
-              isWeekend ? true : undefined,
+              isInnerWeekend ? true : undefined,
             );
             break;
           }
@@ -1385,7 +1484,7 @@ export class WorkLogsService {
                 cellId,
                 undefined,
                 undefined,
-                isWeekend ? true : undefined,
+                isInnerWeekend ? true : undefined,
               );
               break;
             }
@@ -1407,7 +1506,7 @@ export class WorkLogsService {
               cellId,
               undefined,
               undefined,
-              isWeekend ? true : undefined,
+              isInnerWeekend ? true : undefined,
             );
             break;
           }
@@ -1451,7 +1550,7 @@ export class WorkLogsService {
             cellId,
             undefined,
             undefined,
-            isWeekend ? true : undefined,
+            isInnerWeekend ? true : undefined,
           );
         } else {
           if (integers?.allowOnlyTotal) {
@@ -1470,7 +1569,7 @@ export class WorkLogsService {
               cellId,
               undefined,
               undefined,
-              isWeekend ? true : undefined,
+              isInnerWeekend ? true : undefined,
             );
           } else {
             if (
@@ -1499,21 +1598,21 @@ export class WorkLogsService {
                 dayCellId,
                 undefined,
                 undefined,
-                isWeekend ? true : undefined,
+                isInnerWeekend ? true : undefined,
               );
               applyAlignment(
                 worksheet,
                 nightCellId,
                 undefined,
                 undefined,
-                isWeekend ? true : undefined,
+                isInnerWeekend ? true : undefined,
               );
               applyAlignment(
                 worksheet,
                 overworkCellId,
                 undefined,
                 undefined,
-                isWeekend ? true : undefined,
+                isInnerWeekend ? true : undefined,
               );
             } else if (
               integers.allowDay &&
@@ -1537,14 +1636,14 @@ export class WorkLogsService {
                 dayCellId,
                 undefined,
                 undefined,
-                isWeekend ? true : undefined,
+                isInnerWeekend ? true : undefined,
               );
               applyAlignment(
                 worksheet,
                 nightCellId,
                 undefined,
                 undefined,
-                isWeekend ? true : undefined,
+                isInnerWeekend ? true : undefined,
               );
             } else if (
               !integers.allowDay &&
@@ -1552,7 +1651,12 @@ export class WorkLogsService {
               integers.allowOverwork
             ) {
               const nightCellId = `${startColumn}${employeeStart}:${startColumn}${employeeStart}`;
-              const overworkCellId = `${startColumn}${employeeEnd}:${startColumn}${employeeEnd}`;
+              const overworkCellId = `${startColumn}${isInnerWeekend ? employeeStart : employeeEnd}:${startColumn}${employeeEnd}`;
+
+              if (isInnerWeekend) {
+                worksheet.unMergeCells(overworkCellId);
+                worksheet.mergeCells(overworkCellId);
+              }
 
               const nightTime = cellData?.night;
               const overworkTime = cellData?.overwork;
@@ -1568,14 +1672,14 @@ export class WorkLogsService {
                 nightCellId,
                 undefined,
                 undefined,
-                isWeekend ? true : undefined,
+                isInnerWeekend ? true : undefined,
               );
               applyAlignment(
                 worksheet,
                 overworkCellId,
                 undefined,
                 undefined,
-                isWeekend ? true : undefined,
+                isInnerWeekend ? true : undefined,
               );
             } else if (
               integers.allowDay &&
@@ -1583,7 +1687,12 @@ export class WorkLogsService {
               integers.allowOverwork
             ) {
               const dayCellId = `${startColumn}${employeeStart}:${startColumn}${employeeStart}`;
-              const overworkCellId = `${startColumn}${employeeEnd}:${startColumn}${employeeEnd}`;
+              const overworkCellId = `${startColumn}${isInnerWeekend ? employeeStart : employeeEnd}:${startColumn}${employeeEnd}`;
+
+              if (isInnerWeekend) {
+                worksheet.unMergeCells(overworkCellId);
+                worksheet.mergeCells(overworkCellId);
+              }
 
               const dayTime = cellData?.day;
               const overworkTime = cellData?.overwork;
@@ -1599,14 +1708,14 @@ export class WorkLogsService {
                 dayCellId,
                 undefined,
                 undefined,
-                isWeekend ? true : undefined,
+                isInnerWeekend ? true : undefined,
               );
               applyAlignment(
                 worksheet,
                 overworkCellId,
                 undefined,
                 undefined,
-                isWeekend ? true : undefined,
+                isInnerWeekend ? true : undefined,
               );
             } else if (
               integers.allowDay &&
@@ -1626,7 +1735,7 @@ export class WorkLogsService {
                 dayCellId,
                 undefined,
                 undefined,
-                isWeekend ? true : undefined,
+                isInnerWeekend ? true : undefined,
               );
             } else if (
               !integers.allowDay &&
@@ -1646,7 +1755,7 @@ export class WorkLogsService {
                 nightCellId,
                 undefined,
                 undefined,
-                isWeekend ? true : undefined,
+                isInnerWeekend ? true : undefined,
               );
             } else if (
               !integers.allowDay &&
@@ -1668,7 +1777,7 @@ export class WorkLogsService {
                 overworkCellId,
                 undefined,
                 undefined,
-                isWeekend ? true : undefined,
+                isInnerWeekend ? true : undefined,
               );
             }
           }
@@ -1802,7 +1911,57 @@ export class WorkLogsService {
 
       for (let j = 0; j < dates?.length; j++) {
         const day = dates[j];
+
+        const dayValue = day?.fullDate;
+
         const isWeekend = day.isWeekend;
+
+        let isInnerWeekend = false;
+
+        if (dayValue && dateRegex.test(dayValue)) {
+          if (productionCalendar?.length) {
+            const cellDate = dayjs(parseDate(dayValue));
+            const cellDay = cellDate.date();
+
+            for (let i = 0; i < productionCalendar?.length; i++) {
+              const calendarDay = productionCalendar?.[i];
+
+              const startDate = calendarDay?.startDate;
+              const endDate = calendarDay?.endDate;
+
+              if (startDate && (endDate || endDate === null)) {
+                const start = dayjs(startDate);
+                const end = endDate === null ? null : dayjs(endDate);
+
+                if (
+                  (cellDate.isSame(start, 'day') ||
+                    cellDate.isAfter(start, 'date')) &&
+                  end === null
+                ) {
+                  if (calendarDay.months.month === cellDate.month() + 1) {
+                    if (calendarDay.months.days.includes(cellDay)) {
+                      isInnerWeekend = true;
+                    }
+                  }
+                } else if (start && end) {
+                  if (
+                    (start?.isBefore(cellDate, 'day') ||
+                      (start?.isSame(cellDate, 'day') &&
+                        start.diff(end, 'hour') > 1)) &&
+                    (end?.isAfter(cellDate, 'day') ||
+                      end?.isSame(cellDate, 'day'))
+                  ) {
+                    if (calendarDay?.months?.days?.includes(cellDay)) {
+                      isInnerWeekend = true;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        isInnerWeekend = isInnerWeekend ? isInnerWeekend : isWeekend;
+
         const cellData = foundEmployee?.workDays?.[
           day.fullDate
         ] as cellValueType;
@@ -1811,44 +1970,48 @@ export class WorkLogsService {
           const newCellData = cellData as keyof Omit<lettersSumType, 'Я'>;
           if (newCellData) {
             //@ts-ignore
-            lettersSum[cellData] = (lettersSum[cellData] as number) + 1;
+            lettersSum[cellData] = ((lettersSum[cellData] as number) || 0) + 1;
           }
         }
 
-        if (typeof cellData === 'object' && cellData?.overwork && !isWeekend) {
+        if (
+          typeof cellData === 'object' &&
+          cellData?.overwork &&
+          !isInnerWeekend
+        ) {
           const value = +(cellData?.overwork ?? 0);
 
           if (value <= 2) {
-            hoursOfOverworkTwoHours += value;
+            hoursOfOverworkTwoHours += value || 0;
           }
           if (value > 2) {
             hoursOfOverworkTwoHours += 2;
-            hoursOfOverworkMoreTwoHours += value - 2;
+            hoursOfOverworkMoreTwoHours += value - 2 || 0;
           }
         }
 
-        if (typeof cellData === 'object' && !isWeekend) {
+        if (typeof cellData === 'object' && !isInnerWeekend) {
           if (integers?.allowOnlyTotal) {
-            totalHoursSum += cellData.total;
+            totalHoursSum += cellData.total || 0;
           } else {
             if (integers?.allowDay && integers?.allowNight) {
-              dayHoursSum += cellData.day;
-              nightHoursSum += cellData.night;
+              dayHoursSum += cellData.day || 0;
+              nightHoursSum += cellData.night || 0;
             } else if (integers?.allowDay && !integers?.allowNight) {
-              dayHoursSum += cellData.day;
+              dayHoursSum += cellData.day || 0;
             } else if (!integers?.allowDay && integers?.allowNight) {
-              nightHoursSum += cellData.night;
+              nightHoursSum += cellData.night || 0;
             }
           }
 
           if (
             (+cellData?.day || +cellData?.night || +cellData?.total) &&
-            !isWeekend
+            !isInnerWeekend
           ) {
-            countOfWorkDays += 1;
+            countOfWorkDays = (countOfWorkDays || 0) + 1;
           }
         }
-        if (typeof cellData === 'object' && isWeekend) {
+        if (typeof cellData === 'object' && isInnerWeekend) {
           if (integers?.allowOnlyTotal) {
             totalWeekendSum += cellData.total || 0;
           } else {
@@ -1864,19 +2027,19 @@ export class WorkLogsService {
 
           if (!isLocal) {
             if (+cellData?.overwork) {
-              countOfWeekendWorkDays += 1;
+              countOfWeekendWorkDays = (countOfWeekendWorkDays || 0) + 1;
 
               totalWeekendSum += cellData?.overwork || 0;
             }
           } else {
             if (cellData?.overwork) {
-              countOfWorkDays += 1;
+              countOfWorkDays = (countOfWorkDays || 0) + 1;
               totalWeekendSum += cellData?.overwork || 0;
             }
           }
         }
 
-        if (typeof cellData === 'string' && isWeekend) {
+        if (typeof cellData === 'string' && isInnerWeekend) {
           if (
             (cellData as string)?.toLowerCase() === 'В'.toLowerCase() &&
             isLocal
@@ -1896,64 +2059,64 @@ export class WorkLogsService {
           integers?.allowNight &&
           integers?.allowOverwork
         ) {
-          worksheet.getCell(totalDayHoursCell).value = dayHoursSum;
-          worksheet.getCell(totalNightHoursCell).value = nightHoursSum;
+          worksheet.getCell(totalDayHoursCell).value = dayHoursSum || 0;
+          worksheet.getCell(totalNightHoursCell).value = nightHoursSum || 0;
           worksheet.getCell(totalOverworkFirstHoursCell).value =
-            hoursOfOverworkTwoHours;
+            hoursOfOverworkTwoHours || 0;
           worksheet.getCell(totalOverworkSecondHoursCell).value =
-            hoursOfOverworkMoreTwoHours;
+            hoursOfOverworkMoreTwoHours || 0;
         } else if (
           !integers?.allowDay &&
           integers?.allowNight &&
           integers?.allowOverwork
         ) {
-          worksheet.getCell(firstDoubleCell).value = nightHoursSum;
+          worksheet.getCell(firstDoubleCell).value = nightHoursSum || 0;
           worksheet.getCell(totalOverworkFirstHoursCell).value =
-            hoursOfOverworkTwoHours;
+            hoursOfOverworkTwoHours || 0;
           worksheet.getCell(totalOverworkSecondHoursCell).value =
-            hoursOfOverworkMoreTwoHours;
+            hoursOfOverworkMoreTwoHours || 0;
         } else if (
           integers?.allowDay &&
           !integers?.allowNight &&
           integers?.allowOverwork
         ) {
-          worksheet.getCell(firstDoubleCell).value = dayHoursSum;
+          worksheet.getCell(firstDoubleCell).value = dayHoursSum || 0;
           worksheet.getCell(totalOverworkFirstHoursCell).value =
-            hoursOfOverworkTwoHours;
+            hoursOfOverworkTwoHours || 0;
           worksheet.getCell(totalOverworkSecondHoursCell).value =
-            hoursOfOverworkMoreTwoHours;
+            hoursOfOverworkMoreTwoHours || 0;
         } else if (
           integers?.allowDay &&
           integers?.allowNight &&
           !integers?.allowOverwork
         ) {
-          worksheet.getCell(firstDoubleCell).value = dayHoursSum;
+          worksheet.getCell(firstDoubleCell).value = dayHoursSum || 0;
 
-          worksheet.getCell(secondDoubleCell).value = nightHoursSum;
+          worksheet.getCell(secondDoubleCell).value = nightHoursSum || 0;
         } else if (
           !integers?.allowDay &&
           !integers?.allowNight &&
           integers?.allowOverwork
         ) {
           worksheet.getCell(singleOverworkFirstCell).value =
-            hoursOfOverworkTwoHours;
+            hoursOfOverworkTwoHours || 0;
           worksheet.getCell(singleOverworkSecondCell).value =
-            hoursOfOverworkMoreTwoHours;
+            hoursOfOverworkMoreTwoHours || 0;
         } else if (
           integers?.allowDay &&
           !integers?.allowNight &&
           !integers?.allowOverwork
         ) {
-          worksheet.getCell(singleCell).value = dayHoursSum;
+          worksheet.getCell(singleCell).value = dayHoursSum || 0;
         } else if (
           !integers?.allowDay &&
           integers?.allowNight &&
           !integers?.allowOverwork
         ) {
-          worksheet.getCell(singleCell).value = nightHoursSum;
+          worksheet.getCell(singleCell).value = nightHoursSum || 0;
         }
       }
-      worksheet.getCell(totalSmensCell).value = countOfWorkDays;
+      worksheet.getCell(totalSmensCell).value = countOfWorkDays || 0;
       worksheet.getCell(totalWeekendsHoursCell).value = isNaN(totalWeekendSum)
         ? 0
         : totalWeekendSum;

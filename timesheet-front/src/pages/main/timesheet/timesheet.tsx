@@ -10,7 +10,7 @@ import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 
 import { defaultHeaders, mobileDefaultHeaders } from "../utils/constants";
-import { daysInMonth, getDaysInMonth } from "../utils/utils";
+import { dateRegex, daysInMonth, getDaysInMonth, parseDate } from "../utils/utils";
 import { workersStatuses } from "../workers/utils/constants";
 
 import { cellLetters } from "./components/table-cell/component/cell-input";
@@ -498,11 +498,58 @@ export const TimesheetPage = () => {
       }, {});
 
       for (const i in copyOfPrev[indexOfCurrentId].dates) {
+        const dayValue = i;
+
         const element = copyOfPrev[indexOfCurrentId].dates[i];
 
         const isLocal = copyOfPrev[indexOfCurrentId]?.lastIsOutOfTown;
 
         const isWeekend = daysInMonth.find((day) => day.date === i)?.isWeekend;
+
+        let isInnerWeekend = false;
+
+        if (dayValue && dateRegex.test(dayValue)) {
+          const productionCalendar = facilityByIdData?.productionCalendar;
+          if (productionCalendar?.length) {
+            const cellDate = dayjs(parseDate(dayValue));
+            const cellDay = cellDate.date();
+
+            for (let i = 0; i < productionCalendar?.length; i++) {
+              const calendarDay = productionCalendar?.[i];
+
+              const startDate = calendarDay?.startDate;
+              const endDate = calendarDay?.endDate;
+
+              if (startDate && (endDate || endDate === null)) {
+                const start = dayjs(startDate);
+                const end = endDate === null ? null : dayjs(endDate);
+
+                if (
+                  (cellDate.isSame(start, "day") || cellDate.isAfter(start, "date")) &&
+                  end === null
+                ) {
+                  if (calendarDay.months.month === cellDate.month() + 1) {
+                    if (calendarDay.months.days.includes(cellDay)) {
+                      isInnerWeekend = true;
+                    }
+                  }
+                } else if (start && end) {
+                  if (
+                    (start?.isBefore(cellDate, "day") ||
+                      (start?.isSame(cellDate, "day") && start.diff(end, "hour") > 1)) &&
+                    (end?.isAfter(cellDate, "day") || end?.isSame(cellDate, "day"))
+                  ) {
+                    if (calendarDay?.months?.days?.includes(cellDay)) {
+                      isInnerWeekend = true;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        isInnerWeekend = isInnerWeekend ? isInnerWeekend : isWeekend;
 
         if (typeof element === "string" && element) {
           lettersSum[element] = lettersSum[element] + 1;
@@ -511,12 +558,12 @@ export const TimesheetPage = () => {
         if (
           typeof element === "object" &&
           facilitySettings?.integers?.allowOnlyTotal &&
-          !isWeekend
+          !isInnerWeekend
         ) {
           hoursOfOnlyTotalHours += +element.total;
         }
 
-        if (typeof element === "object" && element.overwork && !isWeekend) {
+        if (typeof element === "object" && element.overwork && !isInnerWeekend) {
           const value = +element.overwork;
 
           if (value <= 2) {
@@ -528,11 +575,11 @@ export const TimesheetPage = () => {
           }
         }
 
-        if (typeof element === "object" && !isWeekend) {
+        if (typeof element === "object" && !isInnerWeekend) {
           hoursOfDay += +element.day || 0 || +element?.total || 0;
           hoursOfNight += +(element.night || 0) || +element?.total || 0;
           if (+element?.day || +element?.night || +element?.total) countOfWorkDays += 1;
-        } else if (typeof element === "object" && isWeekend) {
+        } else if (typeof element === "object" && isInnerWeekend) {
           hoursOfWeekendWorkDays += facilitySettings?.integers?.allowOnlyTotal
             ? +element?.total
             : (+element?.day || 0) + (+element.night || 0);
@@ -548,7 +595,7 @@ export const TimesheetPage = () => {
               hoursOfWeekendWorkDays += +element?.overwork;
             }
           }
-        } else if (typeof element === "string" && isWeekend) {
+        } else if (typeof element === "string" && isInnerWeekend) {
           if (element?.toLowerCase() === "В".toLowerCase() && isLocal) {
             countOfWorkDays += 1;
           }
@@ -830,112 +877,159 @@ export const TimesheetPage = () => {
           <div
             ref={headerRef}
             className="flex rounded-t-md  overflow-x-hidden scrollbar-hide border-l-[1px] border-r-[1px] md:min-w-[calc(100vw-140px)] md:max-w-[calc(100vw-140px)] min-h-[110px] max-h-[110px]">
-            {tableHeaders?.map((day, index) => (
-              <div
-                key={index}
-                className={clsx(
-                  day.className && day.className,
-                  " min-w-12 max-w-12 border-b-[1px] border-b-black flex-1 border-r-[1px] border-r-gray-400 bg-[#fafafa]  shadow-md flex items-center justify-center text-center ",
-                  day.isWeekend && "bg-gray-300",
-                  day.dayName && "flex flex-col",
-                  day.type === "location" && "shadow-right-custom"
-                )}>
-                {day.renderer ? (
-                  <>
-                    <day.renderer
-                      facilityTimesheetSetting={facilitySettings}
-                      totalVariant={totalVariant}
-                    />
-                  </>
-                ) : (
-                  <div className="w-full h-full">
-                    <div
-                      className={clsx(
-                        "flex items-center justify-center relative",
-                        day.dayName &&
-                          "border-b-[1px] flex items-center justify-center h-1/2 w-full",
-                        !day.dayName && "h-full"
-                      )}>
-                      {typeof day.label === "string" ? (
-                        <span className="relative">
-                          {day.label}
-                          {typeof day?.label === "string" && day.label === "Работник" && (
-                            <>
-                              <Icon
-                                name="ArrowUp"
-                                size={20}
-                                className={clsx(
-                                  "absolute -top-2 -right-6 cursor-pointer",
-                                  sortValue === "desc" ? "text-green-500" : "text-gray-200"
-                                )}
-                                onClick={() => {
-                                  setSortValue("desc");
-                                  setInnerData(sortByFullName("desc"));
-                                }}
-                              />
-                              <Icon
-                                name="ArrowUp"
-                                size={20}
-                                className={clsx(
-                                  "absolute top-2 -right-6 rotate-180 cursor-pointer",
-                                  sortValue === "asc" ? "text-green-500" : "text-gray-200"
-                                )}
-                                onClick={() => {
-                                  setSortValue("asc");
-                                  setInnerData(sortByFullName("asc"));
-                                }}
-                              />
-                            </>
-                          )}
-                        </span>
-                      ) : (
-                        day.label({
-                          positionColumn: positionColumn,
-                          onSelect: (type) => {
-                            setSelectedFilter(type);
+            {tableHeaders?.map((day, index) => {
+              let isInnerWeekend = false;
 
-                            if (type === null) {
-                              setInnerData(copyOfInnerData);
+              if (day.value && dateRegex.test(day?.value ?? "")) {
+                const productionCalendar = facilityByIdData?.productionCalendar;
+                if (productionCalendar?.length) {
+                  const cellDate = dayjs(parseDate(day?.value));
+                  const cellDay = cellDate.date();
 
-                              for (let i = 0; i < copyOfInnerData?.length; i++) {
-                                const id = copyOfInnerData[i].employeeId;
+                  for (let i = 0; i < productionCalendar?.length; i++) {
+                    const calendarDay = productionCalendar?.[i];
 
-                                updateTotalOfCurrentEditing(id);
-                              }
-                              updateTotalOfAll();
-                            } else {
-                              const newData = copyOfInnerData.filter((el, index) => {
-                                if (index === copyOfInnerData?.length - 1) {
-                                  return true;
+                    const startDate = calendarDay?.startDate;
+                    const endDate = calendarDay?.endDate;
+
+                    if (startDate && (endDate || endDate === null)) {
+                      const start = dayjs(startDate);
+                      const end = endDate === null ? null : dayjs(endDate);
+
+                      if (
+                        (cellDate.isSame(start, "day") || cellDate.isAfter(start, "date")) &&
+                        end === null
+                      ) {
+                        if (calendarDay.months.month === cellDate.month() + 1) {
+                          if (calendarDay.months.days.includes(cellDay)) {
+                            isInnerWeekend = true;
+                          }
+                        }
+                      } else if (start && end) {
+                        if (
+                          (start?.isBefore(cellDate, "day") ||
+                            (start?.isSame(cellDate, "day") && start.diff(end, "hour") > 1)) &&
+                          (end?.isAfter(cellDate, "day") || end?.isSame(cellDate, "day"))
+                        ) {
+                          if (calendarDay?.months?.days?.includes(cellDay)) {
+                            isInnerWeekend = true;
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+
+              isInnerWeekend = isInnerWeekend ? isInnerWeekend : day?.isWeekend;
+
+              return (
+                <div
+                  key={index}
+                  className={clsx(
+                    day.className && day.className,
+                    " min-w-12 max-w-12 border-b-[1px] border-b-black flex-1 border-r-[1px] border-r-gray-400 bg-[#fafafa]  shadow-md flex items-center justify-center text-center ",
+                    isInnerWeekend && "bg-gray-300",
+                    day.dayName && "flex flex-col",
+                    day.type === "location" && "shadow-right-custom"
+                  )}>
+                  {day.renderer ? (
+                    <>
+                      <day.renderer
+                        facilityTimesheetSetting={facilitySettings}
+                        totalVariant={totalVariant}
+                      />
+                    </>
+                  ) : (
+                    <div className="w-full h-full">
+                      <div
+                        className={clsx(
+                          "flex items-center justify-center relative",
+                          day.dayName &&
+                            "border-b-[1px] flex items-center justify-center h-1/2 w-full",
+                          !day.dayName && "h-full"
+                        )}>
+                        {typeof day.label === "string" ? (
+                          <span className="relative">
+                            {day.label}
+                            {typeof day?.label === "string" && day.label === "Работник" && (
+                              <>
+                                <Icon
+                                  name="ArrowUp"
+                                  size={20}
+                                  className={clsx(
+                                    "absolute -top-2 -right-6 cursor-pointer",
+                                    sortValue === "desc" ? "text-green-500" : "text-gray-200"
+                                  )}
+                                  onClick={() => {
+                                    setSortValue("desc");
+                                    setInnerData(sortByFullName("desc"));
+                                  }}
+                                />
+                                <Icon
+                                  name="ArrowUp"
+                                  size={20}
+                                  className={clsx(
+                                    "absolute top-2 -right-6 rotate-180 cursor-pointer",
+                                    sortValue === "asc" ? "text-green-500" : "text-gray-200"
+                                  )}
+                                  onClick={() => {
+                                    setSortValue("asc");
+                                    setInnerData(sortByFullName("asc"));
+                                  }}
+                                />
+                              </>
+                            )}
+                          </span>
+                        ) : (
+                          day.label({
+                            positionColumn: positionColumn,
+                            onSelect: (type) => {
+                              setSelectedFilter(type);
+
+                              if (type === null) {
+                                setInnerData(copyOfInnerData);
+
+                                for (let i = 0; i < copyOfInnerData?.length; i++) {
+                                  const id = copyOfInnerData[i].employeeId;
+
+                                  updateTotalOfCurrentEditing(id);
                                 }
+                                updateTotalOfAll();
+                              } else {
+                                const newData = copyOfInnerData.filter((el, index) => {
+                                  if (index === copyOfInnerData?.length - 1) {
+                                    return true;
+                                  }
 
-                                return type === "green"
-                                  ? el?.lastIsOutOfTown === false
-                                  : el?.lastIsOutOfTown === true;
-                              });
-                              setInnerData(newData);
-                              for (let i = 0; i < newData?.length; i++) {
-                                const id = newData[i].employeeId;
+                                  return type === "green"
+                                    ? el?.lastIsOutOfTown === false
+                                    : el?.lastIsOutOfTown === true;
+                                });
+                                setInnerData(newData);
+                                for (let i = 0; i < newData?.length; i++) {
+                                  const id = newData[i].employeeId;
 
-                                updateTotalOfCurrentEditing(id);
+                                  updateTotalOfCurrentEditing(id);
+                                }
+                                updateTotalOfAll();
+                                rowVirtualizer?.measure();
                               }
-                              updateTotalOfAll();
-                              rowVirtualizer?.measure();
-                            }
-                          },
-                          selectedFilter: selectedFilter
-                        })
+                            },
+                            selectedFilter: selectedFilter
+                          })
+                        )}
+                      </div>
+                      {day.dayName && (
+                        <div className="uppercase h-1/2 items-center justify-center flex">
+                          {day.dayName}
+                        </div>
                       )}
                     </div>
-                    {day.dayName && (
-                      <div className="uppercase h-1/2 items-center justify-center flex">
-                        {day.dayName}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
+                  )}
+                </div>
+              );
+            })}
           </div>
           <Scrollbar
             className="w-full border-l-[1px] border-r-[1px] md:min-w-[calc(100vw-140px)] md:max-w-[calc(100vw-140px)] md:min-h-[calc(100vh-200px)] md:max-h-[calc(100vh-200px)] min-h-[calc(100vh-325px)] max-h-[calc(100vh-325px)] "

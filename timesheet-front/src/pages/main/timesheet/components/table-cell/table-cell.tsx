@@ -110,8 +110,7 @@ export const TableCell: FC<TableCellProps> = memo(
     actualAddress,
     registeredAddress,
     lastStatus,
-    index,
-    positionColumn
+    index
   }) => {
     const { userRole } = useGetUser();
     const [errorMsg, setErrorMsg] = useState<string>("");
@@ -128,50 +127,12 @@ export const TableCell: FC<TableCellProps> = memo(
     const isDisabled = useMemo(() => {
       if (dayValue && dateRegex.test(dayValue) && employmentPeriods?.length && !value) {
         const cellDate = dayjs(parseDate(dayValue));
-        const cellDay = cellDate.date();
 
         const today = dayjs();
 
         if (cellDate.isAfter(today, "day")) {
           setErrorMsg("");
           return true;
-        }
-
-        if (productionCalendar?.length) {
-          for (let i = 0; i < productionCalendar?.length; i++) {
-            const calendarDay = productionCalendar?.[i];
-
-            const startDate = calendarDay?.startDate;
-            const endDate = calendarDay?.endDate;
-
-            if (startDate && (endDate || endDate === null)) {
-              const start = dayjs(startDate);
-              const end = endDate === null ? null : dayjs(endDate);
-
-              if (
-                (cellDate.isSame(start, "day") || cellDate.isAfter(start, "date")) &&
-                end === null
-              ) {
-                if (calendarDay.months.month === cellDate.month() + 1) {
-                  if (calendarDay.months.days.includes(cellDay)) {
-                    setErrorMsg("Вых.");
-                    return true;
-                  }
-                }
-              } else if (start && end) {
-                if (
-                  (start?.isBefore(cellDate, "day") ||
-                    (start?.isSame(cellDate, "day") && start.diff(end, "hour") > 1)) &&
-                  (end?.isAfter(cellDate, "day") || end?.isSame(cellDate, "day"))
-                ) {
-                  if (calendarDay?.months?.days?.includes(cellDay)) {
-                    setErrorMsg("Вых.");
-                    return true;
-                  }
-                }
-              }
-            }
-          }
         }
 
         for (let i = 0; i < facilityPeriods?.length; i++) {
@@ -420,13 +381,57 @@ export const TableCell: FC<TableCellProps> = memo(
       }
     };
 
+    const isInnerWeekend = useMemo(() => {
+      if (dayValue && dateRegex.test(dayValue)) {
+        if (productionCalendar?.length) {
+          const cellDate = dayjs(parseDate(dayValue));
+          const cellDay = cellDate.date();
+
+          for (let i = 0; i < productionCalendar?.length; i++) {
+            const calendarDay = productionCalendar?.[i];
+
+            const startDate = calendarDay?.startDate;
+            const endDate = calendarDay?.endDate;
+
+            if (startDate && (endDate || endDate === null)) {
+              const start = dayjs(startDate);
+              const end = endDate === null ? null : dayjs(endDate);
+
+              if (
+                (cellDate.isSame(start, "day") || cellDate.isAfter(start, "date")) &&
+                end === null
+              ) {
+                if (calendarDay.months.month === cellDate.month() + 1) {
+                  if (calendarDay.months.days.includes(cellDay)) {
+                    return true;
+                  }
+                }
+              } else if (start && end) {
+                if (
+                  (start?.isBefore(cellDate, "day") ||
+                    (start?.isSame(cellDate, "day") && start.diff(end, "hour") > 1)) &&
+                  (end?.isAfter(cellDate, "day") || end?.isSame(cellDate, "day"))
+                ) {
+                  if (calendarDay?.months?.days?.includes(cellDay)) {
+                    return true;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      return isWeekend;
+    }, [dayValue, isWeekend, productionCalendar]);
+
     return (
       <div
         tabIndex={-1}
         className={clsx(
           className && className,
           "min-w-12 flex-1  border-r-[1px]  flex items-center justify-center text-center z-20  max-w-12 border-gray-400",
-          isWeekend && "bg-gray-300",
+          isInnerWeekend && "bg-gray-300",
           fieldType === "input" && "",
           (isDisabled || !allowedToMaster || isNotAllowed) &&
             "bg-slate-100 opacity-50  cursor-not-allowed",
@@ -555,7 +560,7 @@ export const TableCell: FC<TableCellProps> = memo(
                         date={cellParsedDate}
                         isDisabled={isDisabled || !allowedToMaster || isNotAllowed}
                         facilitySettings={facilitySettings}
-                        isWeekend={isWeekend}
+                        isWeekend={isInnerWeekend}
                         integers={integers}
                       />
                     )}
@@ -591,9 +596,6 @@ export const TableCell: FC<TableCellProps> = memo(
             />
 
             <Controller
-              rules={{
-                required: "Отчество обязательно"
-              }}
               control={control}
               name="middleName"
               render={({ field }) => (

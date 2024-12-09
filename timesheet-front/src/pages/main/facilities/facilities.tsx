@@ -545,9 +545,6 @@ export const FacilitiesPage = () => {
             />
 
             <Controller
-              rules={{
-                required: "Отчество обязательно"
-              }}
               control={createWorkerControl}
               name="middleName"
               render={({ field }) => (

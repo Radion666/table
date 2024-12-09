@@ -129,9 +129,6 @@ export const ActionsRenderer = (params: CustomCellRendererProps<usersEmployeeTyp
           />
 
           <Controller
-            rules={{
-              required: "Отчество обязательно"
-            }}
             control={control}
             name="middleName"
             render={({ field }) => (
