@@ -9,7 +9,7 @@ import { GridTable } from "~src/components/grid-table/grid-table";
 import { Loader } from "~src/components/loader/loader";
 import { apiRequests } from "~src/shared/api/requests";
 import { regexes } from "~src/shared/constants/default";
-import { useGetAllEmployees, useGetAllPositions } from "~src/shared/hooks/useRequests";
+import { useGetAllEmployees } from "~src/shared/hooks/useRequests";
 import { CreateEmployeeType } from "~src/shared/types/user";
 import { Button } from "~src/shared/ui/button/button";
 import { Icon } from "~src/shared/ui/icon/icon";
@@ -19,7 +19,7 @@ import { Select } from "~src/shared/ui/select/select";
 
 export const EmployeesPage = () => {
   const { data, isFetching, refetch } = useGetAllEmployees();
-  const { data: positionsData, isFetching: isPositionsFetching } = useGetAllPositions();
+  const [isSubmiting, setSubmiting] = useState<boolean>(false);
 
   const {
     control,
@@ -52,6 +52,7 @@ export const EmployeesPage = () => {
   });
 
   const onSubmit = async (data: CreateEmployeeType) => {
+    setSubmiting(true);
     await apiRequests
       .createEmployee({
         ...data
@@ -59,6 +60,9 @@ export const EmployeesPage = () => {
       .then(() => {
         setModalOpen(false);
         refetch();
+      })
+      .finally(() => {
+        setSubmiting(false);
       });
   };
 
@@ -211,7 +215,9 @@ export const EmployeesPage = () => {
           />
 
           <div className="flex justify-center mt-4">
-            <Button htmlType="submit">Сохранить</Button>
+            <Button loading={isSubmiting} htmlType="submit">
+              Сохранить
+            </Button>
           </div>
         </form>
       </Modal>

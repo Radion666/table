@@ -237,7 +237,7 @@ export const TableCell: FC<TableCellProps> = memo(
         return true;
         // return new Date(parseDate(dayValue)) > new Date(firedAt);
       }
-    }, [dayValue, employmentPeriods, facilityPeriods, productionCalendar]);
+    }, [dayValue, employmentPeriods, facilityPeriods, value]);
 
     const allowedToMaster = useMemo(() => {
       if (userRole === "master" && !isLast) {
@@ -362,8 +362,12 @@ export const TableCell: FC<TableCellProps> = memo(
       queryFn: () => apiRequests.getPositionsByFacilityId(facilityId ?? undefined)
     });
 
+    const [isSubmiting, setSubmiting] = useState<boolean>(false);
+
     const handleUpdate = async (data: CreateEmployeeType) => {
       if (data) {
+        setSubmiting(true);
+
         await apiRequests
           .updateWorkerFromLogs(
             {
@@ -377,6 +381,9 @@ export const TableCell: FC<TableCellProps> = memo(
             toast.success("Сотрудник успешно обновлен");
             setModalOpen(false);
             refetch?.();
+          })
+          .finally(() => {
+            setSubmiting(false);
           });
       }
     };
@@ -689,7 +696,9 @@ export const TableCell: FC<TableCellProps> = memo(
             />
 
             <div className="flex justify-center mt-4">
-              <Button htmlType="submit">Сохранить</Button>
+              <Button htmlType="submit" loading={isSubmiting}>
+                Сохранить
+              </Button>
             </div>
           </form>
         </Modal>

@@ -86,6 +86,8 @@ export const ActionsRenderer = memo((params: CustomCellRendererProps<facilitiyTy
     reset();
   }, [isModalOpen]);
 
+  const [isUpdating, setUpdating] = useState<boolean>(false);
+
   const handleUpdate = async (data: createFacilityWithMasterType) => {
     if (!params?.data) return;
 
@@ -95,6 +97,9 @@ export const ActionsRenderer = memo((params: CustomCellRendererProps<facilitiyTy
     if (!facilityName) {
       return toast.error("Необходимо заполнить наименование объека");
     }
+
+    setUpdating(true);
+
     await apiRequests
       .updateFacilityName({
         id: +params?.data?.id,
@@ -109,6 +114,9 @@ export const ActionsRenderer = memo((params: CustomCellRendererProps<facilitiyTy
         queryClient.refetchQueries({
           queryKey: ["all facilities"]
         });
+      })
+      .finally(() => {
+        setUpdating(false);
       });
   };
 
@@ -261,7 +269,7 @@ export const ActionsRenderer = memo((params: CustomCellRendererProps<facilitiyTy
               </div>
             </div>
 
-            <Button htmlType="submit" className="mt-4 ml-auto mr-auto">
+            <Button htmlType="submit" className="mt-4 ml-auto mr-auto" loading={isUpdating}>
               Сохранить
             </Button>
           </form>

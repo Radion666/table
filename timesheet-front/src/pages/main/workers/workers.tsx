@@ -93,7 +93,11 @@ export const WorkersPage = () => {
     enabled: typeof getValues("facilityId") === "number"
   });
 
+  const [isSubmiting, setSubmiting] = useState<boolean>(false);
+
   const handleCreate = async (data: createWorkerType) => {
+    setSubmiting(true);
+
     await apiRequests
       .createWorker({
         ...data,
@@ -105,6 +109,9 @@ export const WorkersPage = () => {
         toast.success("Сотрудник успешно создан");
         refetch();
         setModalOpen(false);
+      })
+      .finally(() => {
+        setSubmiting(false);
       });
   };
 
@@ -346,7 +353,9 @@ export const WorkersPage = () => {
           />
 
           <div className="flex justify-center mt-4">
-            <Button htmlType="submit">Сохранить</Button>
+            <Button htmlType="submit" loading={isSubmiting}>
+              Сохранить
+            </Button>
           </div>
         </form>
       </Modal>

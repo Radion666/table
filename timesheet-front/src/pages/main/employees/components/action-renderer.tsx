@@ -8,12 +8,7 @@ import { toast } from "react-toastify";
 import { apiRequests } from "~src/shared/api/requests";
 import { regexes } from "~src/shared/constants/default";
 import { useGetUser } from "~src/shared/hooks/useGetUser";
-import {
-  defaultQueryKeys,
-  refetchQuery,
-  useGetAllPositions,
-  useGetAllRoles
-} from "~src/shared/hooks/useRequests";
+import { defaultQueryKeys, refetchQuery, useGetAllRoles } from "~src/shared/hooks/useRequests";
 import { CreateEmployeeType, usersEmployeeType } from "~src/shared/types/user";
 import { Button } from "~src/shared/ui/button/button";
 import { Icon } from "~src/shared/ui/icon/icon";
@@ -27,7 +22,9 @@ export const ActionsRenderer = (params: CustomCellRendererProps<usersEmployeeTyp
 
   const [isModalOpen, setModalOpen] = useState<boolean>(false);
 
-  const { isFetching: isPositionsFetching, data: positionsData } = useGetAllPositions();
+  const [isSubmiting, setSubmiting] = useState<boolean>(false);
+  const [isDeleting, setDeleting] = useState<boolean>(false);
+
   const { data: allRoles, isLoading: isRolesLoading } = useGetAllRoles(isModalOpen);
 
   const {
@@ -52,18 +49,30 @@ export const ActionsRenderer = (params: CustomCellRendererProps<usersEmployeeTyp
   }, [isModalOpen]);
 
   const handleUpdate = async (data: CreateEmployeeType) => {
-    await apiRequests.updateUser(data, userData?.id).then(() => {
-      toast.success("Сотрудник успешно обновлен");
-      refetchQuery(defaultQueryKeys.allEmployess);
-      setModalOpen(false);
-    });
+    setSubmiting(true);
+    await apiRequests
+      .updateUser(data, userData?.id)
+      .then(() => {
+        toast.success("Сотрудник успешно обновлен");
+        refetchQuery(defaultQueryKeys.allEmployess);
+        setModalOpen(false);
+      })
+      .finally(() => {
+        setSubmiting(false);
+      });
   };
 
   const handleDelete = async () => {
-    await apiRequests.deleteEmployee(params?.data?.id).then(() => {
-      toast.success("Пользователь успешно удален");
-      refetchQuery(defaultQueryKeys.allEmployess);
-    });
+    setDeleting(true);
+    await apiRequests
+      .deleteEmployee(params?.data?.id)
+      .then(() => {
+        toast.success("Пользователь успешно удален");
+        refetchQuery(defaultQueryKeys.allEmployess);
+      })
+      .finally(() => {
+        setDeleting(false);
+      });
   };
 
   return (
@@ -215,7 +224,9 @@ export const ActionsRenderer = (params: CustomCellRendererProps<usersEmployeeTyp
           />
 
           <div className="flex justify-center mt-4">
-            <Button htmlType="submit">Сохранить</Button>
+            <Button htmlType="submit" loading={isSubmiting}>
+              Сохранить
+            </Button>
           </div>
         </form>
       </Modal>

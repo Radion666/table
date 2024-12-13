@@ -43,6 +43,8 @@ dayjs.locale("ru");
 export const FacilitiesPage = () => {
   const { user, userRole } = useGetUser();
 
+  const [isSubmiting, setSubmiting] = useState<boolean>(false);
+
   const { currentPage, onChange, onShowSizeChange, pageSize, setTotalPage, totalPage } =
     usePagination();
 
@@ -136,6 +138,7 @@ export const FacilitiesPage = () => {
     if (!facilityName) {
       return toast.error("Необходимо заполнить наименование");
     }
+
     setBtnLoading(true);
 
     apiRequests
@@ -191,6 +194,7 @@ export const FacilitiesPage = () => {
   });
 
   const handleCreate = async (data: createWorkerType) => {
+    setSubmiting(true);
     await apiRequests
       .createWorker({
         ...data,
@@ -203,6 +207,7 @@ export const FacilitiesPage = () => {
         refetch();
       })
       .finally(() => {
+        setSubmiting(false);
         setCreateModalOpen(false);
       });
   };
@@ -673,7 +678,9 @@ export const FacilitiesPage = () => {
             />
 
             <div className="flex justify-center mt-4">
-              <Button htmlType="submit">Сохранить</Button>
+              <Button htmlType="submit" loading={isSubmiting}>
+                Сохранить
+              </Button>
             </div>
           </form>
         </Modal>

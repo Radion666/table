@@ -15,6 +15,7 @@ export const ActionsCellRenderer = (params: CustomCellRendererProps<roleType>) =
   const role = params.data;
 
   const [isModalOpen, setModalOpen] = useState<boolean>(false);
+  const [isSubmiting, setSubmiting] = useState<boolean>(false);
 
   const {
     control,
@@ -39,15 +40,21 @@ export const ActionsCellRenderer = (params: CustomCellRendererProps<roleType>) =
     if (roleName === role?.alt_name) {
       return toast.error("Нельзя сохранить старое значение");
     }
+    setSubmiting(true);
 
     if (role?.id) {
-      apiRequests.updateRole(role.id, roleName).then(() => {
-        toast.success("Успешно обновлено");
-        queryClient.refetchQueries({
-          queryKey: ["all roles"]
+      apiRequests
+        .updateRole(role.id, roleName)
+        .then(() => {
+          toast.success("Успешно обновлено");
+          queryClient.refetchQueries({
+            queryKey: ["all roles"]
+          });
+          setModalOpen(false);
+        })
+        .finally(() => {
+          setSubmiting(false);
         });
-        setModalOpen(false);
-      });
     }
   };
 
@@ -77,7 +84,11 @@ export const ActionsCellRenderer = (params: CustomCellRendererProps<roleType>) =
             }}
           />
 
-          <Button htmlType="submit" color="primary" className="ml-auto mr-auto">
+          <Button
+            loading={isSubmiting}
+            htmlType="submit"
+            color="primary"
+            className="ml-auto mr-auto">
             Сохранить
           </Button>
         </form>

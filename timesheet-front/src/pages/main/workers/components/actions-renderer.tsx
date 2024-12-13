@@ -81,13 +81,19 @@ export const ActionsRenderer = (params: CustomCellRendererProps<actualWorkersRes
     enabled: typeof getValues("facilityId") === "number"
   });
 
+  const [isSubmiting, setSubmiting] = useState<boolean>(false);
+
   const handleUpdate = async (data: Omit<createWorkerType, "createdById">) => {
+    setSubmiting(true);
     await apiRequests
       .updateWorker({ ...data, isOutOfTown: !data?.isOutOfTown }, workerData?.id)
       .then(() => {
         toast.success("Сотрудник успешно создан");
         refetchQuery(defaultQueryKeys.allWorkers);
         setModalOpen(false);
+      })
+      .finally(() => {
+        setSubmiting(false);
       });
   };
 
@@ -351,7 +357,9 @@ export const ActionsRenderer = (params: CustomCellRendererProps<actualWorkersRes
             render={({ field }) => <Input label="Адрес фактического проживания" {...field} />}
           />
           <div className="flex justify-center mt-4">
-            <Button htmlType="submit">Сохранить</Button>
+            <Button htmlType="submit" loading={isSubmiting}>
+              Сохранить
+            </Button>
           </div>
         </form>
       </Modal>
