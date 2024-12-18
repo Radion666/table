@@ -2416,8 +2416,8 @@ export class WorkLogsService {
           const otpushCellId = `${totalStartColumn}${employeeEnd + 4}`;
           const mejVahOtpuskCellId = `${totalStartColumn}${employeeEnd + 5}`;
           const adminOtpuskCellId = `${totalStartColumn}${employeeEnd + 6}`;
-          const comandirCellId = `${totalStartColumn}${employeeStart + 7}`;
-          const materiCellId = `${totalStartColumn}${employeeStart + 8}`;
+          const comandirCellId = `${totalStartColumn}${employeeEnd + 7}`;
+          const materiCellId = `${totalStartColumn}${employeeEnd + 8}`;
 
           const innerTotalOfTotalLetters: Omit<lettersSumType, 'Я'> = {
             А: 0,
