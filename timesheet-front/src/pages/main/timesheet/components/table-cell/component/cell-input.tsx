@@ -54,6 +54,14 @@ export const cellLetters = [
   {
     label: "А - Административный",
     value: "А"
+  },
+  {
+    label: "К - Командировочный",
+    value: "К"
+  },
+  {
+    label: "М - Материнский день",
+    value: "М"
   }
 ];
 

@@ -118,6 +118,12 @@ export const TotalCellRenderer: FC<TotalCellRenderProps> = memo(
             <div className="border-r-[1px] h-full  flex items-center justify-center w-full">
               {employeeTotal.lettersSum?.А}
             </div>
+            <div className="border-r-[1px] h-full  flex items-center justify-center w-full">
+              {employeeTotal.lettersSum?.К}
+            </div>
+            <div className="border-r-[1px] h-full  flex items-center justify-center w-full">
+              {employeeTotal.lettersSum?.М}
+            </div>
           </div>
         )}
       </div>

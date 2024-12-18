@@ -20,6 +20,8 @@ export type lettersSumType = {
   О: number;
   МО: number;
   А: number;
+  К: number;
+  М: number;
 };
 
 export type employeeDatesType = Record<

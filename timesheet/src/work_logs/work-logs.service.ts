@@ -55,6 +55,8 @@ export type lettersSumType = {
   О: number;
   МО: number;
   А: number;
+  К: number;
+  М: number;
 };
 
 @Injectable()
@@ -80,192 +82,211 @@ export class WorkLogsService {
     user: User,
     outterWorkLogs: createOrUpdateWorkLogsDto[],
   ) {
-    let workLogs = outterWorkLogs;
+    try {
+      let workLogs = outterWorkLogs;
 
-    const foundUser = await this.userModel.findByPk(user.id);
+      const foundUser = await this.userModel.findByPk(user.id);
 
-    if (!foundUser) {
-      throw new UnauthorizedException(
-        'Не удалось идентфицировать пользователя',
-      );
-    }
-
-    const foundUserRole = await this.rolesModel.findByPk(foundUser.role_id);
-
-    if (!foundUserRole) {
-      throw new UnauthorizedException(
-        'Не удалось идентфицировать пользователя',
-      );
-    }
-
-    if (foundUserRole.name === 'master') {
-      const today = dayjs();
-
-      const allowedDates = [
-        today.format('YYYY-MM-DD'),
-        today.subtract(1, 'day').format('YYYY-MM-DD'),
-        today.subtract(2, 'day').format('YYYY-MM-DD'),
-      ];
-
-      workLogs = outterWorkLogs.map((el) => {
-        const newDates = {};
-
-        for (const dateKey in el.dates) {
-          const value = el.dates[dateKey];
-
-          const actualDay = dayjs(parseDate(dateKey));
-
-          if (allowedDates.includes(actualDay.format('YYYY-MM-DD'))) {
-            newDates[dateKey] = value;
-          }
-        }
-
-        return {
-          employeeId: el.employeeId,
-          facilityId: el.facilityId,
-          dates: newDates,
-          total: el.total,
-        };
-      });
-    }
-
-    const errors: string[] = [];
-
-    const dateOfFirstElement = Object.keys(workLogs?.[0]?.dates)[0];
-    const [_, month, year] = dateOfFirstElement.split('.').map(Number);
-    const date = `${month}-${year}`;
-
-    if (!isValidDateFormat(date)) {
-      throw new BadRequestException(
-        'Переданная в параметрах дата имеет некорректный формат',
-      );
-    }
-
-    const facilityId = workLogs?.[0]?.facilityId;
-
-    const facilitySettings = await this.facilitiesModel.findByPk(facilityId);
-    const integers = facilitySettings?.settings?.integers;
-
-    const isTotalInteger = integers?.allowOnlyTotal;
-
-    const allowedEmployees = await this.employeeService.findByFacilityId(
-      facilityId,
-      date,
-    );
-
-    for (const logData of workLogs) {
-      try {
-        await this.validateWorkLogDates(
-          logData.employeeId,
-          logData.dates as any,
-          logData.facilityId,
-          allowedEmployees,
-          integers,
+      if (!foundUser) {
+        throw new UnauthorizedException(
+          'Не удалось идентфицировать пользователя',
         );
-      } catch (error) {
-        errors.push(`${error.message}`);
       }
-    }
 
-    if (errors.length > 0) {
-      throw new HttpException(
-        `Ошибка валидации данных: ${errors.join('; ')}`,
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+      const foundUserRole = await this.rolesModel.findByPk(foundUser.role_id);
 
-    for (const log of workLogs) {
-      const { dates, employeeId, facilityId } = log;
+      if (!foundUserRole) {
+        throw new UnauthorizedException(
+          'Не удалось идентфицировать пользователя',
+        );
+      }
 
-      const dateOfFirstElement = Object.keys(dates)[0];
+      if (foundUserRole.name === 'master') {
+        const today = dayjs();
+
+        const allowedDates = [
+          today.format('YYYY-MM-DD'),
+          today.subtract(1, 'day').format('YYYY-MM-DD'),
+          today.subtract(2, 'day').format('YYYY-MM-DD'),
+        ];
+
+        workLogs = outterWorkLogs.map((el) => {
+          const newDates = {};
+
+          for (const dateKey in el.dates) {
+            const value = el.dates[dateKey];
+
+            const actualDay = dayjs(parseDate(dateKey));
+
+            if (allowedDates.includes(actualDay.format('YYYY-MM-DD'))) {
+              newDates[dateKey] = value;
+            }
+          }
+
+          return {
+            employeeId: el.employeeId,
+            facilityId: el.facilityId,
+            dates: newDates,
+            total: el.total,
+          };
+        });
+      }
+
+      const errors: string[] = [];
+
+      const dateOfFirstElement = Object.keys(workLogs?.[0]?.dates)[0];
       const [_, month, year] = dateOfFirstElement.split('.').map(Number);
-
       const date = `${month}-${year}`;
 
-      const newDatesCopy = {};
+      if (!isValidDateFormat(date)) {
+        throw new BadRequestException(
+          'Переданная в параметрах дата имеет некорректный формат',
+        );
+      }
 
-      for (const key in dates) {
-        const date = dates[key];
+      const facilityId = workLogs?.[0]?.facilityId;
 
-        if (typeof date === 'string') {
-          newDatesCopy[key] = date;
-        } else if (typeof date === 'object') {
-          if (
-            isTotalInteger
-              ? !date?.total
-              : (integers?.allowDay &&
-                  integers?.allowNight &&
-                  integers?.allowOverwork &&
-                  !date?.day &&
-                  !date?.night &&
-                  !date?.overwork) ||
-                (integers?.allowDay &&
-                  integers?.allowNight &&
-                  !date?.day &&
-                  !date?.night) ||
-                (integers?.allowDay &&
-                  integers?.allowOverwork &&
-                  !date?.day &&
-                  !date?.overwork) ||
-                (integers?.allowNight &&
-                  integers?.allowOverwork &&
-                  !date?.night &&
-                  !date?.overwork) ||
-                (integers?.allowDay && !date?.day) ||
-                (integers?.allowNight && !date?.night) ||
-                (integers?.allowOverwork && !date?.overwork)
-          ) {
-            newDatesCopy[key] = null;
-            continue;
-          }
-          newDatesCopy[key] = date;
+      const facilitySettings = await this.facilitiesModel.findByPk(facilityId);
+      const integers = facilitySettings?.settings?.integers;
+
+      const isTotalInteger = integers?.allowOnlyTotal;
+
+      const allowedEmployees = await this.employeeService.findByFacilityId(
+        facilityId,
+        date,
+      );
+
+      for (const logData of workLogs) {
+        try {
+          await this.validateWorkLogDates(
+            logData.employeeId,
+            logData.dates as any,
+            logData.facilityId,
+            allowedEmployees,
+            integers,
+          );
+        } catch (error) {
+          errors.push(`${error.message}`);
         }
       }
 
-      const newDates = cleanData(dates, integers);
+      if (errors.length > 0) {
+        throw new HttpException(
+          `Ошибка валидации данных: ${errors.join('; ')}`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
 
-      const existingLog = await this.workLogModel.findOne({
-        where: { employeeId, date: date, facilityId },
-      });
+      for (const log of workLogs) {
+        const { dates, employeeId, facilityId } = log;
 
-      const updatedWorkDays = existingLog ? { ...existingLog.workDays } : {};
+        const dateOfFirstElement = Object.keys(dates)[0];
+        const [_, month, year] = dateOfFirstElement.split('.').map(Number);
 
-      const changes = {};
+        const date = `${month}-${year}`;
 
-      for (const [date, value] of Object.entries(newDates)) {
-        const prevValue = existingLog?.workDays?.[date];
-        const newValue = value;
+        const newDatesCopy = {};
 
-        if (!value && !prevValue) continue;
+        for (const key in dates) {
+          const date = dates[key];
 
-        updatedWorkDays[date] = value;
+          if (typeof date === 'string') {
+            newDatesCopy[key] = date;
+          } else if (typeof date === 'object') {
+            if (
+              isTotalInteger
+                ? !date?.total
+                : (integers?.allowDay &&
+                    integers?.allowNight &&
+                    integers?.allowOverwork &&
+                    !date?.day &&
+                    !date?.night &&
+                    !date?.overwork) ||
+                  (integers?.allowDay &&
+                    integers?.allowNight &&
+                    !date?.day &&
+                    !date?.night) ||
+                  (integers?.allowDay &&
+                    integers?.allowOverwork &&
+                    !date?.day &&
+                    !date?.overwork) ||
+                  (integers?.allowNight &&
+                    integers?.allowOverwork &&
+                    !date?.night &&
+                    !date?.overwork) ||
+                  (integers?.allowDay && !date?.day) ||
+                  (integers?.allowNight && !date?.night) ||
+                  (integers?.allowOverwork && !date?.overwork)
+            ) {
+              newDatesCopy[key] = null;
+              continue;
+            }
+            newDatesCopy[key] = date;
+          }
+        }
 
-        if (existingLog) {
-          if (JSON.stringify(prevValue) !== JSON.stringify(newValue)) {
+        const newDates = cleanData(dates, integers);
+
+        const existingLog = await this.workLogModel.findOne({
+          where: { employeeId, date: date, facilityId },
+        });
+
+        const updatedWorkDays = existingLog ? { ...existingLog.workDays } : {};
+
+        const changes = {};
+
+        for (const [date, value] of Object.entries(newDates)) {
+          const prevValue = existingLog?.workDays?.[date];
+          const newValue = value;
+
+          if (!value && !prevValue) continue;
+
+          updatedWorkDays[date] = value;
+
+          if (existingLog) {
+            if (JSON.stringify(prevValue) !== JSON.stringify(newValue)) {
+              changes[date] = {
+                was: existingLog?.workDays?.[date] ?? null,
+                became: value ?? null,
+              };
+            }
+          } else {
             changes[date] = {
-              was: existingLog?.workDays?.[date] ?? null,
+              was: null,
               became: value ?? null,
             };
           }
-        } else {
-          changes[date] = {
-            was: null,
-            became: value ?? null,
-          };
         }
-      }
 
-      if (existingLog) {
-        (
-          await existingLog.update({
-            workDays: { ...(updatedWorkDays as any) },
-          })
-        ).save();
+        if (existingLog) {
+          (
+            await existingLog.update({
+              workDays: { ...(updatedWorkDays as any) },
+            })
+          ).save();
 
-        if (Object.keys(changes)?.length) {
+          if (Object.keys(changes)?.length) {
+            await this.workLogChangesLogs.create(
+              existingLog.id,
+              existingLog.workDays,
+              updatedWorkDays,
+              changes,
+              foundUser.id,
+              employeeId,
+              facilityId,
+              date,
+            );
+          }
+        } else {
+          const workLogs = await this.workLogModel.create({
+            employeeId,
+            date: date as any,
+            workDays: updatedWorkDays as any,
+            facilityId,
+          });
           await this.workLogChangesLogs.create(
-            existingLog.id,
-            existingLog.workDays,
+            workLogs.id,
+            {},
             updatedWorkDays,
             changes,
             foundUser.id,
@@ -274,26 +295,11 @@ export class WorkLogsService {
             date,
           );
         }
-      } else {
-        const workLogs = await this.workLogModel.create({
-          employeeId,
-          date: date as any,
-          workDays: updatedWorkDays as any,
-          facilityId,
-        });
-        await this.workLogChangesLogs.create(
-          workLogs.id,
-          {},
-          updatedWorkDays,
-          changes,
-          foundUser.id,
-          employeeId,
-          facilityId,
-          date,
-        );
       }
+      return 'success';
+    } catch (err: any) {
+      throw new BadRequestException('Неизвестная ошибка', err);
     }
-    return 'success';
   }
 
   async validateWorkLogDates(
@@ -326,7 +332,7 @@ export class WorkLogsService {
     // const firedAt = employee.firedAt;
 
     const regex = /^\d{2}\.\d{2}\.\d{4}$/;
-    const allowdStringValues = ['Б', 'В', 'О', 'А', 'П', 'МО'];
+    const allowdStringValues = ['Б', 'В', 'О', 'А', 'П', 'МО', 'К', 'М'];
 
     for (const dateKey in dates) {
       const dateValue = dates[dateKey];
@@ -992,6 +998,8 @@ export class WorkLogsService {
     const otpuskColumn = incrementColumn(vihodColumn);
     const mejVahOtpuskColumn = incrementColumn(otpuskColumn);
     const adminOtpuskColumn = incrementColumn(mejVahOtpuskColumn);
+    const comandirColumn = incrementColumn(adminOtpuskColumn);
+    const materiColumn = incrementColumn(comandirColumn);
 
     // const totalHoursRow = `${startColumn}1:${nextColumn}1`;
     // const totalDayHoursRow = `${startColumn}2:${nextColumn}2`;
@@ -1008,6 +1016,8 @@ export class WorkLogsService {
     const otpuskRow = `${otpuskColumn}5:${otpuskColumn}8`;
     const mejVahtRow = `${mejVahOtpuskColumn}5:${mejVahOtpuskColumn}8`;
     const adminOtpushRow = `${adminOtpuskColumn}5:${adminOtpuskColumn}8`;
+    const comandirovochnieRow = `${comandirColumn}5:${comandirColumn}8`;
+    const materiRow = `${materiColumn}5:${materiColumn}8`;
 
     // worksheet.mergeCells(totalHoursRow);
     // worksheet.mergeCells(totalDayHoursRow);
@@ -1021,6 +1031,8 @@ export class WorkLogsService {
     worksheet.mergeCells(otpuskRow);
     worksheet.mergeCells(mejVahtRow);
     worksheet.mergeCells(adminOtpushRow);
+    worksheet.mergeCells(comandirovochnieRow);
+    worksheet.mergeCells(materiRow);
 
     if (integers?.allowOnlyTotal) {
       const totalHoursRow = `${startColumn}5:${nextColumn}8`;
@@ -1146,6 +1158,8 @@ export class WorkLogsService {
     applyAlignment(worksheet, otpuskRow, 'О', 5);
     applyAlignment(worksheet, mejVahtRow, 'МО', 5);
     applyAlignment(worksheet, adminOtpushRow, 'А', 5);
+    applyAlignment(worksheet, comandirovochnieRow, 'К', 5);
+    applyAlignment(worksheet, materiRow, 'М', 5);
 
     const a1a2Cell = worksheet.getCell('A5:A6');
     const b1b2Cell = worksheet.getCell('B5:B6');
@@ -1798,6 +1812,8 @@ export class WorkLogsService {
       const totalRowOtpusk = incrementColumn(totalRowVihod);
       const totalRowMejVahOtpusk = incrementColumn(totalRowOtpusk);
       const totalRowAdminOtpush = incrementColumn(totalRowMejVahOtpusk);
+      const totalRowComandirovochnie = incrementColumn(totalRowAdminOtpush);
+      const totalRowMateri = incrementColumn(totalRowComandirovochnie);
 
       const singleCell = `${startColumn}${employeeStart}:${nextColumn}${employeeEnd}`;
 
@@ -1822,6 +1838,8 @@ export class WorkLogsService {
       const totalOtpushCell = `${totalRowOtpusk}${employeeStart}:${totalRowOtpusk}${employeeEnd}`;
       const totalMejvahOtpuskCell = `${totalRowMejVahOtpusk}${employeeStart}:${totalRowMejVahOtpusk}${employeeEnd}`;
       const totalAdminOtpuskCell = `${totalRowAdminOtpush}${employeeStart}:${totalRowAdminOtpush}${employeeEnd}`;
+      const totalComandirovochnieCell = `${totalRowComandirovochnie}${employeeStart}:${totalRowComandirovochnie}${employeeEnd}`;
+      const totalMateriCell = `${totalRowMateri}${employeeStart}:${totalRowMateri}${employeeEnd}`;
 
       if (integers?.allowOnlyTotal) {
         worksheet.mergeCells(singleCell);
@@ -1884,6 +1902,8 @@ export class WorkLogsService {
       worksheet.mergeCells(totalOtpushCell);
       worksheet.mergeCells(totalMejvahOtpuskCell);
       worksheet.mergeCells(totalAdminOtpuskCell);
+      worksheet.mergeCells(totalComandirovochnieCell);
+      worksheet.mergeCells(totalMateriCell);
 
       let totalHoursSum: number = 0;
       let dayHoursSum: number = 0;
@@ -1907,6 +1927,8 @@ export class WorkLogsService {
         МО: 0,
         О: 0,
         П: 0,
+        К: 0,
+        М: 0,
       };
 
       for (let j = 0; j < dates?.length; j++) {
@@ -1995,12 +2017,12 @@ export class WorkLogsService {
             totalHoursSum += cellData.total || 0;
           } else {
             if (integers?.allowDay && integers?.allowNight) {
-              dayHoursSum += cellData.day || 0;
-              nightHoursSum += cellData.night || 0;
+              dayHoursSum += cellData?.day || 0;
+              nightHoursSum += cellData?.night || 0;
             } else if (integers?.allowDay && !integers?.allowNight) {
-              dayHoursSum += cellData.day || 0;
+              dayHoursSum += cellData?.day || 0;
             } else if (!integers?.allowDay && integers?.allowNight) {
-              nightHoursSum += cellData.night || 0;
+              nightHoursSum += cellData?.night || 0;
             }
           }
 
@@ -2138,6 +2160,8 @@ export class WorkLogsService {
       applyAlignment(worksheet, totalOtpushCell, lettersSum.О);
       applyAlignment(worksheet, totalMejvahOtpuskCell, lettersSum.МО);
       applyAlignment(worksheet, totalAdminOtpuskCell, lettersSum.А);
+      applyAlignment(worksheet, totalComandirovochnieCell, lettersSum.К);
+      applyAlignment(worksheet, totalMateriCell, lettersSum.М);
 
       employeeStart =
         employeeStart +
@@ -2174,6 +2198,8 @@ export class WorkLogsService {
       applyAlignment(worksheet, `B${employeeStart + 5}`, 'О');
       applyAlignment(worksheet, `B${employeeStart + 6}`, 'МО');
       applyAlignment(worksheet, `B${employeeStart + 7}`, 'А');
+      applyAlignment(worksheet, `B${employeeStart + 8}`, 'К');
+      applyAlignment(worksheet, `B${employeeStart + 9}`, 'М');
     } else {
       if (allowAllTypes) {
         const totalDayCell = `B${employeeStart}`;
@@ -2194,6 +2220,8 @@ export class WorkLogsService {
         applyAlignment(worksheet, `B${employeeEnd + 4}`, 'О');
         applyAlignment(worksheet, `B${employeeEnd + 5}`, 'МО');
         applyAlignment(worksheet, `B${employeeEnd + 6}`, 'А');
+        applyAlignment(worksheet, `B${employeeEnd + 7}`, 'К');
+        applyAlignment(worksheet, `B${employeeEnd + 8}`, 'М');
       } else if (allowDayNight) {
         const totalDayCell = `B${employeeStart}`;
         const totalNightCell = `B${employeeStart + 1}`;
@@ -2209,6 +2237,8 @@ export class WorkLogsService {
         applyAlignment(worksheet, `B${employeeStart + 5}`, 'О');
         applyAlignment(worksheet, `B${employeeStart + 6}`, 'МО');
         applyAlignment(worksheet, `B${employeeStart + 7}`, 'А');
+        applyAlignment(worksheet, `B${employeeStart + 8}`, 'К');
+        applyAlignment(worksheet, `B${employeeStart + 9}`, 'М');
       } else if (allowNightOverwork) {
         const totalNightCell = `B${employeeStart}`;
         const totalOverworkCell = `B${employeeStart + 1}`;
@@ -2225,6 +2255,8 @@ export class WorkLogsService {
         applyAlignment(worksheet, `B${employeeStart + 5}`, 'О');
         applyAlignment(worksheet, `B${employeeStart + 6}`, 'МО');
         applyAlignment(worksheet, `B${employeeStart + 7}`, 'А');
+        applyAlignment(worksheet, `B${employeeStart + 8}`, 'К');
+        applyAlignment(worksheet, `B${employeeStart + 9}`, 'М');
       } else if (allowDayOverwork) {
         const totalDayCell = `B${employeeStart}`;
         const totalOverworkCell = `B${employeeStart + 1}`;
@@ -2241,6 +2273,8 @@ export class WorkLogsService {
         applyAlignment(worksheet, `B${employeeStart + 5}`, 'О');
         applyAlignment(worksheet, `B${employeeStart + 6}`, 'МО');
         applyAlignment(worksheet, `B${employeeStart + 7}`, 'А');
+        applyAlignment(worksheet, `B${employeeStart + 8}`, 'К');
+        applyAlignment(worksheet, `B${employeeStart + 9}`, 'М');
       } else if (allowOnlyOverwork) {
         worksheet.getCell(totalSingleCell).value = 'Итого: переработка';
         applyAlignment(worksheet, totalSingleCell);
@@ -2251,6 +2285,8 @@ export class WorkLogsService {
         applyAlignment(worksheet, `B${employeeStart + 4}`, 'О');
         applyAlignment(worksheet, `B${employeeStart + 5}`, 'МО');
         applyAlignment(worksheet, `B${employeeStart + 6}`, 'А');
+        applyAlignment(worksheet, `B${employeeStart + 7}`, 'К');
+        applyAlignment(worksheet, `B${employeeStart + 8}`, 'М');
       } else if (allowOnlyDay) {
         worksheet.getCell(totalSingleCell).value = 'Итого: дневных';
         applyAlignment(worksheet, totalSingleCell);
@@ -2261,6 +2297,8 @@ export class WorkLogsService {
         applyAlignment(worksheet, `B${employeeStart + 4}`, 'О');
         applyAlignment(worksheet, `B${employeeStart + 5}`, 'МО');
         applyAlignment(worksheet, `B${employeeStart + 6}`, 'А');
+        applyAlignment(worksheet, `B${employeeStart + 7}`, 'К');
+        applyAlignment(worksheet, `B${employeeStart + 8}`, 'М');
       } else if (allowOnlyNight) {
         worksheet.getCell(totalSingleCell).value = 'Итого: ночных';
         applyAlignment(worksheet, totalSingleCell);
@@ -2271,6 +2309,8 @@ export class WorkLogsService {
         applyAlignment(worksheet, `B${employeeStart + 4}`, 'О');
         applyAlignment(worksheet, `B${employeeStart + 5}`, 'МО');
         applyAlignment(worksheet, `B${employeeStart + 6}`, 'А');
+        applyAlignment(worksheet, `B${employeeStart + 7}`, 'К');
+        applyAlignment(worksheet, `B${employeeStart + 8}`, 'М');
       }
     }
 
@@ -2283,6 +2323,8 @@ export class WorkLogsService {
       МО: 0,
       О: 0,
       П: 0,
+      К: 0,
+      М: 0,
     };
 
     let totalHoursSum: number = 0;
@@ -2305,6 +2347,8 @@ export class WorkLogsService {
         const otpushCellId = `${totalStartColumn}${employeeStart + 5}`;
         const mejVahOtpuskCellId = `${totalStartColumn}${employeeStart + 6}`;
         const adminOtpuskCellId = `${totalStartColumn}${employeeStart + 7}`;
+        const comandirCellId = `${totalStartColumn}${employeeStart + 8}`;
+        const materiCellId = `${totalStartColumn}${employeeStart + 9}`;
 
         worksheet.mergeCells(cellId);
 
@@ -2315,6 +2359,8 @@ export class WorkLogsService {
           МО: 0,
           О: 0,
           П: 0,
+          К: 0,
+          М: 0,
         };
 
         for (let j = 0; j < workLogsData?.length; j++) {
@@ -2352,6 +2398,8 @@ export class WorkLogsService {
           adminOtpuskCellId,
           innerTotalOfTotalLetters.А,
         );
+        applyAlignment(worksheet, comandirCellId, innerTotalOfTotalLetters.К);
+        applyAlignment(worksheet, materiCellId, innerTotalOfTotalLetters.М);
       } else {
         if (allowAllTypes) {
           let totalOfTotalDayCell = 0;
@@ -2368,6 +2416,8 @@ export class WorkLogsService {
           const otpushCellId = `${totalStartColumn}${employeeEnd + 4}`;
           const mejVahOtpuskCellId = `${totalStartColumn}${employeeEnd + 5}`;
           const adminOtpuskCellId = `${totalStartColumn}${employeeEnd + 6}`;
+          const comandirCellId = `${totalStartColumn}${employeeStart + 7}`;
+          const materiCellId = `${totalStartColumn}${employeeStart + 8}`;
 
           const innerTotalOfTotalLetters: Omit<lettersSumType, 'Я'> = {
             А: 0,
@@ -2376,6 +2426,8 @@ export class WorkLogsService {
             МО: 0,
             О: 0,
             П: 0,
+            К: 0,
+            М: 0,
           };
 
           for (let j = 0; j < workLogsData?.length; j++) {
@@ -2426,6 +2478,8 @@ export class WorkLogsService {
             adminOtpuskCellId,
             innerTotalOfTotalLetters.А,
           );
+          applyAlignment(worksheet, comandirCellId, innerTotalOfTotalLetters.К);
+          applyAlignment(worksheet, materiCellId, innerTotalOfTotalLetters.М);
         } else if (allowNightOverwork || allowDayNight || allowDayOverwork) {
           let firstCellValue = 0;
           let secondCellValue = 0;
@@ -2439,6 +2493,8 @@ export class WorkLogsService {
           const otpushCellId = `${totalStartColumn}${employeeStart + 5}`;
           const mejVahOtpuskCellId = `${totalStartColumn}${employeeStart + 6}`;
           const adminOtpuskCellId = `${totalStartColumn}${employeeStart + 7}`;
+          const comandirCellId = `${totalStartColumn}${employeeStart + 8}`;
+          const materiCellId = `${totalStartColumn}${employeeStart + 9}`;
 
           const innerTotalOfTotalLetters: Omit<lettersSumType, 'Я'> = {
             А: 0,
@@ -2447,6 +2503,8 @@ export class WorkLogsService {
             МО: 0,
             О: 0,
             П: 0,
+            К: 0,
+            М: 0,
           };
 
           for (let j = 0; j < workLogsData?.length; j++) {
@@ -2504,6 +2562,12 @@ export class WorkLogsService {
               adminOtpuskCellId,
               innerTotalOfTotalLetters.А,
             );
+            applyAlignment(
+              worksheet,
+              comandirCellId,
+              innerTotalOfTotalLetters.К,
+            );
+            applyAlignment(worksheet, materiCellId, innerTotalOfTotalLetters.М);
           }
         } else if (allowOnlyDay || allowOnlyNight || allowOnlyOverwork) {
           let firstCellValue = 0;
@@ -2517,6 +2581,8 @@ export class WorkLogsService {
             МО: 0,
             О: 0,
             П: 0,
+            К: 0,
+            М: 0,
           };
 
           const progulCellId = `${totalStartColumn}${employeeStart + 1}`;
@@ -2525,6 +2591,8 @@ export class WorkLogsService {
           const otpushCellId = `${totalStartColumn}${employeeStart + 4}`;
           const mejVahOtpuskCellId = `${totalStartColumn}${employeeStart + 5}`;
           const adminOtpuskCellId = `${totalStartColumn}${employeeStart + 6}`;
+          const comandirCellId = `${totalStartColumn}${employeeStart + 7}`;
+          const materiCellId = `${totalStartColumn}${employeeStart + 8}`;
 
           for (let j = 0; j < workLogsData?.length; j++) {
             const element = workLogsData?.[j];
@@ -2572,6 +2640,8 @@ export class WorkLogsService {
             adminOtpuskCellId,
             innerTotalOfTotalLetters.А,
           );
+          applyAlignment(worksheet, comandirCellId, innerTotalOfTotalLetters.К);
+          applyAlignment(worksheet, materiCellId, innerTotalOfTotalLetters.М);
         }
       }
 
@@ -2594,6 +2664,12 @@ export class WorkLogsService {
     );
     const totalTotalAdminOtpuskWeekends = incrementColumn(
       totalTotalMejOtpuskWeekends,
+    );
+    const totalTotalComandirWeekends = incrementColumn(
+      totalTotalAdminOtpuskWeekends,
+    );
+    const totalTotalMateriWeekends = incrementColumn(
+      totalTotalComandirWeekends,
     );
 
     if (integers?.allowOnlyTotal) {
@@ -2738,6 +2814,8 @@ export class WorkLogsService {
     const total4 = `${totalTotalOtpuskWeekends}${employeeStart}:${totalTotalOtpuskWeekends}${employeeEnd}`;
     const total5 = `${totalTotalMejOtpuskWeekends}${employeeStart}:${totalTotalMejOtpuskWeekends}${employeeEnd}`;
     const total6 = `${totalTotalAdminOtpuskWeekends}${employeeStart}:${totalTotalAdminOtpuskWeekends}${employeeEnd}`;
+    const total7 = `${totalTotalComandirWeekends}${employeeStart}:${totalTotalComandirWeekends}${employeeEnd}`;
+    const total8 = `${totalTotalMateriWeekends}${employeeStart}:${totalTotalMateriWeekends}${employeeEnd}`;
 
     worksheet.mergeCells(totalSmensCell);
     worksheet.mergeCells(totalWeekendsHoursCell);
@@ -2749,6 +2827,8 @@ export class WorkLogsService {
     worksheet.mergeCells(total4);
     worksheet.mergeCells(total5);
     worksheet.mergeCells(total6);
+    worksheet.mergeCells(total7);
+    worksheet.mergeCells(total8);
 
     setSumWithStep(
       worksheet,
@@ -2781,9 +2861,11 @@ export class WorkLogsService {
     applyAlignment(worksheet, total4, totalOfTotalLetters.О);
     applyAlignment(worksheet, total5, totalOfTotalLetters.МО);
     applyAlignment(worksheet, total6, totalOfTotalLetters.А);
+    applyAlignment(worksheet, total7, totalOfTotalLetters.К);
+    applyAlignment(worksheet, total8, totalOfTotalLetters.М);
 
     //                                                                                                                                               Латыпова Н.В.
-    const agreedCell = `A${employeeEnd + 8}:U${employeeEnd + 8}`;
+    const agreedCell = `A${employeeEnd + 10}:U${employeeEnd + 10}`;
     worksheet.mergeCells(agreedCell);
     applyAlignment(
       worksheet,
@@ -2806,7 +2888,7 @@ export class WorkLogsService {
       employeeEnd + 8,
     );
 
-    const leadingEmployee = `A${employeeEnd + 9}:U${employeeEnd + 9}`;
+    const leadingEmployee = `A${employeeEnd + 11}:U${employeeEnd + 11}`;
     worksheet.mergeCells(leadingEmployee);
     applyAlignment(
       worksheet,
@@ -2829,7 +2911,7 @@ export class WorkLogsService {
       employeeEnd + 9,
     );
 
-    const directorCell = `A${employeeEnd + 10}:U${employeeEnd + 10}`;
+    const directorCell = `A${employeeEnd + 13}:U${employeeEnd + 13}`;
     worksheet.mergeCells(directorCell);
     applyAlignment(
       worksheet,
@@ -2852,7 +2934,7 @@ export class WorkLogsService {
       employeeEnd + 10,
     );
 
-    const nachanlnikCell = `A${employeeEnd + 11}:U${employeeEnd + 11}`;
+    const nachanlnikCell = `A${employeeEnd + 15}:U${employeeEnd + 15}`;
     worksheet.mergeCells(nachanlnikCell);
     applyAlignment(
       worksheet,
@@ -3078,6 +3160,8 @@ export class WorkLogsService {
         МО: number;
         О: number;
         П: number;
+        К: number;
+        М: number;
       } = {
         onlyTotalHours: 0,
         totalDayHours: 0,
@@ -3093,6 +3177,8 @@ export class WorkLogsService {
         МО: 0,
         О: 0,
         П: 0,
+        К: 0,
+        М: 0,
       };
 
       for (let i = 0; i < allFacilities?.length; i++) {
@@ -3293,6 +3379,8 @@ export class WorkLogsService {
           МО: 0,
           О: 0,
           П: 0,
+          К: 0,
+          М: 0,
         };
 
         let columnIdForTotalStart: string = '';
@@ -3318,6 +3406,8 @@ export class WorkLogsService {
               МО: 0,
               О: 0,
               П: 0,
+              К: 0,
+              М: 0,
             };
 
             for (let n = 0; n < workLogsData?.length; n++) {

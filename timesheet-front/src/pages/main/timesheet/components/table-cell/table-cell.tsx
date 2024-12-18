@@ -1,4 +1,4 @@
-import { FC, HTMLProps, memo, useEffect, useMemo, useState } from "react";
+import { Dispatch, FC, HTMLProps, memo, SetStateAction, useEffect, useMemo, useState } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
@@ -65,6 +65,26 @@ interface TableCellProps {
   lastStatus: string;
   index: number;
   positionColumn: boolean;
+  dateColToCopy?: string;
+  dateColToPaste?: string;
+  setDateColToPaste?: Dispatch<SetStateAction<string | undefined>>;
+  setCopyValue: Dispatch<
+    SetStateAction<
+      | {
+          isWeekend: boolean;
+          value: ({
+            isDisabled: boolean;
+          } & employeeType)[];
+        }
+      | undefined
+    >
+  >;
+  copyValue?: {
+    isWeekend: boolean;
+    value: {
+      isDisabled: boolean;
+    } & employeeType[];
+  };
 }
 
 const checkDate = (dateToCheck: Dayjs) => {
@@ -110,7 +130,12 @@ export const TableCell: FC<TableCellProps> = memo(
     actualAddress,
     registeredAddress,
     lastStatus,
-    index
+    index,
+    dateColToCopy,
+    setCopyValue,
+    copyValue,
+    dateColToPaste,
+    setDateColToPaste
   }) => {
     const { userRole } = useGetUser();
     const [errorMsg, setErrorMsg] = useState<string>("");
@@ -432,6 +457,56 @@ export const TableCell: FC<TableCellProps> = memo(
       return isWeekend;
     }, [dayValue, isWeekend, productionCalendar]);
 
+    useEffect(() => {
+      // if (dateColToCopy === )
+      if (dayValue && dateRegex.test(dayValue)) {
+        if (dayValue === dateColToCopy) {
+          setCopyValue((prev) => ({
+            ...prev,
+            isWeekend: isInnerWeekend,
+            value: prev?.value?.length
+              ? [
+                  ...prev?.value,
+                  {
+                    dates: value,
+                    isDisabled: isDisabled,
+                    employeeId: employeeId
+                  }
+                ]
+              : [
+                  {
+                    dates: value,
+                    isDisabled: isDisabled,
+                    employeeId: employeeId
+                  }
+                ]
+          }));
+        }
+
+        // const cellDate = dayjs(parseDate(dayValue));
+        // // console.log(cellDate.format(''));
+        // console.log(dayValue, dateColToCopy);
+        // setCopyValue(prev => ({
+        //   ...prev,
+        //   isWeekend: isInnerWeekend,
+        // value: [...prev?.value, {
+        //   // dates: value
+        //   dates: value,
+        // }]
+        // }))
+      }
+    }, [dateColToCopy]);
+
+    useEffect(() => {
+      if (!isDisabled && copyValue && dayValue && dateRegex.test(dayValue)) {
+        if (dayValue === dateColToPaste) {
+          const foundElemenet = copyValue.value.find((el) => el.employeeId === employeeId);
+          handleChange(dayValue, foundElemenet?.dates);
+          setDateColToPaste?.(undefined);
+        }
+      }
+    }, [dateColToPaste]);
+
     return (
       <div
         tabIndex={-1}
@@ -514,6 +589,12 @@ export const TableCell: FC<TableCellProps> = memo(
                                       </div>
                                       <div className="border-b-[1px]  min-h-8 flex items-center justify-center">
                                         {totalLettersSum?.А}
+                                      </div>
+                                      <div className="border-b-[1px]  min-h-8 flex items-center justify-center">
+                                        {totalLettersSum?.К}
+                                      </div>
+                                      <div className="border-b-[1px]  min-h-8 flex items-center justify-center">
+                                        {totalLettersSum?.М}
                                       </div>
                                     </div>
                                   </>

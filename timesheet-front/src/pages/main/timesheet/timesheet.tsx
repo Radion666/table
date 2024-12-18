@@ -23,6 +23,7 @@ import {
   lettersSumType
 } from "./data";
 
+import { Loader } from "~src/components/loader/loader";
 import { Scrollbar } from "~src/components/scrollbar/Scrollbar";
 import { apiRequests } from "~src/shared/api/requests";
 import { monthsNameByNumberLocal, regexes } from "~src/shared/constants/default";
@@ -112,6 +113,25 @@ export const TimesheetPage = () => {
   const [selectedFilter, setSelectedFilter] = useState<"red" | "green" | null>(null);
 
   const [sortValue, setSortValue] = useState<"asc" | "desc">("asc");
+
+  const [isSaving, setSaving] = useState<boolean>(false);
+  const [isDownloading, setDownloading] = useState<boolean>(false);
+
+  const [dateColToCopy, setDateColToCopy] = useState<string | undefined>(undefined);
+  const [dateColToPaste, setDateColToPaste] = useState<string | undefined>(undefined);
+
+  const [copyValue, setCopyValue] = useState<
+    | {
+        isWeekend: boolean;
+        value: { isDisabled: boolean } & employeeType[];
+      }
+    | undefined
+  >(undefined);
+
+  useEffect(() => {
+    setDateColToPaste(undefined);
+    setDateColToCopy(undefined);
+  }, [copyValue]);
 
   const {
     getValues,
@@ -641,7 +661,9 @@ export const TimesheetPage = () => {
           МО: 0,
           О: 0,
           П: 0,
-          Я: 0
+          Я: 0,
+          К: 0,
+          М: 0
         };
 
         const date = totalDays[i].date;
@@ -687,7 +709,9 @@ export const TimesheetPage = () => {
         МО: 0,
         О: 0,
         П: 0,
-        Я: 0
+        Я: 0,
+        К: 0,
+        М: 0
       };
 
       const totalOfAllElements = copyOfPrev?.flatMap((prevCopy) =>
@@ -836,45 +860,78 @@ export const TimesheetPage = () => {
                   height={30}
                   className="cursor-pointer hover:text-blue-700"
                 />
-                <Icon
-                  onClick={() => {
-                    apiRequests
-                      .downloadReport(
-                        facilityId ? +facilityId : 0,
-                        dayjs(currentDate)?.format("MM-YYYY")
-                      )
-                      .then(async (response) => {
-                        const url = window.URL.createObjectURL(new Blob([response.data]));
-                        const a = document.createElement("a");
-                        a.href = url;
-                        a.download = "downloaded_file.xlsx";
-                        document.body.appendChild(a);
-                        a.click();
-                        a.remove();
-                        window.URL.revokeObjectURL(url);
-                      });
-                  }}
-                  name="Excel"
-                  width={30}
-                  height={30}
-                  className="cursor-pointer hover:text-blue-700"
-                />
-                <Icon
-                  onClick={() => {
-                    apiRequests
-                      .saveWorkLogs(innerData, facilityId ? +facilityId : undefined)
-                      .then(() => {
-                        toast.success("Успешно обновлено");
-                        setTimeout(() => {
-                          // window.location.reload();
-                        }, 500);
-                      });
-                  }}
-                  name="Save"
-                  width={30}
-                  height={30}
-                  className="cursor-pointer hover:text-blue-700"
-                />
+                <div className="relative">
+                  <Icon
+                    onClick={() => {
+                      if (isDownloading) return;
+
+                      setDownloading(true);
+                      apiRequests
+                        .downloadReport(
+                          facilityId ? +facilityId : 0,
+                          dayjs(currentDate)?.format("MM-YYYY")
+                        )
+                        .then(async (response) => {
+                          const url = window.URL.createObjectURL(new Blob([response.data]));
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = "downloaded_file.xlsx";
+                          document.body.appendChild(a);
+                          a.click();
+                          a.remove();
+                          window.URL.revokeObjectURL(url);
+                        })
+                        .finally(() => {
+                          setDownloading(false);
+                        });
+                    }}
+                    name="Excel"
+                    width={30}
+                    height={30}
+                    className={clsx(
+                      "cursor-pointer hover:text-blue-700 ",
+                      isDownloading && "opacity-20"
+                    )}
+                  />
+                  {isDownloading && (
+                    <div
+                      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+                    ">
+                      <Loader />
+                    </div>
+                  )}
+                </div>
+                <div className="relative">
+                  <Icon
+                    onClick={() => {
+                      if (isSaving) return;
+                      setSaving(true);
+                      apiRequests
+                        .saveWorkLogs(innerData, facilityId ? +facilityId : undefined)
+                        .then(() => {
+                          toast.success("Успешно обновлено");
+                          setTimeout(() => {
+                            // window.location.reload();
+                          }, 500);
+                        })
+                        .finally(() => setSaving(false));
+                    }}
+                    name="Save"
+                    width={30}
+                    height={30}
+                    className={clsx(
+                      "cursor-pointer hover:text-blue-700 ",
+                      isSaving && "opacity-20"
+                    )}
+                  />
+                  {isSaving && (
+                    <div
+                      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+                    ">
+                      <Loader />
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -956,6 +1013,67 @@ export const TimesheetPage = () => {
                             "border-b-[1px] flex items-center justify-center h-1/2 w-full",
                           !day.dayName && "h-full"
                         )}>
+                        {day.fieldType === "input" &&
+                          (dayjs(day.value, "DD.MM.YYYY").isBefore(dayjs(), "day") ||
+                            dayjs(day.value, "DD.MM.YYYY").isSame(dayjs(), "day")) && (
+                            <>
+                              <div
+                                className="absolute top-2 cursor-pointer select-none"
+                                onClick={() => {
+                                  setCopyValue(undefined);
+                                  setDateColToCopy(day.value as string);
+                                  toast.success("Значение успешно скопировано");
+                                }}>
+                                <Icon name="Copy" size={16} />
+                              </div>
+                              {copyValue && copyValue.isWeekend === isInnerWeekend && (
+                                <div
+                                  className="absolute bottom-2 cursor-pointer"
+                                  onClick={() => {
+                                    let IsNotEmpty = false;
+                                    const prevDates = innerData
+                                      ?.map((el) => el.dates)
+                                      ?.filter(Boolean);
+
+                                    for (let i = 0; i < prevDates?.length; i++) {
+                                      if (IsNotEmpty) break;
+
+                                      const element = prevDates?.[i];
+
+                                      for (const k in element) {
+                                        const value = element[k];
+                                        const isValueExists =
+                                          typeof value === "string"
+                                            ? !!value
+                                            : +value?.day ||
+                                              +value?.night ||
+                                              +value?.overwork ||
+                                              +value?.total;
+
+                                        if (k === (day.value as string) && !!isValueExists) {
+                                          IsNotEmpty = true;
+
+                                          break;
+                                        }
+                                      }
+                                    }
+
+                                    if (IsNotEmpty) {
+                                      const isConfirmed = confirm(
+                                        "На указанную дату в выбранной ячейке уже имеются данные. При копировании и вставке новых значений текущие данные будут перезаписаны. Убедитесь, что вы хотите продолжить операцию."
+                                      );
+                                      if (isConfirmed) {
+                                        setDateColToPaste(day.value as string);
+                                      }
+                                    } else {
+                                      setDateColToPaste(day.value as string);
+                                    }
+                                  }}>
+                                  <Icon name="Paste" size={16} />
+                                </div>
+                              )}
+                            </>
+                          )}
                         {typeof day.label === "string" ? (
                           <span className="relative">
                             {day.label}
@@ -1049,7 +1167,7 @@ export const TimesheetPage = () => {
             <div
               style={{
                 height: `${
-                  rowVirtualizer.getTotalSize() + (totalVariant === "numbers" ? 0 : 95)
+                  rowVirtualizer.getTotalSize() + (totalVariant === "numbers" ? 0 : 155)
                 }px`,
                 width: "100%",
                 position: "relative",
@@ -1073,7 +1191,7 @@ export const TimesheetPage = () => {
                       left: 0,
                       width: "100%",
                       height: `${
-                        virtualRow.size + (totalVariant === "numbers" ? 0 : isLast ? 95 : 0)
+                        virtualRow.size + (totalVariant === "numbers" ? 0 : isLast ? 155 : 0)
                       }px`,
                       transform: `translateY(${virtualRow.start}px)`,
                       pointerEvents: userRole === "financier" ? "none" : "all"
@@ -1099,6 +1217,9 @@ export const TimesheetPage = () => {
                               />
                             ) : (
                               <TableCell
+                                dateColToPaste={dateColToPaste}
+                                setDateColToPaste={setDateColToPaste}
+                                copyValue={copyValue}
                                 key={day.dayName}
                                 index={virtualRow.index + 1}
                                 productionCalendar={facilityByIdData?.productionCalendar}
@@ -1112,6 +1233,8 @@ export const TimesheetPage = () => {
                                 label={
                                   typeof day.value === "function" ? day.value(ppl) : ppl[day.value]
                                 }
+                                setCopyValue={setCopyValue}
+                                dateColToCopy={dateColToCopy}
                                 userShortName={ppl.fullName}
                                 userPosition={ppl?.lastPosition?.name}
                                 positionId={ppl?.lastPosition?.id}

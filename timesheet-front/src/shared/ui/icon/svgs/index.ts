@@ -1,5 +1,6 @@
 import ArrowUp from "./icons/arrow-up.svg";
 import CheckMark from "./icons/check-mark.svg";
+import Copy from "./icons/copy.svg";
 import Create from "./icons/create.svg";
 import Cross from "./icons/cross.svg";
 import Delete from "./icons/delete.svg";
@@ -15,6 +16,7 @@ import House from "./icons/house.svg";
 import Logout from "./icons/logout.svg";
 import Logs from "./icons/logs.svg";
 import NoRoutes from "./icons/no-routes.svg";
+import Paste from "./icons/paste.svg";
 import Position from "./icons/position.svg";
 import Roles from "./icons/roles.svg";
 import Save from "./icons/save.svg";
@@ -25,6 +27,7 @@ import Worker from "./icons/worker.svg";
 export {
   ArrowUp,
   CheckMark,
+  Copy,
   Create,
   Cross,
   Delete,
@@ -40,6 +43,7 @@ export {
   Logout,
   Logs,
   NoRoutes,
+  Paste,
   Position,
   Roles,
   Save,
