@@ -818,7 +818,9 @@ export const TimesheetPage = () => {
               Следующий месяц
             </Button>
           </div>
-
+          <div className="flex flex-row items-center gap-2">
+            <b>Наименование объекта:</b> {facilityByIdData?.name}
+          </div>
           <div className="flex flex-row items-center gap-5">
             <div className="flex flex-row items-center gap-2">
               <div>Итоги по буквам</div>
