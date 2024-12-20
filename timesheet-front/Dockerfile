@@ -25,4 +25,4 @@ COPY nginx.conf /etc/nginx/nginx.conf
 COPY --from=build-stage /app/dist /usr/share/nginx/html
 
 # Убедитесь, что права на файлы SSL корректные
-RUN chmod 644 /etc/ssl/certs/goldrekrut.ru.crt /etc/ssl/private/goldrekrut.ru.key
+RUN chmod 644 /etc/ssl/goldrekrut.ru.crt /etc/ssl/goldrekrut.ru.key
