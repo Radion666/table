@@ -790,7 +790,7 @@ export const TimesheetPage = () => {
   return (
     <>
       <div className="flex flex-col flex-1 p-5 md:text-base text-[12px]" ref={parentDivRef}>
-        <div className="flex justify-between mb-4  min-h-[50px] max-h-[50px] overflow-x-auto md:min-w-[calc(100vw-140px)] md:max-w-[calc(100vw-140px)]">
+        <div className="flex justify-between mb-4  min-h-[50px] max-h-[50px] overflow-x-scroll md:min-w-[calc(100vw-140px)] md:max-w-[calc(100vw-140px)]">
           <div className="flex gap-5 items-center">
             <div className="font-bold">
               {monthsNameByNumberLocal[currentMonth]} {currentYear}
