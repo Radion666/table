@@ -300,7 +300,7 @@ export const FacilitiesPage = () => {
   return (
     <>
       <div className="flex flex-1 flex-col gap-5 justify-center p-5 overflow-scroll">
-        <div className="flex flex-row justify-end gap-5 flex-wrap">
+        <div className="flex flex-row justify-end gap-5">
           <DatePicker
             onChange={(date) => {
               //@ts-ignore
@@ -323,7 +323,7 @@ export const FacilitiesPage = () => {
               lang: ruRU
             }}
             placeholder="Выберите месяц для скачивания отчета по объектам"
-            className="min-w-[300px]"
+            className="flex-1"
           />
           {userRole !== "master" && userRole !== "financier" && (
             <div className="flex items-center justify-end">
