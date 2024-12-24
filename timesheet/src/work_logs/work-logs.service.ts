@@ -924,7 +924,7 @@ export class WorkLogsService {
                 end === null
               ) {
                 if (calendarDay.months.month === cellDate.month() + 1) {
-                  if (calendarDay.months.days.includes(cellDay)) {
+                  if (calendarDay?.months?.days.includes(cellDay)) {
                     isInnerWeekend = true;
                   }
                 }
@@ -950,8 +950,8 @@ export class WorkLogsService {
       const dayCell = `${startColumn}5:${startColumn}6`;
       const dayNameCell = `${startColumn}7:${startColumn}8`;
 
-      worksheet.getCell(dayCell).value = day.date;
-      worksheet.getCell(dayNameCell).value = day.dayName;
+      worksheet.getCell(dayCell).value = day?.date;
+      worksheet.getCell(dayNameCell).value = day?.dayName;
 
       worksheet.mergeCells(dayCell);
       worksheet.mergeCells(dayNameCell);
@@ -1367,7 +1367,7 @@ export class WorkLogsService {
                   end === null
                 ) {
                   if (calendarDay.months.month === cellDate.month() + 1) {
-                    if (calendarDay.months.days.includes(cellDay)) {
+                    if (calendarDay?.months?.days.includes(cellDay)) {
                       isInnerWeekend = true;
                     }
                   }
@@ -1961,7 +1961,7 @@ export class WorkLogsService {
                   end === null
                 ) {
                   if (calendarDay.months.month === cellDate.month() + 1) {
-                    if (calendarDay.months.days.includes(cellDay)) {
+                    if (calendarDay?.months?.days.includes(cellDay)) {
                       isInnerWeekend = true;
                     }
                   }
@@ -2444,13 +2444,13 @@ export class WorkLogsService {
             }
 
             if (typeof newWorkLogs === 'object') {
-              totalDayHoursSum += newWorkLogs.day;
-              totalNightHoursSum = newWorkLogs.night;
-              totalOverworkHoursSum = newWorkLogs.overwork;
+              totalDayHoursSum += newWorkLogs?.day;
+              totalNightHoursSum = newWorkLogs?.night;
+              totalOverworkHoursSum = newWorkLogs?.overwork;
 
-              totalOfTotalDayCell += newWorkLogs.day;
-              totalOfTotalNightCell += newWorkLogs.night;
-              totalOfTotalOveroworkCell += newWorkLogs.overwork;
+              totalOfTotalDayCell += newWorkLogs?.day;
+              totalOfTotalNightCell += newWorkLogs?.night;
+              totalOfTotalOveroworkCell += newWorkLogs?.overwork;
 
               // newWorkLogs.overwork;
             }
@@ -2608,16 +2608,16 @@ export class WorkLogsService {
             }
 
             if (typeof newWorkLogs === 'object') {
-              totalDayHoursSum += newWorkLogs.day;
-              totalNightHoursSum = newWorkLogs.night;
-              totalOverworkHoursSum = newWorkLogs.overwork;
+              totalDayHoursSum += newWorkLogs?.day;
+              totalNightHoursSum = newWorkLogs?.night;
+              totalOverworkHoursSum = newWorkLogs?.overwork;
 
               firstCellValue += allowOnlyDay
-                ? newWorkLogs.day
+                ? newWorkLogs?.day
                 : allowOnlyNight
-                  ? newWorkLogs.night
+                  ? newWorkLogs?.night
                   : allowOnlyOverwork
-                    ? newWorkLogs.overwork
+                    ? newWorkLogs?.overwork
                     : 0;
             }
 
@@ -3020,8 +3020,8 @@ export class WorkLogsService {
       const dayCell = `${startColumn}1`;
       const dayNameCell = `${startColumn}2`;
 
-      worksheet.getCell(dayCell).value = day.date;
-      worksheet.getCell(dayNameCell).value = day.dayName;
+      worksheet.getCell(dayCell).value = day?.date;
+      worksheet.getCell(dayNameCell).value = day?.dayName;
 
       worksheet.mergeCells(dayCell);
       worksheet.mergeCells(dayNameCell);
