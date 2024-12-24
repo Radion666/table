@@ -23,7 +23,7 @@ export const App = () => {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Provider store={setupStore()}>
-          <div className="h-[90dvh]">
+          <div className="h-dvh">
             <Routing />
             <ToastContainer position="bottom-right" autoClose={1000} />
           </div>
