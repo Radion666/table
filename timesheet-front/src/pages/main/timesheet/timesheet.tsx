@@ -790,154 +790,167 @@ export const TimesheetPage = () => {
   return (
     <>
       <div className="flex flex-col flex-1 p-5 md:text-base text-[12px]" ref={parentDivRef}>
-        <div className="flex justify-between mb-4  min-h-[50px] max-h-[50px] overflow-x-auto md:min-w-[calc(100vw-140px)] md:max-w-[calc(100vw-140px)]">
-          <div className="flex gap-5 items-center">
-            <div className="font-bold">
-              {monthsNameByNumberLocal[currentMonth]} {currentYear}
-            </div>
-            <Button
-              type="default"
-              className="ml-5 h-6 text-sm max-w-32"
-              onClick={() => {
-                setCurrentDate((prev) => {
-                  return dayjs(prev).subtract(1, "month");
-                });
-              }}>
-              Предыдущий месяц
-            </Button>
-            <Button
-              type="default"
-              className="h-6 text-sm  max-w-32"
-              onClick={() => {
-                setCurrentDate((prev) => {
-                  const nextDate = dayjs(prev).add(1, "month");
-                  if (dayjs(nextDate) > dayjs()) return prev;
-                  return nextDate;
-                });
-              }}>
-              Следующий месяц
-            </Button>
-          </div>
-          <div className="flex flex-row items-center gap-2 whitespace-nowrap">
-            <b>Наименование объекта:</b> {facilityByIdData?.name}
-          </div>
-          <div className="flex flex-row items-center gap-5">
-            <div className="flex flex-row items-center gap-2">
-              <div className="whitespace-nowrap pl-4">Итоги по буквам</div>
-              <Switch
-                size="small"
-                checked={totalVariant === "letters"}
-                onChange={() =>
-                  setTotalVariant((prev) => (prev === "letters" ? "numbers" : "letters"))
-                }
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-row items-center gap-4 ml-4">
-            <Dropdown
-              menu={{
-                items: cellLetters.map((el) => ({
-                  key: el.value,
-                  label: el.label
-                }))
-              }}>
-              <Button className="max-w-24">Обозначения</Button>
-            </Dropdown>
-            <Input
-              placeholder="Поиск работника"
-              value={searchingEmployee}
-              onChange={(e) => {
-                setSearchingEmployee(e.target.value);
-              }}
-              className="relative top-1 min-w-32"
-            />
-
-            {userRole !== "financier" && (
-              <div className="flex flex-row gap-4 items-center">
-                <Icon
-                  onClick={() => setModalOpen(true)}
-                  name="Create"
-                  width={30}
-                  height={30}
-                  className="cursor-pointer hover:text-blue-700"
-                />
-                <div className="relative">
-                  <Icon
-                    onClick={() => {
-                      if (isDownloading) return;
-
-                      setDownloading(true);
-                      apiRequests
-                        .downloadReport(
-                          facilityId ? +facilityId : 0,
-                          dayjs(currentDate)?.format("MM-YYYY")
-                        )
-                        .then(async (response) => {
-                          const url = window.URL.createObjectURL(new Blob([response.data]));
-                          const a = document.createElement("a");
-                          a.href = url;
-                          a.download = "downloaded_file.xlsx";
-                          document.body.appendChild(a);
-                          a.click();
-                          a.remove();
-                          window.URL.revokeObjectURL(url);
-                        })
-                        .finally(() => {
-                          setDownloading(false);
-                        });
-                    }}
-                    name="Excel"
-                    width={30}
-                    height={30}
-                    className={clsx(
-                      "cursor-pointer hover:text-blue-700 ",
-                      isDownloading && "opacity-20"
-                    )}
-                  />
-                  {isDownloading && (
-                    <div
-                      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
-                    ">
-                      <Loader />
-                    </div>
-                  )}
-                </div>
-                <div className="relative">
-                  <Icon
-                    onClick={() => {
-                      if (isSaving) return;
-                      setSaving(true);
-                      apiRequests
-                        .saveWorkLogs(innerData, facilityId ? +facilityId : undefined)
-                        .then(() => {
-                          toast.success("Успешно обновлено");
-                          setTimeout(() => {
-                            // window.location.reload();
-                          }, 500);
-                        })
-                        .finally(() => setSaving(false));
-                    }}
-                    name="Save"
-                    width={30}
-                    height={30}
-                    className={clsx(
-                      "cursor-pointer hover:text-blue-700 ",
-                      isSaving && "opacity-20"
-                    )}
-                  />
-                  {isSaving && (
-                    <div
-                      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
-                    ">
-                      <Loader />
-                    </div>
-                  )}
-                </div>
+        <Scrollbar
+          scrollBarHeight={6}
+          scrollBarWidth={0}
+          className="flex justify-between mb-4 flex-nowrap min-h-[50px] max-h-[50px]  md:min-w-[calc(100vw-140px)] md:max-w-[calc(100vw-140px)]"
+          style={{
+            WebkitOverflowScrolling: "touch"
+          }}>
+          <div
+            className="flex justify-between min-h-[50px] max-h-[50px]  md:min-w-[calc(100vw-140px)] md:max-w-[calc(100vw-140px)] w-full"
+            style={{
+              minHeight: 50,
+              maxHeight: 50
+            }}>
+            <div className="flex gap-5 items-center">
+              <div className="font-bold">
+                {monthsNameByNumberLocal[currentMonth]} {currentYear}
               </div>
-            )}
+              <Button
+                type="default"
+                className="ml-5 h-6 text-sm max-w-32"
+                onClick={() => {
+                  setCurrentDate((prev) => {
+                    return dayjs(prev).subtract(1, "month");
+                  });
+                }}>
+                Предыдущий месяц
+              </Button>
+              <Button
+                type="default"
+                className="h-6 text-sm  max-w-32"
+                onClick={() => {
+                  setCurrentDate((prev) => {
+                    const nextDate = dayjs(prev).add(1, "month");
+                    if (dayjs(nextDate) > dayjs()) return prev;
+                    return nextDate;
+                  });
+                }}>
+                Следующий месяц
+              </Button>
+            </div>
+            <div className="flex flex-row items-center gap-2 whitespace-nowrap">
+              <b>Наименование объекта:</b> {facilityByIdData?.name}
+            </div>
+            <div className="flex flex-row items-center gap-5">
+              <div className="flex flex-row items-center gap-2">
+                <div className="whitespace-nowrap pl-4">Итоги по буквам</div>
+                <Switch
+                  size="small"
+                  checked={totalVariant === "letters"}
+                  onChange={() =>
+                    setTotalVariant((prev) => (prev === "letters" ? "numbers" : "letters"))
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-row items-center gap-4 ml-4">
+              <Dropdown
+                menu={{
+                  items: cellLetters.map((el) => ({
+                    key: el.value,
+                    label: el.label
+                  }))
+                }}>
+                <Button className="max-w-24">Обозначения</Button>
+              </Dropdown>
+              <Input
+                placeholder="Поиск работника"
+                value={searchingEmployee}
+                onChange={(e) => {
+                  setSearchingEmployee(e.target.value);
+                }}
+                className="relative top-1 min-w-32"
+              />
+
+              {userRole !== "financier" && (
+                <div className="flex flex-row gap-4 items-center">
+                  <Icon
+                    onClick={() => setModalOpen(true)}
+                    name="Create"
+                    width={30}
+                    height={30}
+                    className="cursor-pointer hover:text-blue-700"
+                  />
+                  <div className="relative">
+                    <Icon
+                      onClick={() => {
+                        if (isDownloading) return;
+
+                        setDownloading(true);
+                        apiRequests
+                          .downloadReport(
+                            facilityId ? +facilityId : 0,
+                            dayjs(currentDate)?.format("MM-YYYY")
+                          )
+                          .then(async (response) => {
+                            const url = window.URL.createObjectURL(new Blob([response.data]));
+                            const a = document.createElement("a");
+                            a.href = url;
+                            a.download = "downloaded_file.xlsx";
+                            document.body.appendChild(a);
+                            a.click();
+                            a.remove();
+                            window.URL.revokeObjectURL(url);
+                          })
+                          .finally(() => {
+                            setDownloading(false);
+                          });
+                      }}
+                      name="Excel"
+                      width={30}
+                      height={30}
+                      className={clsx(
+                        "cursor-pointer hover:text-blue-700 ",
+                        isDownloading && "opacity-20"
+                      )}
+                    />
+                    {isDownloading && (
+                      <div
+                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+                    ">
+                        <Loader />
+                      </div>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <Icon
+                      onClick={() => {
+                        if (isSaving) return;
+                        setSaving(true);
+                        apiRequests
+                          .saveWorkLogs(innerData, facilityId ? +facilityId : undefined)
+                          .then(() => {
+                            toast.success("Успешно обновлено");
+                            setTimeout(() => {
+                              // window.location.reload();
+                            }, 500);
+                          })
+                          .finally(() => setSaving(false));
+                      }}
+                      name="Save"
+                      width={30}
+                      height={30}
+                      className={clsx(
+                        "cursor-pointer hover:text-blue-700 ",
+                        isSaving && "opacity-20"
+                      )}
+                    />
+                    {isSaving && (
+                      <div
+                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+                    ">
+                        <Loader />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        </Scrollbar>
 
         <div className="flex-1" ref={containerRef}>
           <div
@@ -1159,7 +1172,7 @@ export const TimesheetPage = () => {
             })}
           </div>
           <Scrollbar
-            className="w-full border-l-[1px] border-r-[1px] md:min-w-[calc(100vw-140px)] md:max-w-[calc(100vw-140px)] md:min-h-[calc(100vh-220px)] md:max-h-[calc(100vh-220px)] min-h-[calc(100vh-296px)] max-h-[calc(100vh-296px)] "
+            className="w-full border-l-[1px] border-r-[1px] md:min-w-[calc(100vw-140px)] md:max-w-[calc(100vw-140px)] md:min-h-[calc(100dvh-220px)] md:max-h-[calc(100dvh-220px)] min-h-[calc(100dvh-296px)] max-h-[calc(100dvh-296px)] "
             viewRef={contentRef}
             onViewScroll={(props) => {
               headerRef?.current?.scrollTo({

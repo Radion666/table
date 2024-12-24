@@ -85,7 +85,7 @@ export const LoginPage = () => {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="h-svh flex items-center justify-center flex-col gap-3 w-full">
+      className="h-dvh flex items-center justify-center flex-col gap-3 w-full">
       <div className="font-serif text-3xl mb-2">Вход</div>
       <Controller
         name="login"
