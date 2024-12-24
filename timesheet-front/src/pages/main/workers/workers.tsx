@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import dayjs, { Dayjs } from "dayjs";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "react-toastify";
-import { useDebounceValue } from "usehooks-ts";
 
 import { workersColumns, workersStatuses } from "./utils/constants";
 
@@ -12,6 +11,7 @@ import { GridTable } from "~src/components/grid-table/grid-table";
 import { apiRequests } from "~src/shared/api/requests";
 import { regexes } from "~src/shared/constants/default";
 import { useAppSelector } from "~src/shared/hooks";
+import { useCustomDebounceValue } from "~src/shared/hooks/useCustomDebounced";
 import { useGetUser } from "~src/shared/hooks/useGetUser";
 import { useGetAllFacilities, useGetAllWorkers } from "~src/shared/hooks/useRequests";
 import { createWorkerType, workerStatusType } from "~src/shared/types/employees";
@@ -32,7 +32,9 @@ export const WorkersPage = () => {
   const [isModalOpen, setModalOpen] = useState<boolean>(false);
 
   const [searchName, setSearchName] = useState<string>("");
-  const [debouncedSearchName] = useDebounceValue(searchName, 500);
+
+  const [debouncedSearchName] = useCustomDebounceValue(searchName, 500);
+
   const [selectedStatus, setSelectedStatus] = useState<workerStatusType>("working");
 
   const {

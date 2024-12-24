@@ -790,7 +790,7 @@ export const TimesheetPage = () => {
   return (
     <>
       <div className="flex flex-col flex-1 p-5 md:text-base text-[12px]" ref={parentDivRef}>
-        <div className="flex justify-between mb-4 md:flex-nowrap flex-wrap">
+        <div className="flex justify-between mb-4  min-h-[50px] max-h-[50px] overflow-x-auto md:min-w-[calc(100vw-140px)] md:max-w-[calc(100vw-140px)]">
           <div className="flex gap-5 items-center">
             <div className="font-bold">
               {monthsNameByNumberLocal[currentMonth]} {currentYear}
@@ -818,12 +818,12 @@ export const TimesheetPage = () => {
               Следующий месяц
             </Button>
           </div>
-          <div className="flex flex-row items-center gap-2">
+          <div className="flex flex-row items-center gap-2 whitespace-nowrap">
             <b>Наименование объекта:</b> {facilityByIdData?.name}
           </div>
           <div className="flex flex-row items-center gap-5">
             <div className="flex flex-row items-center gap-2">
-              <div>Итоги по буквам</div>
+              <div className="whitespace-nowrap pl-4">Итоги по буквам</div>
               <Switch
                 size="small"
                 checked={totalVariant === "letters"}
@@ -834,7 +834,7 @@ export const TimesheetPage = () => {
             </div>
           </div>
 
-          <div className="flex flex-row items-center gap-4">
+          <div className="flex flex-row items-center gap-4 ml-4">
             <Dropdown
               menu={{
                 items: cellLetters.map((el) => ({
@@ -850,7 +850,7 @@ export const TimesheetPage = () => {
               onChange={(e) => {
                 setSearchingEmployee(e.target.value);
               }}
-              className="relative top-1"
+              className="relative top-1 min-w-32"
             />
 
             {userRole !== "financier" && (
@@ -1159,7 +1159,7 @@ export const TimesheetPage = () => {
             })}
           </div>
           <Scrollbar
-            className="w-full border-l-[1px] border-r-[1px] md:min-w-[calc(100vw-140px)] md:max-w-[calc(100vw-140px)] md:min-h-[calc(100vh-200px)] md:max-h-[calc(100vh-200px)] min-h-[calc(100vh-325px)] max-h-[calc(100vh-325px)] "
+            className="w-full border-l-[1px] border-r-[1px] md:min-w-[calc(100vw-140px)] md:max-w-[calc(100vw-140px)] md:min-h-[calc(100vh-220px)] md:max-h-[calc(100vh-220px)] min-h-[calc(100vh-296px)] max-h-[calc(100vh-296px)] "
             viewRef={contentRef}
             onViewScroll={(props) => {
               headerRef?.current?.scrollTo({

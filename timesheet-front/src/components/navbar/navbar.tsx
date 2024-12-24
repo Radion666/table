@@ -26,7 +26,7 @@ export const NavBar = () => {
   };
 
   return (
-    <div className="h-full flex items-center flex-col gap-5 bg-[#E5E5E5] p-5 min-w-24 max-w-24 justify-center max-md:h-20 max-md:min-w-[100vw] max-md:flex-row max-md:gap-3">
+    <div className="h-full flex items-center flex-col gap-5 bg-[#E5E5E5] p-5 min-w-24 max-w-24 justify-center max-md:h-[80px] max-md:min-w-[100vw] max-md:flex-row max-md:gap-3">
       <button className="md:absolute md:top-10 max-md:hidden flex flex-col justify-center items-center">
         <Icon name="User" size={24} className="hover:text-[#B74858]" />
         {getShortUserFio(user)}
@@ -47,7 +47,7 @@ export const NavBar = () => {
                 href={item.url?.[0]}
                 className={clsx(
                   styles.btn,
-                  "w-16 min-h-12 rounded-lg items-center justify-center flex gap-2 cursor-pointer max-md:max-w-12 max-md:min-w-12",
+                  "w-16 min-h-12 rounded-lg items-center justify-center flex gap-2 cursor-pointer max-md:max-w-[32px] max-md:min-w-[32px] max-md:min-h-10",
                   isSelected && "bg-blue-600 text-white hover:text-neutral-300 ",
                   !isSelected && "text-[#343434]  hover:text-[#B74858]"
                 )}>
