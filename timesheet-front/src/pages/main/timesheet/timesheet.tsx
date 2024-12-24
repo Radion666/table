@@ -1159,7 +1159,7 @@ export const TimesheetPage = () => {
             })}
           </div>
           <Scrollbar
-            className="w-full border-l-[1px] border-r-[1px] md:min-w-[calc(100vw-140px)] md:max-w-[calc(100vw-140px)] md:min-h-[calc(100vh-220px)] md:max-h-[calc(100vh-220px)] min-h-[calc(100vh-350px)] max-h-[calc(100vh-350px)] "
+            className="w-full border-l-[1px] border-r-[1px] md:min-w-[calc(100vw-140px)] md:max-w-[calc(100vw-140px)] md:min-h-[calc(100dvh-220px)] md:max-h-[calc(100dvh-220px)] min-h-[calc(100dvh-296px)] max-h-[calc(100dvh-296px)] "
             viewRef={contentRef}
             onViewScroll={(props) => {
               headerRef?.current?.scrollTo({
