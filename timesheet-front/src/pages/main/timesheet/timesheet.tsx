@@ -14,8 +14,9 @@ import { dateRegex, daysInMonth, getDaysInMonth, parseDate } from "../utils/util
 import { workersStatuses } from "../workers/utils/constants";
 
 import { cellLetters } from "./components/table-cell/component/cell-input";
-import { TableCell } from "./components/table-cell/table-cell";
+import { checkDate, TableCell } from "./components/table-cell/table-cell";
 import {
+  dateValueType,
   employeeDatesType,
   employeeTotalType,
   employeeType,
@@ -117,7 +118,13 @@ export const TimesheetPage = () => {
   const [isSaving, setSaving] = useState<boolean>(false);
   const [isDownloading, setDownloading] = useState<boolean>(false);
 
-  const [dateColToCopy, setDateColToCopy] = useState<string | undefined>(undefined);
+  const [dateColToCopy, setDateColToCopy] = useState<
+    | {
+        date: string;
+        isWeekend: boolean;
+      }
+    | undefined
+  >(undefined);
   const [dateColToPaste, setDateColToPaste] = useState<string | undefined>(undefined);
 
   const [copyValue, setCopyValue] = useState<
@@ -293,6 +300,178 @@ export const TimesheetPage = () => {
 
   const [innerData, setInnerData] = useState<employeeType[]>([]);
   const [copyOfInnerData, setCopyOfInnerData] = useState<employeeType[]>([]);
+
+  useEffect(() => {
+    if (dateColToCopy?.date && dateColToPaste && innerData) {
+      const newDatesByEmployeeId: {
+        employeeId: number;
+        value: dateValueType;
+      }[] = [];
+
+      for (let i = 0; i < innerData?.length; i++) {
+        const element = innerData?.[i];
+
+        newDatesByEmployeeId.push({
+          employeeId: element.employeeId,
+          value: element?.dates?.[dateColToCopy?.date]
+        });
+      }
+
+      setInnerData((prev) => {
+        const copyOfPrev = structuredClone(prev);
+
+        for (let i = 0; i < copyOfPrev?.length; i++) {
+          const element = copyOfPrev[i];
+
+          const foundElement = newDatesByEmployeeId?.find(
+            (el) => el.employeeId === element.employeeId
+          );
+
+          if (foundElement) {
+            let isDisabled = true;
+
+            const cellDate = dayjs(parseDate(dateColToPaste));
+            const today = dayjs();
+            const facilityPeriods = element?.facilityPeriods;
+            const employmentPeriods = element?.employmentPeriods;
+
+            if (cellDate.isAfter(today, "day")) {
+              isDisabled = true;
+            }
+
+            for (let i = 0; i < facilityPeriods?.length; i++) {
+              const facilityPeriod = facilityPeriods?.[i];
+
+              const newFacilityPeriod = {
+                ...facilityPeriod,
+                startDate: dayjs(facilityPeriod.startDate)?.format(),
+                createdAt: dayjs(facilityPeriod.createdAt)?.format()
+              };
+
+              const startDate = dayjs(newFacilityPeriod?.startDate);
+              const endDate = dayjs(newFacilityPeriod?.endDate);
+
+              if (
+                newFacilityPeriod?.endDate === null &&
+                (cellDate.isSame(startDate, "day") || cellDate.isAfter(startDate))
+              ) {
+                break;
+              }
+
+              if (
+                (startDate?.isBefore(cellDate) || startDate?.isSame(cellDate, "day")) &&
+                (endDate?.isAfter(cellDate) || endDate?.isSame(cellDate, "day"))
+                // && dayjs(endDate)?.diff(startDate, "hour") > 1
+              ) {
+                break;
+              } else {
+                if (cellDate.isAfter(endDate) || cellDate.isSame(endDate, "day")) {
+                  isDisabled = true;
+                }
+                // setErrorMsg("Н/у");
+                isDisabled = true;
+              }
+            }
+
+            if (checkDate(cellDate)) {
+              isDisabled = true;
+            }
+
+            for (let i = 0; i < employmentPeriods?.length; i++) {
+              const period = employmentPeriods?.[i];
+
+              const newPeriod = {
+                ...period,
+                startDate: dayjs(period.startDate)?.format(),
+                createdAt: dayjs(period.createdAt)?.format(),
+                endDate: period.endDate ? dayjs(period.endDate)?.format() : null
+              };
+
+              const isAfterStartDate = cellDate?.isAfter(newPeriod.startDate);
+              const isBeforeEndDate = cellDate?.isBefore(newPeriod.endDate);
+              const isSameAsStartDate = cellDate?.isSame(newPeriod.startDate, "day");
+              const isSameAsEndDate = cellDate?.isSame(newPeriod.endDate, "day");
+
+              const isCoincidingWithBoth = isSameAsStartDate && isSameAsEndDate;
+
+              if (newPeriod.status === "working") {
+                if (cellDate?.isSame(newPeriod.startDate, "day") && newPeriod.endDate === null) {
+                  isDisabled = false;
+                }
+
+                if (dayjs(newPeriod?.startDate)?.isAfter(cellDate)) {
+                  isDisabled = true;
+                }
+              }
+
+              if (
+                newPeriod.endDate === null &&
+                cellDate.isAfter(newPeriod?.startDate) &&
+                newPeriod?.status === "working"
+              ) {
+                isDisabled = false;
+              } else if (
+                newPeriod.endDate !== null &&
+                newPeriod.status === "working" &&
+                dayjs(newPeriod?.startDate)?.isBefore(cellDate) &&
+                dayjs(newPeriod?.endDate)?.isAfter(cellDate)
+              ) {
+                isDisabled = false;
+              } else if (
+                (isAfterStartDate && isBeforeEndDate) ||
+                (isCoincidingWithBoth && (newPeriod.endDate === null ? true : true))
+                // dayjs(newPeriod?.endDate)?.diff(newPeriod.startDate, "hour") > 8
+              ) {
+                isDisabled = false;
+              }
+
+              if (
+                (newPeriod?.status === "archived" || newPeriod?.status === "fired") &&
+                newPeriod?.endDate === null &&
+                cellDate.isSame(newPeriod?.startDate, "day")
+              ) {
+                isDisabled = true;
+              }
+            }
+
+            if (!isDisabled && userRole === "master") {
+              const actualDay = dayjs(parseDate(dateColToPaste));
+              const today = dayjs();
+
+              const allowedDates = [
+                today.format("YYYY-MM-DD"),
+                today.subtract(1, "day").format("YYYY-MM-DD"),
+                today.subtract(2, "day").format("YYYY-MM-DD")
+              ];
+
+              if (allowedDates.includes(actualDay.format("YYYY-MM-DD"))) {
+                isDisabled = false;
+              } else {
+                isDisabled = true;
+              }
+            }
+
+            if (!isDisabled) {
+              const today = dayjs()?.startOf("day");
+              const parsedDate = dayjs(parseDate(dateColToPaste));
+
+              if (dayjs(parsedDate)?.startOf("day")?.format() > today?.format()) {
+                isDisabled = true;
+              }
+            }
+
+            if (!isDisabled) {
+              element.dates[dateColToPaste] = foundElement.value;
+            }
+          }
+        }
+
+        setDateColToPaste(undefined);
+        setDateColToCopy(undefined);
+        return copyOfPrev;
+      });
+    }
+  }, [dateColToCopy, dateColToPaste]);
 
   useEffect(() => {
     const checkWidth = () => {
@@ -787,6 +966,12 @@ export const TimesheetPage = () => {
     return sortedArr;
   };
 
+  const allowedDates = [
+    today.format("YYYY-MM-DD"),
+    today.subtract(1, "day").format("YYYY-MM-DD"),
+    today.subtract(2, "day").format("YYYY-MM-DD")
+  ];
+
   return (
     <>
       <div className="flex flex-col flex-1 p-5 md:text-base text-[12px]" ref={parentDivRef}>
@@ -1002,6 +1187,15 @@ export const TimesheetPage = () => {
 
               isInnerWeekend = isInnerWeekend ? isInnerWeekend : day?.isWeekend;
 
+              let isAllowedToCopy = false;
+
+              if (userRole === "master" && day.value && dateRegex.test(day?.value ?? "")) {
+                const actualDay = dayjs(parseDate(day?.value));
+                isAllowedToCopy = allowedDates.includes(actualDay.format("YYYY-MM-DD"));
+              } else if (userRole !== "master") {
+                isAllowedToCopy = true;
+              }
+
               return (
                 <div
                   key={index}
@@ -1029,6 +1223,7 @@ export const TimesheetPage = () => {
                           !day.dayName && "h-full"
                         )}>
                         {day.fieldType === "input" &&
+                          isAllowedToCopy &&
                           (dayjs(day.value, "DD.MM.YYYY").isBefore(dayjs(), "day") ||
                             dayjs(day.value, "DD.MM.YYYY").isSame(dayjs(), "day")) && (
                             <>
@@ -1036,12 +1231,15 @@ export const TimesheetPage = () => {
                                 className="absolute top-2 cursor-pointer select-none"
                                 onClick={() => {
                                   setCopyValue(undefined);
-                                  setDateColToCopy(day.value as string);
+                                  setDateColToCopy({
+                                    date: day.value as string,
+                                    isWeekend: !!isInnerWeekend
+                                  });
                                   toast.success("Значение успешно скопировано");
                                 }}>
                                 <Icon name="Copy" size={16} />
                               </div>
-                              {copyValue && copyValue.isWeekend === isInnerWeekend && (
+                              {dateColToCopy && !!dateColToCopy?.isWeekend === isInnerWeekend && (
                                 <div
                                   className="absolute bottom-2 cursor-pointer"
                                   onClick={() => {

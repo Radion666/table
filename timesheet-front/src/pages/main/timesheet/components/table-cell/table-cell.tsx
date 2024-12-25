@@ -87,7 +87,7 @@ interface TableCellProps {
   };
 }
 
-const checkDate = (dateToCheck: Dayjs) => {
+export const checkDate = (dateToCheck: Dayjs) => {
   const today = dayjs();
   const dayOfMonth = today.date();
 
@@ -130,12 +130,7 @@ export const TableCell: FC<TableCellProps> = memo(
     actualAddress,
     registeredAddress,
     lastStatus,
-    index,
-    dateColToCopy,
-    setCopyValue,
-    copyValue,
-    dateColToPaste,
-    setDateColToPaste
+    index
   }) => {
     const { userRole } = useGetUser();
     const [errorMsg, setErrorMsg] = useState<string>("");
@@ -456,56 +451,6 @@ export const TableCell: FC<TableCellProps> = memo(
 
       return isWeekend;
     }, [dayValue, isWeekend, productionCalendar]);
-
-    useEffect(() => {
-      // if (dateColToCopy === )
-      if (dayValue && dateRegex.test(dayValue)) {
-        if (dayValue === dateColToCopy) {
-          setCopyValue((prev) => ({
-            ...prev,
-            isWeekend: isInnerWeekend,
-            value: prev?.value?.length
-              ? [
-                  ...prev?.value,
-                  {
-                    dates: value,
-                    isDisabled: isDisabled,
-                    employeeId: employeeId
-                  }
-                ]
-              : [
-                  {
-                    dates: value,
-                    isDisabled: isDisabled,
-                    employeeId: employeeId
-                  }
-                ]
-          }));
-        }
-
-        // const cellDate = dayjs(parseDate(dayValue));
-        // // console.log(cellDate.format(''));
-        // console.log(dayValue, dateColToCopy);
-        // setCopyValue(prev => ({
-        //   ...prev,
-        //   isWeekend: isInnerWeekend,
-        // value: [...prev?.value, {
-        //   // dates: value
-        //   dates: value,
-        // }]
-        // }))
-      }
-    }, [dateColToCopy]);
-
-    useEffect(() => {
-      if (!isDisabled && copyValue && dayValue && dateRegex.test(dayValue)) {
-        if (dayValue === dateColToPaste) {
-          const foundElemenet = copyValue.value.find((el) => el.employeeId === employeeId);
-          handleChange(dayValue, foundElemenet?.dates);
-          setDateColToPaste?.(undefined);
-        }
-      }
-    }, [dateColToPaste]);
 
     return (
       <div
