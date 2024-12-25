@@ -298,7 +298,7 @@ export class WorkLogsService {
       }
       return 'success';
     } catch (err: any) {
-      throw new BadRequestException('Неизвестная ошибка', err);
+      throw new BadRequestException(err?.response || 'Неизвестная ошибка', err);
     }
   }
 
