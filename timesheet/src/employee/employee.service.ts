@@ -766,6 +766,16 @@ export class EmployeeService {
             ? null
             : dayjs(employmentPeriod?.endDate);
 
+        const status = employmentPeriod?.status;
+
+        if (
+          (status === 'fired' || status === 'archived') &&
+          innerEndDate === null &&
+          dayjs(innerStartDate)?.isBefore(startDate, 'month')
+        ) {
+          continue;
+        }
+
         if (
           innerEndDate === null &&
           (innerStartDate?.isBefore(startDate) ||
