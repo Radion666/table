@@ -33,7 +33,7 @@ export const WorkersPage = () => {
 
   const [searchName, setSearchName] = useState<string>("");
 
-  const [debouncedSearchName] = useCustomDebounceValue(searchName, 500);
+  const debouncedSearchName = useCustomDebounceValue(searchName, 500);
 
   const [selectedStatus, setSelectedStatus] = useState<workerStatusType>("working");
 
