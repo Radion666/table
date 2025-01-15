@@ -173,7 +173,7 @@ export const FacilitiesPage = () => {
       actualAddress: "",
       facilityId: null,
       firstName: "",
-      isOutOfTown: true,
+      isOutOfTown: false,
       lastName: "",
       masterId: user?.id,
       middleName: "",
@@ -185,10 +185,8 @@ export const FacilitiesPage = () => {
     }
   });
 
-  const { data: positionsData, isFetching: isPositionsFetching } = useGetAllPositions(
-    userRole !== "financier"
-  );
-  const { data: allFacilities, isFetching: isAllFacilitiesFetching } = useGetAllFacilities({
+  const { data: positionsData } = useGetAllPositions(userRole !== "financier");
+  const { data: allFacilities } = useGetAllFacilities({
     page: 1,
     pageSize: 1000
   });
