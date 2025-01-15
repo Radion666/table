@@ -66,7 +66,7 @@ export const WorkersPage = () => {
       actualAddress: "",
       facilityId: null,
       firstName: "",
-      isOutOfTown: true,
+      isOutOfTown: false,
       lastName: "",
       masterId: userRole === "master" ? user?.id : null,
       middleName: "",
@@ -98,6 +98,7 @@ export const WorkersPage = () => {
   const [isSubmiting, setSubmiting] = useState<boolean>(false);
 
   const handleCreate = async (data: createWorkerType) => {
+    console.log(data);
     setSubmiting(true);
 
     await apiRequests
@@ -120,6 +121,8 @@ export const WorkersPage = () => {
   const today = dayjs();
   const firstDayOfCurrentMonth = dayjs().startOf("month");
 
+  const [randomKey, setRandomKey] = useState<number>(Date.now());
+
   // Функция для отключения дней
   const disabledDate = (current: Dayjs) => {
     return current.isAfter(today, "day") || current.isBefore(firstDayOfCurrentMonth, "day");
@@ -127,6 +130,7 @@ export const WorkersPage = () => {
 
   useEffect(() => {
     reset();
+    setRandomKey(Date.now());
   }, [isModalOpen]);
 
   return (
@@ -184,183 +188,185 @@ export const WorkersPage = () => {
           }}
         />
       </div>
-      <Modal title="Создание нового сотрудника" state={isModalOpen} setState={setModalOpen}>
-        <form className="flex flex-col gap-2 mt-4" onSubmit={handleSubmit(handleCreate)}>
-          <Controller
-            control={control}
-            name="lastName"
-            rules={{
-              required: "Фамилия обязательна"
-            }}
-            render={({ field }) => (
-              <Input errorMessage={errors?.lastName?.message} label="Фамилия" {...field} />
-            )}
-          />
-
-          <Controller
-            rules={{
-              required: "Имя обязательно"
-            }}
-            control={control}
-            name="firstName"
-            render={({ field }) => (
-              <Input errorMessage={errors?.firstName?.message} label="Имя" {...field} />
-            )}
-          />
-
-          <Controller
-            control={control}
-            name="middleName"
-            render={({ field }) => (
-              <Input errorMessage={errors?.middleName?.message} label="Отчество" {...field} />
-            )}
-          />
-
-          <Controller
-            control={control}
-            name="facilityId"
-            render={({ field }) => (
-              <Select
-                optionFilterProp="label"
-                loading={isAllFacilitiesFetching}
-                options={allFacilities?.data?.items?.map((facility) => ({
-                  value: facility.id,
-                  label: facility.name
-                }))}
-                showSearch
-                errorMessage={errors?.facilityId?.message}
-                label="Объект"
-                {...field}
-              />
-            )}
-          />
-
-          <Controller
-            rules={{
-              required: "Должность обязательна"
-            }}
-            control={control}
-            name="positionId"
-            render={({ field }) => (
-              <Select
-                optionFilterProp="label"
-                loading={isPositionsFetching}
-                options={positionsData?.data?.map((position) => ({
-                  value: position.id,
-                  label: position.name
-                }))}
-                showSearch
-                errorMessage={errors?.positionId?.message}
-                label="Должность"
-                {...field}
-              />
-            )}
-          />
-
-          {userRole !== "master" && (
+      {isModalOpen && (
+        <Modal title="Создание нового сотрудника" state={isModalOpen} setState={setModalOpen}>
+          <form className="flex flex-col gap-2 mt-4" onSubmit={handleSubmit(handleCreate)}>
             <Controller
               control={control}
-              name="masterId"
+              name="lastName"
+              rules={{
+                required: "Фамилия обязательна"
+              }}
+              render={({ field }) => (
+                <Input errorMessage={errors?.lastName?.message} label="Фамилия" {...field} />
+              )}
+            />
+
+            <Controller
+              rules={{
+                required: "Имя обязательно"
+              }}
+              control={control}
+              name="firstName"
+              render={({ field }) => (
+                <Input errorMessage={errors?.firstName?.message} label="Имя" {...field} />
+              )}
+            />
+
+            <Controller
+              control={control}
+              name="middleName"
+              render={({ field }) => (
+                <Input errorMessage={errors?.middleName?.message} label="Отчество" {...field} />
+              )}
+            />
+
+            <Controller
+              control={control}
+              name="facilityId"
               render={({ field }) => (
                 <Select
                   optionFilterProp="label"
-                  loading={isAllMastersLoading}
-                  options={allMastersData?.data?.map((master) => ({
-                    value: master.id,
-                    label: getUserFio(master)
+                  loading={isAllFacilitiesFetching}
+                  options={allFacilities?.data?.items?.map((facility) => ({
+                    value: facility.id,
+                    label: facility.name
                   }))}
                   showSearch
-                  errorMessage={errors?.masterId?.message}
-                  label="Мастер"
+                  errorMessage={errors?.facilityId?.message}
+                  label="Объект"
                   {...field}
                 />
               )}
             />
-          )}
 
-          <Controller
-            rules={{
-              required: "Статус обязателен"
-            }}
-            control={control}
-            name="status"
-            render={({ field }) => (
-              <Select
-                optionFilterProp="label"
-                options={workersStatuses?.map((status) => ({
-                  value: status.value,
-                  label: status.label
-                }))}
-                showSearch
-                errorMessage={errors?.status?.message}
-                label="Статус"
-                {...field}
+            <Controller
+              rules={{
+                required: "Должность обязательна"
+              }}
+              control={control}
+              name="positionId"
+              render={({ field }) => (
+                <Select
+                  optionFilterProp="label"
+                  loading={isPositionsFetching}
+                  options={positionsData?.data?.map((position) => ({
+                    value: position.id,
+                    label: position.name
+                  }))}
+                  showSearch
+                  errorMessage={errors?.positionId?.message}
+                  label="Должность"
+                  {...field}
+                />
+              )}
+            />
+
+            {userRole !== "master" && (
+              <Controller
+                control={control}
+                name="masterId"
+                render={({ field }) => (
+                  <Select
+                    optionFilterProp="label"
+                    loading={isAllMastersLoading}
+                    options={allMastersData?.data?.map((master) => ({
+                      value: master.id,
+                      label: getUserFio(master)
+                    }))}
+                    showSearch
+                    errorMessage={errors?.masterId?.message}
+                    label="Мастер"
+                    {...field}
+                  />
+                )}
               />
             )}
-          />
 
-          <Controller
-            rules={{
-              required: "Номер телефона обязателен",
-              pattern: {
-                value: regexes.phone,
-                message: "Номер телефона не соответствует стандарту"
-              }
-            }}
-            control={control}
-            name="phoneNumber"
-            render={({ field }) => (
-              <Input
-                label="Номер телефона"
-                isPhone
-                errorMessage={errors.phoneNumber?.message}
-                {...field}
-              />
-            )}
-          />
+            <Controller
+              rules={{
+                required: "Статус обязателен"
+              }}
+              control={control}
+              name="status"
+              render={({ field }) => (
+                <Select
+                  optionFilterProp="label"
+                  options={workersStatuses?.map((status) => ({
+                    value: status.value,
+                    label: status.label
+                  }))}
+                  showSearch
+                  errorMessage={errors?.status?.message}
+                  label="Статус"
+                  {...field}
+                />
+              )}
+            />
 
-          <Controller
-            rules={{
-              required: ""
-            }}
-            control={control}
-            name="isOutOfTown"
-            render={({ field }) => <Checkbox label="Вахтовик" {...field} />}
-          />
+            <Controller
+              rules={{
+                required: "Номер телефона обязателен",
+                pattern: {
+                  value: regexes.phone,
+                  message: "Номер телефона не соответствует стандарту"
+                }
+              }}
+              control={control}
+              name="phoneNumber"
+              render={({ field }) => (
+                <Input
+                  label="Номер телефона"
+                  isPhone
+                  errorMessage={errors.phoneNumber?.message}
+                  {...field}
+                />
+              )}
+            />
 
-          <Controller
-            rules={{
-              required: ""
-            }}
-            control={control}
-            name="createdAt"
-            render={({ field }) => (
-              <CustomDatePicker
-                label="Дата трудоустройства"
-                disabledDate={userRole === "admin" ? false : disabledDate}
-                {...field}
-              />
-            )}
-          />
+            <Controller
+              rules={{
+                required: ""
+              }}
+              control={control}
+              name="isOutOfTown"
+              render={({ field }) => <Checkbox label="Вахтовик" {...field} />}
+            />
 
-          <Controller
-            control={control}
-            name="registeredAddress"
-            render={({ field }) => <Input label="Адрес регистрации" {...field} />}
-          />
-          <Controller
-            control={control}
-            name="actualAddress"
-            render={({ field }) => <Input label="Адрес фактического проживания" {...field} />}
-          />
+            <Controller
+              rules={{
+                required: ""
+              }}
+              control={control}
+              name="createdAt"
+              render={({ field }) => (
+                <CustomDatePicker
+                  label="Дата трудоустройства"
+                  disabledDate={userRole === "admin" ? false : disabledDate}
+                  {...field}
+                />
+              )}
+            />
 
-          <div className="flex justify-center mt-4">
-            <Button htmlType="submit" loading={isSubmiting}>
-              Сохранить
-            </Button>
-          </div>
-        </form>
-      </Modal>
+            <Controller
+              control={control}
+              name="registeredAddress"
+              render={({ field }) => <Input label="Адрес регистрации" {...field} />}
+            />
+            <Controller
+              control={control}
+              name="actualAddress"
+              render={({ field }) => <Input label="Адрес фактического проживания" {...field} />}
+            />
+
+            <div className="flex justify-center mt-4">
+              <Button htmlType="submit" loading={isSubmiting}>
+                Сохранить
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </>
   );
 };
