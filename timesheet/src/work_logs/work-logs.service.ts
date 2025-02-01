@@ -708,6 +708,8 @@ export class WorkLogsService {
   }
 
   async findByDate(date: string, facilityId: number) {
+    date = date?.startsWith('0') ? date?.slice(1) : date;
+
     await this.findFacility(facilityId);
 
     validateParamsDate(date);
@@ -759,6 +761,8 @@ export class WorkLogsService {
     const productionCalendar = (foundFacilityById as any)?.productionCalendar;
 
     const workLogsData = await this.findByDate(date, facilityId);
+
+    console.log(workLogsData);
 
     const dates = getDaysInMonth(monthDifference);
 
