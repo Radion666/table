@@ -18,11 +18,13 @@ export const queryClient = new QueryClient({
   }
 });
 
+export const store = setupStore();
+
 export const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <Provider store={setupStore()}>
+        <Provider store={store}>
           <div className="h-dvh">
             <Routing />
             <ToastContainer position="bottom-right" autoClose={1000} />

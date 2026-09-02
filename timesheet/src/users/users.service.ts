@@ -54,12 +54,11 @@ export class UsersService {
     await this.validateDto(dto as CreateUserDto, id);
 
     if (dto?.password) {
-      const hashPassword = await hash(dto.password, 5);
+      const hashPassword = await hash(dto.password, 10);
       const result = await this.userRepository.update(
         {
           ...dto,
           password: hashPassword,
-          lastLoginAt: '2024-10-08 14:30:00' as any,
           passwordChangedAt: new Date(),
         },
         {
@@ -79,7 +78,6 @@ export class UsersService {
         ...Object.fromEntries(
           Object.entries(dto).filter(([key, value]) => key !== 'password'),
         ),
-        lastLoginAt: '2024-10-08 14:30:00' as any,
       },
       {
         where: {

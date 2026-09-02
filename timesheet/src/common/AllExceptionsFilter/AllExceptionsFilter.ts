@@ -45,9 +45,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
       statusCode: typedException?.status ?? httpStatus,
       timestamp: new Date().toISOString(),
       path: httpAdapter.getRequestUrl(ctx.getRequest()),
-      method: ctx.getRequest()?.method, // HTTP метод (GET, POST, и т.д.)
-      userAgent: ctx.getRequest()?.headers['user-agent'], // Информация о клиенте
-      ip: ctx.getRequest()?.ip, // IP-адрес клиента
+      method: ctx.getRequest()?.method,
+      userAgent: ctx.getRequest()?.headers['user-agent'],
+      ip: ctx.getRequest()?.ip,
       ...(typeof exceptionResponse === 'object' && exceptionResponse),
       ...(typedException?.response && {
         message: typedException.response,
@@ -61,11 +61,15 @@ export class AllExceptionsFilter implements ExceptionFilter {
       ...(exceptionRequest?.query && {
         requestQuery: JSON.stringify(exceptionRequest.query),
       }),
-      environment: process.env.NODE_ENV || 'development',
-      service: 'auth-service',
-      hostname: require('os').hostname(),
-      stack: exception instanceof Error ? exception.stack : '',
     };
+
+    // Only include sensitive info in development
+    if (process.env.NODE_ENV !== 'production') {
+      responseBody.environment = process.env.NODE_ENV || 'development';
+      responseBody.service = 'timesheet-service';
+      responseBody.hostname = require('os').hostname();
+      responseBody.stack = exception instanceof Error ? exception.stack : '';
+    }
 
     this.logger.error(
       `\`\`\`\n${JSON.stringify(responseBody, null, 2)}\n\`\`\``,

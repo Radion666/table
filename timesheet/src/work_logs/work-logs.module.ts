@@ -16,7 +16,7 @@ import { WorkLogsService } from './work-logs.service';
 
 @Module({
   controllers: [WorkLogsController],
-  providers: [WorkLogsService, ChangeLogsService, WorkLogsService],
+  providers: [WorkLogsService, ChangeLogsService],
   imports: [
     SequelizeModule.forFeature([
       WorkLog,

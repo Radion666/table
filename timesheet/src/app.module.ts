@@ -34,6 +34,7 @@ import { WorkLogsModule } from './work_logs/work-logs.module';
       password: process.env.PG_PASSWORD,
       database: process.env.PG_DATABASE,
       autoLoadModels: true,
+      synchronize: true, // TODO: set to false after initial deployment and add migrations
       logging: false,
       // logging: console.log,
     }),

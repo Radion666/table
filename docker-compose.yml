@@ -3,8 +3,8 @@ services:
     build:
       context: ./timesheet-front
       dockerfile: Dockerfile
-    environment:
-      VITE_API_URL: "${VITE_API_URL}"
+      args:
+        VITE_API_URL: "${VITE_API_URL}"
     restart: unless-stopped
     ports:
       - "80:80"
@@ -17,31 +17,39 @@ services:
     ports:
       - "${BACKEND_PORT}:42131"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - my_network
     environment:
-      PORT: '${PORT}'
+      PORT: '42131'
       PG_HOST: "${PG_HOST}"
       PG_PORT: "${PG_PORT}"
       PG_USERNAME: "${PG_USERNAME}"
       PG_PASSWORD: "${PG_PASSWORD}"
       PG_DATABASE: "${PG_DATABASE}"
+      PRIVATE_KEY: "${PRIVATE_KEY}"
       TG_API_TOKEN: "${TG_API_TOKEN}"
       TG_CHAT_ID: "${TG_CHAT_ID}"
+      NODE_ENV: "production"
   postgres:
     image: postgres:16.3-alpine
     environment:
       POSTGRES_USER: "${PG_USERNAME}"
       POSTGRES_PASSWORD: "${PG_PASSWORD}"
-      PG_DATABASE: ${PG_DATABASE}
+      POSTGRES_DB: "${PG_DATABASE}"
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     networks:
       - my_network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USERNAME} -d ${PG_DATABASE}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   pgadmin:
     image: dpage/pgadmin4
     ports:
@@ -50,7 +58,8 @@ services:
       PGADMIN_DEFAULT_EMAIL: "${PGADMIN_DEFAULT_EMAIL}"
       PGADMIN_DEFAULT_PASSWORD: "${PGADMIN_DEFAULT_PASSWORD}"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - my_network
 networks:
