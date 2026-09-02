@@ -21,10 +21,6 @@ import { RolesModule } from './roles/roles.module';
 import { UsersModule } from './users/users.module';
 import { WorkLogsModule } from './work_logs/work-logs.module';
 
-const telegramModule = process.env.TG_API_TOKEN
-  ? TelegrafModule.forRoot({ token: process.env.TG_API_TOKEN })
-  : [];
-
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -42,7 +38,9 @@ const telegramModule = process.env.TG_API_TOKEN
       logging: false,
       // logging: console.log,
     }),
-    telegramModule,
+    ...(process.env.TG_API_TOKEN
+      ? [TelegrafModule.forRoot({ token: process.env.TG_API_TOKEN })]
+      : []),
     AuthModule,
     UsersModule,
     RolesModule,
