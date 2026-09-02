@@ -38,12 +38,12 @@ table/
 - **Сборка**: Vite → nginx (alpine) в Docker
 
 ### Инфраструктура — Docker Compose
-| Контейнер   | Образ            | Порт  | Назначение           |
-|-------------|------------------|-------|----------------------|
-| frontend    | multi-stage build| 80    | nginx + React SPA    |
-| backend     | node:20.11       | 42131 | NestJS API           |
-| postgres    | postgres:16.3-alpine | 5432 | БД PostgreSQL       |
-| pgadmin     | dpage/pgadmin4   | 5050  | Управление БД        |
+| Контейнер   | Образ            | Порты       | Назначение           |
+|-------------|------------------|-------------|----------------------|
+| frontend    | multi-stage build| 80, 443     | nginx + React SPA + SSL |
+| backend     | node:20          | 42131       | NestJS API           |
+| postgres    | postgres:16.3-alpine | 5432 (127.0.0.1) | БД PostgreSQL   |
+| pgadmin     | dpage/pgadmin4   | 5050        | Управление БД        |
 
 ---
 
@@ -127,32 +127,60 @@ table/
 docker compose up -d --build
 ```
 
+### SSL (Let's Encrypt)
+```bash
+# Остановить контейнеры (certbot нужен порт 80)
+docker compose down
+
+# Сгенерировать сертификат
+certbot certonly --standalone -d your_domain.ru --non-interactive --agree-tos --email your@email.com
+
+# Заменить DOMAIN в nginx.conf на реальный домен
+sed -i 's/DOMAIN/your_domain.ru/g' timesheet-front/nginx.conf
+
+# Запустить обратно
+docker compose up -d --build
+```
+
 ### CI/CD (GitHub Actions)
-- Пуш в `master` → SSH на VPS → `git pull` → `docker compose down` → `docker compose up -d --build`
+- Пуш в `master` → SSH на VPS → `git pull` → `docker compose up -d --build`
 
 ### Первый запуск (создание данных)
-После деплоя через Swagger (`/api/docs`):
-1. Создать роли: `POST /api/v1/roles` — `{name: "admin", alt_name: "Администратор"}`
-2. Создать другие роли: master, personnel_officer, financier
-3. Создать первого админа: `POST /api/v1/auth/create`
+После деплоя — через SQL или Swagger (`/api/docs`):
+
+```sql
+INSERT INTO roles (name, "alt_name", "createdAt", "updatedAt")
+VALUES
+('admin', 'Администратор', NOW(), NOW()),
+('master', 'Мастер', NOW(), NOW()),
+('personnel_officer', 'Кадровик', NOW(), NOW()),
+('financier', 'Финансист', NOW(), NOW());
+```
+
+Создать админа через API:
+```bash
+curl -X POST http://localhost:42131/api/v1/auth/create \
+  -H "Content-Type: application/json" \
+  -d '{"login":"admin","password":"YourPassword!","lastName":"Admin","firstName":"Admin","middleName":"Adminov","role_id":2,"phoneNumber":"+79000000000"}'
+```
 
 ---
 
-## ⚠️ Известные проблемы (выявлены при анализе)
+## ⚠️ Известные проблемы и решения
 
-### 🔴 Критические (блокируют деплой)
-1. **Нет `.env` файлов** — приложение не запустится без переменных
-2. **Порт бэкенда**: NestJS default 5000, но Dockerfile/nginx ожидают 42131
-3. **Sequelize `synchronize: false`** — таблицы НЕ создадутся на пустой БД
-4. **JWT secret fallback `'secret'`** — критическая уязвимость
-5. **`VITE_API_URL` не передаётся при сборке** — фронтенд не найдёт API
+### ✅ Решённые (при деплое)
+1. ~~Нет `.env` файлов~~ → Создан `.env` на сервере
+2. ~~Порт бэкенда~~ → `app.listen(PORT, '0.0.0.0')` для Docker
+3. ~~Sequelize `synchronize: false`~~ → В проде `synchronize: true`, таблицы создаются автоматически
+4. ~~JWT secret fallback `'secret'`~~ → `PRIVATE_KEY` обязательно в `.env`
+5. ~~`VITE_API_URL` не передаётся при сборке~~ → Передаётся через `args` в docker-compose.yml
+6. ~~Порт 5432 postgres доступен извне~~ → Привязан к `127.0.0.1:5432`
+7. ~~SSL/HTTPS~~ → Настроен Let's Encrypt + nginx
 
-### 🟡 Безопасность
+### 🟡 Безопасность (не критично)
 1. bcrypt salt rounds = 5 (рекомендуется 10-12)
 2. CORS: `cors: true` — все origins
-3. Exception filter утекает stack trace, hostname, env в ответы API
-4. Порт 5432 postgres доступен извне в docker-compose
-5. Хардкод `lastLoginAt: '2024-10-08 14:30:00'` в users.service.ts
+3. Exception filter логирует stack trace, hostname, env
 
 ### 🟠 Баги кода
 1. `WorkLogsService` зарегистрирован дважды в providers модуля
