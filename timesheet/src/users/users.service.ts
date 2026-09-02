@@ -60,7 +60,7 @@ export class UsersService {
           ...dto,
           password: hashPassword,
           passwordChangedAt: new Date(),
-        },
+        } as any,
         {
           where: {
             id: id,
@@ -78,7 +78,7 @@ export class UsersService {
         ...Object.fromEntries(
           Object.entries(dto).filter(([key, value]) => key !== 'password'),
         ),
-      },
+      } as any,
       {
         where: {
           id: id,

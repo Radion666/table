@@ -1,5 +1,5 @@
 # Используем официальный Node.js образ
-FROM node:20.11.0 AS build-stage
+FROM node:20 AS build-stage
 
 WORKDIR /app
 
